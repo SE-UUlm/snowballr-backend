@@ -147,7 +147,7 @@ class InvitationService(
 
         // Check if the token has expired
         if (OffsetDateTime.now().isAfter(invitationToken.expiresAt)) {
-            logger.warn {
+            logger.debug {
                 "Invitation token expired for '${invitationToken.email}' to project ${invitationToken.projectId}"
             }
             invitationTokenRepo.deleteInvitationToken(invitationToken.token)

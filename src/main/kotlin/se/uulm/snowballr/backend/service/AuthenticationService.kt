@@ -66,7 +66,7 @@ class AuthenticationService(
 
         // Check if the token has expired
         if (OffsetDateTime.now().isAfter(verificationToken.expiresAt)) {
-            logger.warn { "Email verification failed: token expired for user ${verificationToken.userId}" }
+            logger.debug { "Email verification failed: token expired for user ${verificationToken.userId}" }
             verificationTokenRepo.deleteVerificationToken(token)
             throw VerificationTokenNotFoundException()
         }
@@ -104,12 +104,12 @@ class AuthenticationService(
             try {
                 repo.getUserByEmail(request.email).getOrThrow()
             } catch (_: NotFoundException) {
-                logger.warn { "Login failed: no account found for email '${request.email}'" }
+                logger.debug { "Login failed: no account found for email '${request.email}'" }
                 throw UnauthenticatedException()
             }
 
         if (!user.isActiveAndConfirmed) {
-            logger.warn { "Login failed: user ${user.id} is not active or confirmed (status: ${user.status})" }
+            logger.debug { "Login failed: user ${user.id} is not active or confirmed (status: ${user.status})" }
             throw UnauthenticatedException()
         }
 
@@ -122,7 +122,7 @@ class AuthenticationService(
         }
 
         if (!PasswordUtils.verifyPassword(request.password, storedPasswordHash)) {
-            logger.warn { "Login failed: incorrect password for user ${user.id}" }
+            logger.debug { "Login failed: incorrect password for user ${user.id}" }
             throw UnauthenticatedException()
         }
 
@@ -139,7 +139,7 @@ class AuthenticationService(
 
         val storedPasswordHash = repo.getPasswordHashByEmail(currentUser.email).getOrThrow()
         if (!PasswordUtils.verifyPassword(request.oldPassword, storedPasswordHash)) {
-            logger.warn { "Password change failed: incorrect old password for user ${currentUser.id}" }
+            logger.debug { "Password change failed: incorrect old password for user ${currentUser.id}" }
             throw IncorrectOldPasswordException()
         }
 

@@ -100,11 +100,12 @@ private class ExceptionCall<ReqT, RespT>(
 
         when (exception) {
             is InternalException, is UnauthorizedFetcherPathException -> logger.error(exception, logMessage)
-            is UnauthenticatedException, is UnauthorizedException -> logger.warn(logMessage)
             is AlreadyExistsException,
             is FailedPreconditionException,
             is InvalidArgumentException,
             is NotFoundException,
+            is UnauthenticatedException,
+            is UnauthorizedException,
             -> logger.debug(logMessage)
         }
         logger.trace { exception.stackTraceToString() }

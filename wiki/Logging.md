@@ -38,21 +38,23 @@ alert reading it. Before picking a level, ask:
 > When this line shows up in production, does somebody have to act on it, is it a record that the system changed
 > state, or is it detail that only matters while investigating one specific request?
 
-The second question decides between `WARN` and `ERROR`:
+The second question separates `WARN` from `ERROR`:
 
-> Does somebody have to *do* something about this?
+> Is something broken, or is something merely wrong?
 
-A rejected password is not an error because the system worked exactly as designed. A user row without a password hash
-is an error because either the code or the data is broken.
+`ERROR` means the code or the data is broken: an escaped exception, a violated invariant, an unusable dependency.
+`WARN` means a state that should not occur but broke nothing — worth inspecting, not worth waking anyone. Neither is
+for outcomes a user causes normally: a rejected password or a denied permission belongs at `DEBUG`. A user row without
+a password hash is an `ERROR`, because the database contradicts itself.
 
 ## Log Levels
 
 | Level   | Meaning                                       | Typical trigger                                         | Never use for                                       |
 |---------|-----------------------------------------------|---------------------------------------------------------|-----------------------------------------------------|
 | `ERROR` | The system is broken and an operator must act | Broken invariant, unhandled exception, dependency down  | Anything a user can cause by using the app normally |
-| `WARN`  | Expected, but noteworthy. Alert on *rate*     | Rejected credential, degraded fetcher, slow call        | Routine control flow                                |
+| `WARN`  | Illegal state that did not break behaviour    | Degraded fetcher, slow call, cancelled job              | Routine control flow, user-caused outcomes          |
 | `INFO`  | The business audit trail of state changes     | Entity created, updated or deleted, login, job finished | Per-request noise, reads                            |
-| `DEBUG` | Diagnostics for one specific request          | Request entry and exit, client errors                   | Anything to alert on, or the audit trail            |
+| `DEBUG` | Diagnostics for one specific request          | Request entry and exit, client errors, auth failures    | Anything to alert on, or the audit trail            |
 | `TRACE` | Firehose                                      | Stack traces, per-branch decisions, payload dumps       | Anything at all in a normal deployment              |
 
 ### ERROR
@@ -76,19 +78,18 @@ logger.error { "Login failed: no password hash found for user ${user.id}" }
 
 ### WARN
 
-This level is for events that are expected but should be noticed if they become frequent. It is also the level for
-**security-relevant rejections**, because it is the level that separates them from the `DEBUG` noise around them and
-makes them countable:
+This level is for states that should not occur but did not break anything, and that are worth noticing if they become
+frequent:
 
 ```kotlin
-logger.warn { "Login failed: incorrect password for user ${user.id}" }
+logger.warn { "Skipping plugin: $fetcherFileName" }
 ```
-
-All failure branches of the same operation get the same level, with the reason stated in the message. Splitting one
-logical event across `DEBUG` and `WARN` makes it impossible to alert on.
 
 Use `WARN` for degraded but working conditions as well. Examples are a fetcher plugin that failed while the others
 succeeded, a call that exceeded the slow-call threshold, and a scheduled job that was cancelled.
+
+Failure branches that are the same kind of event share one level. A branch that reveals a broken invariant is a
+different event and moves up to `ERROR`, as in the password hash example above.
 
 ### INFO
 
@@ -126,8 +127,9 @@ bulk. Only the `TESTING` profile runs at this level.
 ## What to Log
 
 * **Every state-changing service operation**, meaning create, update, and delete, at `INFO`, after it succeeded.
-* **All authentication and authorization events**, such as login success and failure, logout, password change, email
-  verification, accepted invitation, role change and permission denial.
+* **All authentication and authorization events.** State changes such as login, logout, password change, email
+  verification, accepted invitation and role change at `INFO`; rejections such as a failed login or a denied permission
+  at `DEBUG`.
 * **Data egress.** Exporting a project copies the personal data of every project member out of the system, so it needs
   a record.
 * **Scheduled and background jobs**, including their start, their finish, and the number of affected rows.
