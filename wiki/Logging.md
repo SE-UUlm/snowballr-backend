@@ -32,8 +32,8 @@ On this page, we cover the following topics:
 ## What Log Level to use?
 
 **The `PRODUCTION` profile runs at `DEBUG`.** Every level except `TRACE` is therefore visible in production. The level
-you pick does not decide whether anybody can see the line; it decides **how the line is treated** by the person or the
-alert reading it. Before picking a level, ask:
+you pick does not control who sees the line. It controls **how the line is treated** by the person or the alert
+reading it. Before picking a level, ask:
 
 > When this line shows up in production, does somebody have to act on it, is it a record that the system changed
 > state, or is it detail that only matters while investigating one specific request?
@@ -42,10 +42,10 @@ The second question separates `WARN` from `ERROR`:
 
 > Is something broken, or is something merely wrong?
 
-`ERROR` means the code or the data is broken: an escaped exception, a violated invariant, an unusable dependency.
-`WARN` means a state that should not occur but broke nothing — worth inspecting, not worth waking anyone. Neither is
-for outcomes a user causes normally: a rejected password or a denied permission belongs at `DEBUG`. A user row without
-a password hash is an `ERROR`, because the database contradicts itself.
+`ERROR` means the code or the data is broken, for example an escaped exception, a violated invariant or an unusable
+dependency. `WARN` means a state that should not occur but broke nothing, worth inspecting but not worth waking
+anyone. Neither level is for outcomes a user causes normally. A rejected password or a denied permission belongs at
+`DEBUG`. A user row without a password hash is an `ERROR`, because the database contradicts itself.
 
 ## Log Levels
 
@@ -65,9 +65,8 @@ This level is reserved for faults that need a human. Always pass the throwable s
 logger.error(exception) { "Failed to process fetcher job for paper $paperId" }
 ```
 
-Do **not** use `ERROR` for user-caused outcomes. A wrong password, a missing entity, and a permission denial are all
-normal results of a correctly working system. Putting them at `ERROR` buries real faults and trains everyone to ignore
-the error log.
+Do **not** use `ERROR` for user-caused outcomes. A wrong password, a missing entity or a permission denial are normal
+results of a correctly working system. Putting them at `ERROR` buries the real faults and makes the error log useless.
 
 A genuine `ERROR` case looks like the following, where the user did nothing wrong and cannot fix the situation:
 
@@ -101,9 +100,9 @@ repo.softDeleteProject(projectId)
 logger.info { "Project $projectId soft-deleted" }
 ```
 
-`INFO` must stay readable. If a line fires on every request regardless of the outcome, it does not belong here. That is
-what `DEBUG` and metrics are for. Since `DEBUG` is enabled in production, filtering the stream down to `INFO` and above
-is how the audit trail is read, and one chatty `INFO` line is enough to ruin it.
+`INFO` must stay readable. If a line fires on every request regardless of the outcome, it belongs at `DEBUG` instead.
+Since `DEBUG` is enabled in production, the audit trail is read by filtering the stream down to `INFO` and above, so a
+single chatty `INFO` line can bury it.
 
 For updates, name what changed. The message `"Project X updated"` is not actionable, so include the field mask:
 
@@ -116,8 +115,8 @@ logger.info { "Project ${request.projectId} updated: ${paths.joinToString()}" }
 This level covers everything needed to reconstruct a single request while investigating it. That includes request entry
 and exit, intermediate results, and ordinary client errors such as `NOT_FOUND`, `INVALID_ARGUMENT` and
 `ALREADY_EXISTS`. Both the `PRODUCTION` and the `DEVELOPMENT` profile run at this level, so an incident can be
-investigated from the logs that already exist rather than by restarting the server with a higher verbosity, which would
-destroy the state being investigated.
+investigated from logs that already exist. Restarting the server with a higher verbosity would destroy the state you
+are investigating.
 
 ### TRACE
 
@@ -128,19 +127,19 @@ bulk. Only the `TESTING` profile runs at this level.
 
 * **Every state-changing service operation**, meaning create, update, and delete, at `INFO`, after it succeeded.
 * **All authentication and authorization events.** State changes such as login, logout, password change, email
-  verification, accepted invitation and role change at `INFO`; rejections such as a failed login or a denied permission
-  at `DEBUG`.
+  verification, accepted invitation and role change at `INFO`. Rejections such as a failed login or a denied
+  permission at `DEBUG`.
 * **Data egress.** Exporting a project copies the personal data of every project member out of the system, so it needs
   a record.
 * **Scheduled and background jobs**, including their start, their finish, and the number of affected rows.
 * **External calls that fail**, such as fetcher plugins and SMTP.
 
-Reads are *not* logged. A method like `getProjectById` firing an `INFO` line on every page load destroys the audit
+Reads are *not* logged. A method like `getProjectById` firing an `INFO` line on every page load would bury the audit
 trail.
 
 ## What Never to Log
 
-* **Secrets in any form.** This covers passwords in plaintext or hashed, JWTs, and, easiest to overlook,
+* **Secrets in any form.** This covers passwords in plaintext or hashed, JWTs and, easiest to overlook,
   **verification and invitation tokens**. Those tokens are bearer credentials, so anyone who reads the log line can use
   them. Log the subject of the token, such as the user ID or project ID, but never its value.
 * **Raw request payloads.** Log the identifiers you need instead of the whole message.
@@ -151,7 +150,7 @@ trail.
 
 ## Layer Responsibilities
 
-Each event has exactly one owner. This is what keeps the log free of duplicates.
+Each event has exactly one owner, which keeps the log free of duplicates.
 
 | Layer                 | Logs                                                                   | Level                   |
 |-----------------------|------------------------------------------------------------------------|-------------------------|
@@ -161,9 +160,8 @@ Each event has exactly one owner. This is what keeps the log free of duplicates.
 | Fetcher, Orchestrator | Job lifecycle and per-job outcomes                                     | `INFO`                  |
 | Scheduler             | Job start, finish and cancellation                                     | `INFO`, `WARN`          |
 
-Repositories do **not** log per-request writes. That is the responsibility of the service, which has the business
-context of who acted on what, and the repository does not. The existing repository logs are all bulk cleanups, for
-example:
+Repositories do **not** log per-request writes. The service does that, because it knows who acted on what and the
+repository does not. The existing repository logs are all bulk cleanups, for example:
 
 ```kotlin
 logger.info { "Deleted $deletedTokens expired invitation tokens." }
@@ -219,8 +217,8 @@ login and registration, have to name the user themselves.
 Email addresses reach the service layer already validated against `EMAIL_REGEX` in
 [`ValidationHelper.kt`](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/validation/ValidationHelper.kt),
 so they are safe to log. A value that is not a well-formed address is rejected with `INVALID_ARGUMENT` before it ever
-reaches a service. Logging the attempted address on a failed login is deliberate because it is what makes a targeted
-attack distinguishable from a forgetful user.
+reaches a service. Logging the attempted address on a failed login is deliberate, because it distinguishes a targeted
+attack from a forgetful user.
 
-Be aware of the consequence. Hard deletion removes the user from the database, but log lines survive. Log retention is
-therefore what enforces erasure, and it is an operational setting rather than something the code can guarantee.
+Note the consequence. Hard deletion removes the user from the database, but log lines survive. Log retention therefore
+enforces erasure, and it is an operational setting that the code cannot guarantee.
