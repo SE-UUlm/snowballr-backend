@@ -55,7 +55,7 @@ a password hash is an `ERROR`, because the database contradicts itself.
 | `WARN`  | Illegal state that did not break behaviour    | Degraded fetcher, slow call, cancelled job              | Routine control flow, user-caused outcomes          |
 | `INFO`  | The business audit trail of state changes     | Entity created, updated or deleted, login, job finished | Per-request noise, reads                            |
 | `DEBUG` | Diagnostics for one specific request          | Request entry and exit, client errors, auth failures    | Anything to alert on, or the audit trail            |
-| `TRACE` | Firehose                                      | Stack traces, per-branch decisions, payload dumps       | Anything at all in a normal deployment              |
+| `TRACE` | Exhaustive detail for deep investigation      | Stack traces, per-branch decisions, payload dumps       | Anything at all in a normal deployment              |
 
 ### ERROR
 
