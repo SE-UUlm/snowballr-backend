@@ -53,11 +53,11 @@ val loggingInterceptor =
     }
 
 /**
- * Wraps a [ServerCall.Listener] to log the call's duration once it completes or is cancelled, warning when
+ * Wraps a [ServerCall.Listener] to log the call's duration once it completes or is canceled, warning when
  * it exceeds [SLOW_CALL_THRESHOLD_MS].
  *
  * Timing starts when the call is intercepted, so the measured duration covers authentication and validation
- * as well as the service method itself, and calls cancelled before the client half-closes are still logged.
+ * as well as the service method itself, and calls canceled before the client half-closes are still logged.
  */
 private class RequestLoggingListener<ReqT>(
     delegate: ServerCall.Listener<ReqT>,
@@ -93,8 +93,8 @@ private class RequestLoggingListener<ReqT>(
  * [RequestLoggingListener] can report it alongside the duration.
  *
  * This interceptor is the outermost one, so its wrapper is the last to see `close` and therefore observes
- * the status after the [exceptionInterceptor] has mapped any exception onto it. The severity of a failed
- * call is logged by that interceptor, so the outcome line here stays at `DEBUG` for every status.
+ * the status after the [exceptionInterceptor] has mapped any exception onto it. That interceptor logs the
+ * severity of a failed call, so the outcome line here stays at `DEBUG` for every status.
  */
 private class StatusCapturingCall<ReqT, RespT>(
     delegate: ServerCall<ReqT, RespT>,
