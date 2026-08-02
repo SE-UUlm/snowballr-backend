@@ -172,6 +172,22 @@ private class StructureRules {
             .because("Only the gRPC and validation layers may access the generated gRPC code")
             .check(classes)
     }
+
+    @ArchTest
+    fun `When a class is outside the context package, then it should not access the MDC`(classes: JavaClasses) {
+        noClasses()
+            .that()
+            .resideOutsideOfPackage("$BASE_PACKAGE.context..")
+            .should()
+            .accessClassesThat()
+            .haveFullyQualifiedName("org.slf4j.MDC")
+            .because(
+                "a plain MDC entry does not survive dispatcher hops in coroutine code, so correlation IDs " +
+                    "are silently lost. Use RequestContext, which mirrors requestId and userId into the MDC " +
+                    "via a ThreadContextElement",
+            )
+            .check(classes)
+    }
 }
 
 private class NamingConventions {

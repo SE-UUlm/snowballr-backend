@@ -9,7 +9,6 @@ import io.grpc.ServerCall
 import io.grpc.ServerCallHandler
 import io.grpc.ServerInterceptor
 import io.grpc.Status
-import org.slf4j.MDC
 import se.uulm.snowballr.backend.context.RequestContext
 
 private val logger = KotlinLogging.logger {}
@@ -28,7 +27,7 @@ internal val REQUEST_ID_CONTEXT_KEY: Context.Key<String> = Context.key("requestI
  * its outcome (status and duration), and warns about slow calls.
  *
  * The request ID is placed on the gRPC [Context] (via [REQUEST_ID_CONTEXT_KEY]) so downstream interceptors
- * can adopt it, and mirrored into the SLF4J [MDC] around each log statement it emits so the `logback.xml`
+ * can adopt it, and mirrored into the SLF4J MDC around each log statement it emits so the `logback.xml`
  * pattern can render it. Service-level logs pick up the same ID through the [RequestContext] installed by
  * the [authenticationInterceptor].
  */
@@ -45,7 +44,7 @@ val loggingInterceptor =
             val context = Context.current().withValue(REQUEST_ID_CONTEXT_KEY, requestId)
 
             return context.call {
-                withRequestIdMdc(requestId) { logger.debug { "Received call to $methodName" } }
+                RequestContext.withRequestIdMdc(requestId) { logger.debug { "Received call to $methodName" } }
                 val statusCall = call?.let { StatusCapturingCall(it) }
                 val listener = next?.startCall(statusCall ?: call, headers) ?: return@call null
                 RequestLoggingListener(listener, requestId, methodName, startTime, statusCall)
@@ -80,7 +79,7 @@ private class RequestLoggingListener<ReqT>(
     private fun logOutcome(outcome: String) {
         val durationMs = System.currentTimeMillis() - startTime
         val statusCode = statusCall?.closedStatus?.code?.name ?: "<not closed>"
-        withRequestIdMdc(requestId) {
+        RequestContext.withRequestIdMdc(requestId) {
             logger.debug { "$methodName $outcome with $statusCode in ${durationMs}ms" }
             if (durationMs >= SLOW_CALL_THRESHOLD_MS) {
                 logger.warn { "Slow call: $methodName took ${durationMs}ms (threshold: ${SLOW_CALL_THRESHOLD_MS}ms)" }
@@ -107,23 +106,5 @@ private class StatusCapturingCall<ReqT, RespT>(
     override fun close(status: Status?, trailers: Metadata?) {
         closedStatus = status
         super.close(status, trailers)
-    }
-}
-
-/**
- * Runs [block] with [requestId] set in the SLF4J [MDC], restoring the previous value afterward. Used for
- * interceptor log lines that run outside the [RequestContext]-managed service coroutine.
- */
-private inline fun withRequestIdMdc(requestId: String, block: () -> Unit) {
-    val previous = MDC.get(RequestContext.MDC_REQUEST_ID_KEY)
-    MDC.put(RequestContext.MDC_REQUEST_ID_KEY, requestId)
-    try {
-        block()
-    } finally {
-        if (previous == null) {
-            MDC.remove(RequestContext.MDC_REQUEST_ID_KEY)
-        } else {
-            MDC.put(RequestContext.MDC_REQUEST_ID_KEY, previous)
-        }
     }
 }

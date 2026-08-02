@@ -172,6 +172,22 @@ class RequestContext(
         }
 
         /**
+         * Runs [block] with [requestId] set in the SLF4J [MDC], restoring the previous value afterward.
+         *
+         * Must not become `inline`. The architecture test reads bytecode, where an inlined body is copied
+         * into every caller, which would report the callers as touching the [MDC] themselves.
+         */
+        fun withRequestIdMdc(requestId: String, block: () -> Unit) {
+            val previous = MDC.get(MDC_REQUEST_ID_KEY)
+            MDC.put(MDC_REQUEST_ID_KEY, requestId)
+            try {
+                block()
+            } finally {
+                if (previous == null) MDC.remove(MDC_REQUEST_ID_KEY) else MDC.put(MDC_REQUEST_ID_KEY, previous)
+            }
+        }
+
+        /**
          * Binds [context] to the current thread for the duration of [block], then restores the previous
          * binding. Intended for blocking transport adapters and tests that drive the flow synchronously.
          */
