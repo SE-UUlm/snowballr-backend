@@ -12,7 +12,7 @@ On this page, we cover the following topics:
 <!-- markdownlint-disable MD007 -->
 <!-- @formatter:off -->
 <!-- TOC -->
-  * [The Rule That Decides Everything](#the-rule-that-decides-everything)
+  * [What Log Level to use?](#what-log-level-to-use)
   * [Log Levels](#log-levels)
     * [ERROR](#error)
     * [WARN](#warn)
@@ -29,7 +29,7 @@ On this page, we cover the following topics:
 <!-- @formatter:on -->
 <!-- markdownlint-enable MD007 -->
 
-## The Rule That Decides Everything
+## What Log Level to use?
 
 **The `PRODUCTION` profile runs at `DEBUG`.** Every level except `TRACE` is therefore visible in production. The level
 you pick does not decide whether anybody can see the line; it decides **how the line is treated** by the person or the
