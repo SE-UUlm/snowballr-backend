@@ -86,10 +86,12 @@ existing docs over restating them here. If you must summarize, keep it short and
 
 Full rules in wiki/Logging.md. The points most easily got wrong:
 
-- **PRODUCTION runs at INFO.** Anything below INFO does not exist in production; this decides every level choice.
+- **PRODUCTION runs at DEBUG.** Everything except TRACE is visible in production, so the level does not decide whether
+  a line is seen but how it is treated: act on it (WARN/ERROR), record a state change (INFO), or diagnose one request
+  (DEBUG). Levels must stay separable, since filtering to INFO and above is how the audit trail is read.
 - **Levels:** ERROR only when an operator must act (broken invariant, unhandled exception). WARN for expected but
   noteworthy events, including security-relevant rejections such as failed logins. INFO for state changes. DEBUG for
-  per-request diagnostics.
+  per-request diagnostics. TRACE is the only level not enabled in production.
 - **Layer ownership:** services log business events; repositories log only batch/maintenance row counts; interceptors
   log the request lifecycle. Never log the same event at two layers, and never log-and-throw.
 - **Never log** passwords, JWTs, verification/invitation tokens (they are bearer credentials), or raw request payloads.

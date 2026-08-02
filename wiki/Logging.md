@@ -31,14 +31,12 @@ On this page, we cover the following topics:
 
 ## The Rule That Decides Everything
 
-**The `PRODUCTION` profile runs at `INFO`.** Anything logged below `INFO` does not exist in production. Before picking
-a level, ask:
+**The `PRODUCTION` profile runs at `DEBUG`.** Every level except `TRACE` is therefore visible in production. The level
+you pick does not decide whether anybody can see the line; it decides **how the line is treated** by the person or the
+alert reading it. Before picking a level, ask:
 
-> Would an operator who cannot attach a debugger need this line to understand what the system did, or to notice that
-> something is wrong?
-
-If the answer is yes, it belongs at `INFO` or above. If it only helps while actively debugging a specific request, it
-belongs at `DEBUG`.
+> When this line shows up in production, does somebody have to act on it, is it a record that the system changed
+> state, or is it detail that only matters while investigating one specific request?
 
 The second question decides between `WARN` and `ERROR`:
 
@@ -54,7 +52,7 @@ is an error because either the code or the data is broken.
 | `ERROR` | The system is broken and an operator must act | Broken invariant, unhandled exception, dependency down  | Anything a user can cause by using the app normally |
 | `WARN`  | Expected, but noteworthy. Alert on *rate*     | Rejected credential, degraded fetcher, slow call        | Routine control flow                                |
 | `INFO`  | The business audit trail of state changes     | Entity created, updated or deleted, login, job finished | Per-request noise, reads                            |
-| `DEBUG` | Diagnostics for one specific request          | Request entry and exit, client errors                   | Anything needed to operate the system in production |
+| `DEBUG` | Diagnostics for one specific request          | Request entry and exit, client errors                   | Anything to alert on, or the audit trail            |
 | `TRACE` | Firehose                                      | Stack traces, per-branch decisions, payload dumps       | Anything at all in a normal deployment              |
 
 ### ERROR
@@ -79,7 +77,8 @@ logger.error { "Login failed: no password hash found for user ${user.id}" }
 ### WARN
 
 This level is for events that are expected but should be noticed if they become frequent. It is also the level for
-**security-relevant rejections**, because it is the lowest level that is still visible in production:
+**security-relevant rejections**, because it is the level that separates them from the `DEBUG` noise around them and
+makes them countable:
 
 ```kotlin
 logger.warn { "Login failed: incorrect password for user ${user.id}" }
@@ -102,7 +101,8 @@ logger.info { "Project $projectId soft-deleted" }
 ```
 
 `INFO` must stay readable. If a line fires on every request regardless of the outcome, it does not belong here. That is
-what `DEBUG` and metrics are for.
+what `DEBUG` and metrics are for. Since `DEBUG` is enabled in production, filtering the stream down to `INFO` and above
+is how the audit trail is read, and one chatty `INFO` line is enough to ruin it.
 
 For updates, name what changed. The message `"Project X updated"` is not actionable, so include the field mask:
 
@@ -114,7 +114,9 @@ logger.info { "Project ${request.projectId} updated: ${paths.joinToString()}" }
 
 This level covers everything needed to reconstruct a single request while investigating it. That includes request entry
 and exit, intermediate results, and ordinary client errors such as `NOT_FOUND`, `INVALID_ARGUMENT` and
-`ALREADY_EXISTS`. The `DEVELOPMENT` profile runs at this level.
+`ALREADY_EXISTS`. Both the `PRODUCTION` and the `DEVELOPMENT` profile run at this level, so an incident can be
+investigated from the logs that already exist rather than by restarting the server with a higher verbosity, which would
+destroy the state being investigated.
 
 ### TRACE
 
