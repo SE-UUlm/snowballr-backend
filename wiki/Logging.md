@@ -196,6 +196,10 @@ logger.info { "Review ${review.id} created for project paper ${request.projectPa
 logger.info { "User ${user.id} logged in" }
 ```
 
+Inside `withUser` this is guaranteed: it resolves the acting user from the context and throws if there is none.
+Outside it, every authenticated call still carries the `userId`. Only endpoints that run unauthenticated, such as
+login and registration, have to name the user themselves.
+
 ## Message Style
 
 * Always use the lambda form. It defers building the string until the level is actually enabled:
