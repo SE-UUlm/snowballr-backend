@@ -46,7 +46,7 @@ val loggingInterceptor =
             return context.call {
                 RequestContext.withRequestIdMdc(requestId) { logger.debug { "Received call to $methodName" } }
                 val statusCall = call?.let { StatusCapturingCall(it) }
-                val listener = next?.startCall(statusCall ?: call, headers) ?: return@call null
+                val listener = next?.startCall(statusCall, headers) ?: return@call null
                 RequestLoggingListener(listener, requestId, methodName, startTime, statusCall)
             }
         }
