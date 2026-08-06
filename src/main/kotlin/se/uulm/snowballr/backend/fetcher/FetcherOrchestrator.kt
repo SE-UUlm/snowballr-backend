@@ -62,7 +62,7 @@ class FetcherOrchestrator(
     private val citationRepo: ICitationTableRepo,
     private val projectPaperRepo: IProjectPaperTableRepo,
     private val paperMatcher: IPaperMatcher,
-    dispatcher: CoroutineDispatcher = Dispatchers.IO,
+    dispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : IFetcherOrchestrator {
     private val queue = Channel<FetcherProcessingJob>(Channel.UNLIMITED)
 
@@ -259,7 +259,7 @@ class FetcherOrchestrator(
             }
         }
 
-        val candidates = paperRepo.getPapersByYear(ref.year, tolerance = 1)
+        val candidates = paperRepo.getPapersByYear(ref.year, paperMatcher.config.yearTolerance)
         val match = if (candidates.isEmpty()) null else paperMatcher.findMatch(ref, candidates, threshold)
         if (match != null) {
             updateMetadataIfChanged(match, ref)

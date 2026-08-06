@@ -253,6 +253,7 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
                 every {
                     paperMatcherMock.deduplicatePapers(setOf(forwardFetcherRef), any())
                 } returns setOf(forwardFetcherRef)
+                every { paperMatcherMock.config.yearTolerance } returns 1
                 coEvery { paperRepoMock.getPapersByYear(backwardFetcherRef.year, 1) } returns listOf(backwardRef)
                 coEvery { paperRepoMock.getPapersByYear(forwardFetcherRef.year, 1) } returns listOf(forwardRef)
                 coEvery {
@@ -364,6 +365,7 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
                     paperRepoMock.getPapersByExternalIds(forwardRef.externalIds)
                 } returns emptyList()
             }
+            every { paperMatcherMock.config.yearTolerance } returns 1
             coEvery { paperRepoMock.getPapersByYear(backwardRef.year, 1) } returns emptyList()
             coEvery { paperRepoMock.getPapersByYear(forwardRef.year, 1) } returns emptyList()
             coEvery {
@@ -428,6 +430,7 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
                     paperRepoMock.getPapersByExternalIds(forwardRef.externalIds)
                 } returns emptyList()
             }
+            every { paperMatcherMock.config.yearTolerance } returns 1
             coEvery { paperRepoMock.getPapersByYear(backwardRef.year, 1) } returns candidates
             coEvery {
                 paperMatcherMock.findMatch(backwardFetcherRef, candidates, project.similarityThreshold)
@@ -481,6 +484,7 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
             every {
                 paperMatcherMock.deduplicatePapers(setOf(forwardFetcherRef), any())
             } returns setOf(forwardFetcherRef)
+            every { paperMatcherMock.config.yearTolerance } returns 1
             coEvery { paperRepoMock.getPapersByYear(backwardFetcherRef.year, 1) } returns emptyList()
             coEvery { paperRepoMock.getPapersByYear(forwardFetcherRef.year, 1) } returns emptyList()
             coEvery {

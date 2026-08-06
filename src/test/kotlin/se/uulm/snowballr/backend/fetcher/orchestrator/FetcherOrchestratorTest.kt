@@ -132,6 +132,8 @@ sealed class FetcherOrchestratorTest {
         every { paperMatcherMock.deduplicatePapers(backwardFetcherRefs, any()) } returns backwardFetcherRefs
         every { paperMatcherMock.deduplicatePapers(forwardFetcherRefs, any()) } returns forwardFetcherRefs
 
+        every { paperMatcherMock.config.yearTolerance } returns 1
+
         // No year-based candidates → falls through to createPaper
         for (ref in backwardFetcherRefs + forwardFetcherRefs) {
             coEvery { paperRepoMock.getPapersByYear(ref.year, 1) } returns emptyList()

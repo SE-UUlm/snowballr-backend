@@ -10,6 +10,11 @@ import kotlin.math.abs
 
 interface IPaperMatcher {
     /**
+     * The [PaperMatchingConfig] used by the matcher.
+     */
+    val config: PaperMatchingConfig
+
+    /**
      * Returns a similarity score in [0.0, 1.0] between two [FetcherPaper]s.
      *
      * Scoring rules:
@@ -67,11 +72,8 @@ interface IPaperMatcher {
 
 /**
  * The [IPaperMatcher] implementation.
- *
- * @param config The weight config that is used by [similarity] to determine how each component accounts to the overall
- * similarity.
  */
-class PaperMatcher(private val config: PaperMatchingConfig) : IPaperMatcher {
+class PaperMatcher(override val config: PaperMatchingConfig) : IPaperMatcher {
     companion object {
         // Definition of the default config that is used for the matching algorithm
         val defaultConfig = PaperMatchingConfig(
