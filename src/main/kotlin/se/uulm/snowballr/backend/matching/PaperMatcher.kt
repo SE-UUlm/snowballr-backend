@@ -14,7 +14,7 @@ interface IPaperMatcher {
      *
      * Scoring rules:
      * - If both papers share at least one [ExternalId], returns 1.0 immediately.
-     * - If the publication years differ by more than one, returns 0.0 immediately.
+     * - If the publication years differ by more than the configured threshold, returns 0.0 immediately.
      * - Otherwise, the score is a weighted combination of:
      *   - **Title**: normalized Levenshtein similarity.
      *   - **Authors**: Jaccard similarity on author name tokens. Omitted when either list is empty.
@@ -72,6 +72,20 @@ interface IPaperMatcher {
  * similarity.
  */
 class PaperMatcher(private val config: PaperMatchingConfig) : IPaperMatcher {
+    companion object {
+        // Definition of the default config that is used for the matching algorithm
+        val defaultConfig = PaperMatchingConfig(
+            // A year difference of greater than one eliminates a paper from being similar
+            yearTolerance = 1,
+            // The title similarity accounts for 60% of the total similarity
+            titleWeight = 0.6,
+            // The authors similarity accounts for 30% of the total similarity
+            authorsWeight = 0.3,
+            // The abstract similarity accounts for 10% of the total similarity
+            abstractWeight = 0.1,
+        )
+    }
+
     override fun similarity(a: FetcherPaper, b: FetcherPaper): Double {
         if (haveSameExternalId(a, b)) return 1.0
         if (abs(a.year - b.year) > config.yearTolerance) return 0.0

@@ -41,7 +41,6 @@ import se.uulm.snowballr.backend.mail.EmailTemplateManager
 import se.uulm.snowballr.backend.mail.IEmailManager
 import se.uulm.snowballr.backend.matching.IPaperMatcher
 import se.uulm.snowballr.backend.matching.PaperMatcher
-import se.uulm.snowballr.backend.matching.PaperMatchingConfig
 import se.uulm.snowballr.backend.repository.CriterionTableRepo
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
@@ -204,15 +203,7 @@ private fun Module.customServicesDeps() {
     singleOf(::CookieManager) { bind<ICookieManager>() }
     singleOf(::EmailManager) { bind<IEmailManager>() }
     singleOf(::AuthenticationManager) { bind<IAuthenticationManager>() }
-    single<IPaperMatcher> {
-        val config = PaperMatchingConfig(
-            yearTolerance = 1,
-            titleWeight = 0.6,
-            authorsWeight = 0.3,
-            abstractWeight = 0.1,
-        )
-        PaperMatcher(config)
-    }
+    single<IPaperMatcher> { PaperMatcher(PaperMatcher.defaultConfig) }
     single<IFetcherOrchestrator> {
         FetcherOrchestrator(
             fetcherManager = get(),
