@@ -395,3 +395,5 @@ To build the client locally, use the `buildTsClient` Gradle task.
 * [ ] Create Paper -> Existence check via similarity
 * [ ] Update Paper -> Existence check via similarity
 * [ ] Search Fetcher ProjectPaper Candidates -> Existence check via similarity
+* [ ] Investigate performance improvements for paper deduplication
+  * e.g. limit the length of the abstracts before comparing them

@@ -207,10 +207,22 @@ class FetcherOrchestrator(
      * Deduplicates the results from the fetching part of the processing job.
      */
     private fun runDeduplication(results: FetchingResults, job: FetcherProcessingJob): FetchingResults {
+        val start = System.currentTimeMillis()
         val dedupedBackward = paperMatcher.deduplicatePapers(results.backwardRefs, job.similarityThreshold)
         val dedupedForward = paperMatcher.deduplicatePapers(results.forwardRefs, job.similarityThreshold)
+        val duration = System.currentTimeMillis() - start
+        logger.debug { "Deduplication took ${duration}ms" }
 
-        return FetchingResults(dedupedBackward, dedupedForward)
+        val dedupResults = FetchingResults(dedupedBackward, dedupedForward)
+
+        if (results.allRefs.size != dedupResults.allRefs.size) {
+            logger.info {
+                "Deduplicated fetching results (Backward: ${dedupedBackward.size}/${results.backwardRefs.size}; " +
+                    "Forward: ${dedupedForward.size}/${results.forwardRefs.size})"
+            }
+        }
+
+        return dedupResults
     }
 
     /**
