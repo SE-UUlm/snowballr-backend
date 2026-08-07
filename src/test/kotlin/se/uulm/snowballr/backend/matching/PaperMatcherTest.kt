@@ -31,7 +31,7 @@ class PaperMatcherTest {
         val a = "a".repeat(100)
         val b = "b".repeat(100 - similarity) + "a".repeat(similarity)
 
-        return Pair(a, b)
+        return a to b
     }
 
     @Nested
@@ -185,6 +185,44 @@ class PaperMatcherTest {
             )
 
             assertEquals(emptyResult, blankResult, DELTA)
+        }
+
+        @Test
+        fun `When both papers have a conflicting external ID, then the similarity is 0`() {
+            val externalIdsA = listOf(
+                ExternalId(ExternalIdType.MAG, "123456"),
+                ExternalId(ExternalIdType.DOI, "10.1234/abcd"),
+            )
+            val externalIdsB = listOf(
+                ExternalId(ExternalIdType.SEMANTIC_SCHOLAR, "123456"),
+                ExternalId(ExternalIdType.DOI, "10.4321/dcba"),
+            )
+            val a = DataBuilder.createExampleFetcherPaper(externalIds = externalIdsA)
+            val b = DataBuilder.createExampleFetcherPaper(externalIds = externalIdsB)
+
+            assertEquals(0.0, matcher.similarity(a, b), DELTA)
+        }
+
+        @Test
+        fun `When both papers have a conflicting URL, then the similarity is determined by the paper components`() {
+            val externalIdsA = listOf(
+                ExternalId(ExternalIdType.MAG, "123456"),
+                ExternalId(ExternalIdType.URL, "https://example.org"),
+            )
+            val externalIdsB = listOf(
+                ExternalId(ExternalIdType.SEMANTIC_SCHOLAR, "123456"),
+                ExternalId(ExternalIdType.URL, "https://redirect-to-example.org"),
+            )
+            val a = DataBuilder.createExampleFetcherPaper(externalIds = externalIdsA)
+            val b = DataBuilder.createExampleFetcherPaper(externalIds = externalIdsB)
+
+            val urlResult = matcher.similarity(a, b)
+            val noIdsResult = matcher.similarity(
+                a.copy(externalIds = emptyList()),
+                b.copy(externalIds = emptyList()),
+            )
+
+            assertEquals(noIdsResult, urlResult, DELTA)
         }
     }
 
