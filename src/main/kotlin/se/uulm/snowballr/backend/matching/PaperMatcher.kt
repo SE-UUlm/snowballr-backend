@@ -61,16 +61,16 @@ interface IPaperMatcher {
     fun findMatch(fetched: FetcherPaper, candidates: List<Paper>, threshold: Float): Paper?
 
     /**
-     * Merges fetcher metadata from a freshly fetched paper into the existing DB paper's metadata.
+     * Merges fetched fetcher metadata into the existing metadata.
      *
-     * The DB paper's values take precedence on key conflicts: keys present in [dbPaper] always
+     * The existing values take precedence on key conflicts: keys present in [existing] always
      * overwrite the same keys from [fetched]. Keys present only in [fetched] are added.
      *
-     * @param dbPaper the existing paper stored in the database.
-     * @param fetched the newly fetched paper whose metadata may contain new keys.
+     * @param existing the existing [FetcherMetadata].
+     * @param fetched the newly fetched [FetcherMetadata].
      * @return a merged [FetcherMetadata] map.
      */
-    fun mergeMetadata(dbPaper: Paper, fetched: FetcherPaper): FetcherMetadata
+    fun mergeMetadata(existing: FetcherMetadata, fetched: FetcherMetadata): FetcherMetadata
 }
 
 /**
@@ -160,9 +160,9 @@ class PaperMatcher(override val config: PaperMatchingConfig) : IPaperMatcher {
         .maxByOrNull { (_, score) -> score }
         ?.first
 
-    override fun mergeMetadata(dbPaper: Paper, fetched: FetcherPaper): FetcherMetadata {
-        val merged = fetched.fetcherMetadata.toMutableMap()
-        merged.putAll(dbPaper.fetcherMetadata)
+    override fun mergeMetadata(existing: FetcherMetadata, fetched: FetcherMetadata): FetcherMetadata {
+        val merged = fetched.toMutableMap()
+        merged.putAll(existing)
         return merged
     }
 

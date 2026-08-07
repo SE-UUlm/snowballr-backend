@@ -406,25 +406,25 @@ class PaperMatcherTest {
     @Nested
     inner class MergeMetadata {
         @Test
-        fun `When fetched and DB metadata have disjoint and overlapping keys, then DB wins on conflict`() {
-            val dbPaper = DataBuilder.createExamplePaper(fetcherMetadata = mapOf("b" to "DB", "c" to "3"))
-            val fetched = DataBuilder.createExampleFetcherPaper(fetcherMetadata = mapOf("a" to "1", "b" to "2"))
-            val result = matcher.mergeMetadata(dbPaper, fetched)
+        fun `When fetched and existing metadata have disjoint and overlapping keys, then existing wins on conflict`() {
+            val existing = mapOf("b" to "DB", "c" to "3")
+            val fetched = mapOf("a" to "1", "b" to "2")
+            val result = matcher.mergeMetadata(existing, fetched)
             assertEquals(mapOf("a" to "1", "b" to "DB", "c" to "3"), result)
         }
 
         @Test
-        fun `When fetched metadata is empty, then DB metadata is returned unchanged`() {
-            val dbPaper = DataBuilder.createExamplePaper(fetcherMetadata = mapOf("x" to "1"))
-            val fetched = DataBuilder.createExampleFetcherPaper(fetcherMetadata = emptyMap())
-            assertEquals(mapOf("x" to "1"), matcher.mergeMetadata(dbPaper, fetched))
+        fun `When fetched metadata is empty, then existing metadata is returned unchanged`() {
+            val existing = mapOf("x" to "1")
+            val fetched = emptyMap<String, String>()
+            assertEquals(mapOf("x" to "1"), matcher.mergeMetadata(existing, fetched))
         }
 
         @Test
-        fun `When DB metadata is empty, then fetched metadata is returned`() {
-            val dbPaper = DataBuilder.createExamplePaper(fetcherMetadata = emptyMap())
-            val fetched = DataBuilder.createExampleFetcherPaper(fetcherMetadata = mapOf("a" to "1"))
-            assertEquals(mapOf("a" to "1"), matcher.mergeMetadata(dbPaper, fetched))
+        fun `When existing metadata is empty, then fetched metadata is returned`() {
+            val existing = emptyMap<String, String>()
+            val fetched = mapOf("a" to "1")
+            assertEquals(mapOf("a" to "1"), matcher.mergeMetadata(existing, fetched))
         }
     }
 }
