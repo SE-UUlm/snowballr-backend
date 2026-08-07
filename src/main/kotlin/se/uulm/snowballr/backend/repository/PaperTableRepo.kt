@@ -139,6 +139,11 @@ class PaperTableRepo(
         (PaperHasExternalIdTable.type eq it.type) and (PaperHasExternalIdTable.value eq it.value)
     }.fold<Op<Boolean>, Op<Boolean>>(Op.FALSE) { acc, value -> acc or value }
 
+    private fun getPaperIdsFromExternalIds(externalIds: List<ExternalId>): List<UUID> =
+        PaperHasExternalIdTable.selectAll()
+            .where { externalIdsWhereOp(externalIds) }
+            .map { it[PaperHasExternalIdTable.paperId].value }
+
     override suspend fun getPaperById(id: UUID): Result<Paper> = db.query {
         getEntityByKeyAsResult(::getPaperByIdOrNull, EntityType.PAPER, id)
     }
@@ -237,7 +242,11 @@ class PaperTableRepo(
     override suspend fun getPapersByExternalIds(externalIds: List<ExternalId>): List<Paper> = db.query {
         if (externalIds.isEmpty()) return@query emptyList()
 
-        getPapersWhere(where = { externalIdsWhereOp(externalIds) })
+        val paperIds = getPaperIdsFromExternalIds(externalIds)
+
+        if (paperIds.isEmpty()) return@query emptyList()
+
+        getPapersWhere(where = { PaperTable.id inList paperIds })
     }
 
     override suspend fun getPapersByYear(year: Int, tolerance: Int): List<Paper> = db.query {

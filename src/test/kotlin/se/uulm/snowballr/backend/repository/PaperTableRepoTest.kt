@@ -366,6 +366,18 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable, PaperHasExternalId
 
             assertEquals(0, papers.size)
         }
+
+        @Test
+        fun `When a paper is found by one of its external IDs, then all of its external IDs are returned`() = runTest {
+            val paperId = insertPaperAndGetId()
+            val doi = insertExternalId(paperId, type = ExternalIdType.DOI, value = "10.1234/5678")
+            val url = insertExternalId(paperId, type = ExternalIdType.URL, value = "https://example.com")
+
+            val papers = repo.getPapersByExternalIds(listOf(doi))
+
+            assertEquals(1, papers.size)
+            assertThat(papers.first().externalIds).containsExactlyInAnyOrder(doi, url)
+        }
     }
 
     @Nested
@@ -416,6 +428,18 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable, PaperHasExternalId
             val papers = repo.getPapersByYear(1990, tolerance = 0)
 
             assertEquals(0, papers.size)
+        }
+
+        @Test
+        fun `When a paper is found by year, then all of its external IDs are returned`() = runTest {
+            val paperId = insertPaperAndGetId(year = 2020)
+            val doi = insertExternalId(paperId, type = ExternalIdType.DOI, value = "10.1234/5678")
+            val url = insertExternalId(paperId, type = ExternalIdType.URL, value = "https://example.com")
+
+            val papers = repo.getPapersByYear(2020, tolerance = 0)
+
+            assertEquals(1, papers.size)
+            assertThat(papers.first().externalIds).containsExactlyInAnyOrder(doi, url)
         }
     }
 
