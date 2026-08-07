@@ -3,14 +3,12 @@ package se.uulm.snowballr.backend.fetcher.orchestrator
 import io.mockk.coEvery
 import io.mockk.coJustRun
 import io.mockk.coVerify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class FetcherOrchestratorEnqueueTest : FetcherOrchestratorTest() {
     @Test
     fun `When a job is enqueued without the orchestrator being started, then an IllegalStateException is thrown`() =

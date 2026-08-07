@@ -137,6 +137,7 @@ sealed class FetcherOrchestratorTest {
         // No year-based candidates → falls through to createPaper
         for (ref in backwardFetcherRefs + forwardFetcherRefs) {
             coEvery { paperRepoMock.getPapersByYear(ref.year, 1) } returns emptyList()
+            coEvery { paperMatcherMock.findMatch(ref, emptyList(), any()) } returns null
         }
 
         for (backwardRef in backwardRefs) {

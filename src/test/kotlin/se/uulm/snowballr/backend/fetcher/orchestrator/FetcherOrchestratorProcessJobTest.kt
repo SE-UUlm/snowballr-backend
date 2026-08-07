@@ -4,7 +4,6 @@ import io.mockk.coEvery
 import io.mockk.coJustRun
 import io.mockk.coVerify
 import io.mockk.every
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -25,7 +24,6 @@ import se.uulm.snowballr.backend.repository.UNIQUE_CONSTRAINT_VIOLATION_SQL_STAT
 import java.sql.SQLException
 import java.util.UUID
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
     private val exampleFetchers = mapOf(
         "foo" to mapOf(
@@ -368,6 +366,8 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
             every { paperMatcherMock.config.yearTolerance } returns 1
             coEvery { paperRepoMock.getPapersByYear(backwardRef.year, 1) } returns emptyList()
             coEvery { paperRepoMock.getPapersByYear(forwardRef.year, 1) } returns emptyList()
+            coEvery { paperMatcherMock.findMatch(backwardFetcherRef, emptyList(), any()) } returns null
+            coEvery { paperMatcherMock.findMatch(forwardFetcherRef, emptyList(), any()) } returns null
             coEvery {
                 paperRepoMock.createPaper(CreatePaperRequest.fromFetcherPaper(backwardFetcherRef))
             } returns backwardRef
@@ -487,6 +487,8 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
             every { paperMatcherMock.config.yearTolerance } returns 1
             coEvery { paperRepoMock.getPapersByYear(backwardFetcherRef.year, 1) } returns emptyList()
             coEvery { paperRepoMock.getPapersByYear(forwardFetcherRef.year, 1) } returns emptyList()
+            coEvery { paperMatcherMock.findMatch(backwardFetcherRef, emptyList(), any()) } returns null
+            coEvery { paperMatcherMock.findMatch(forwardFetcherRef, emptyList(), any()) } returns null
             coEvery {
                 paperRepoMock.createPaper(CreatePaperRequest.fromFetcherPaper(backwardFetcherRef))
             } throws SQLException("Creating backward paper failed")

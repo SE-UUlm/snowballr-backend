@@ -187,7 +187,7 @@ class FetcherOrchestrator(
 
         for ((fetcher, options) in fetchers) {
             try {
-                val fetchedPapers = fetchCall(fetcher, paper.toFetcherPaper(), options)
+                val fetchedPapers = fetchCall.invoke(fetcher, paper.toFetcherPaper(), options)
                 set += fetchedPapers
             } catch (ex: FetcherException) {
                 logger.error(ex) {
@@ -257,11 +257,13 @@ class FetcherOrchestrator(
     private suspend fun resolveExistingPaper(ref: FetcherPaper, threshold: Float): Paper? {
         if (ref.externalIds.isNotEmpty()) {
             val existingPapers = paperRepo.getPapersByExternalIds(ref.externalIds)
+                .sortedBy { it.createdAt }
 
             if (existingPapers.isNotEmpty()) {
                 if (existingPapers.size > 1) {
                     logger.error {
-                        "Several papers existing for external IDs (${ref.externalIds}) of single fetcher paper"
+                        "External IDs of fetcher paper (${ref.externalIds}) refer to many existing papers: " +
+                            "$existingPapers"
                     }
                 }
 
@@ -272,7 +274,7 @@ class FetcherOrchestrator(
         }
 
         val candidates = paperRepo.getPapersByYear(ref.year, paperMatcher.config.yearTolerance)
-        val match = if (candidates.isEmpty()) null else paperMatcher.findMatch(ref, candidates, threshold)
+        val match = paperMatcher.findMatch(ref, candidates, threshold)
         if (match != null) {
             updateMetadataIfChanged(match, ref)
             return match
@@ -328,7 +330,7 @@ class FetcherOrchestrator(
         var addedCitations = 0
         for (ref in refs) {
             try {
-                citeCall(paperId, ref.id)
+                citeCall.invoke(paperId, ref.id)
                 addedCitations++
             } catch (ex: SQLException) {
                 // A unique constraint violation is okay (no-op)
