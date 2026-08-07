@@ -137,17 +137,21 @@ class FetcherOrchestrator(
 
         val paper = paperRepo.getPaperById(job.paperId).getOrThrow()
 
-        val fetchingResults = runFetching(job, paper)
+        val (fetchingResults, fetchingTime) = measureTime { runFetching(job, paper) }
 
-        val dedupResults = runDeduplication(fetchingResults, job)
+        val (dedupResults, dedupTime) = measureTime { runDeduplication(fetchingResults, job) }
 
-        val creationResults = runPaperCreation(dedupResults, job)
+        val (creationResults, creationTime) = measureTime { runPaperCreation(dedupResults, job) }
 
-        runPaperCitation(job.paperId, creationResults)
+        val (_, citationTime) = measureTime { runPaperCitation(job.paperId, creationResults) }
 
-        runAddingPapersToProject(job, creationResults)
+        val (_, addingTime) = measureTime { runAddingPapersToProject(job, creationResults) }
 
         logger.info { "Finished fetcher processing job for paper ${job.paperId}" }
+        logger.debug {
+            "Processing Times:\n  - fetching: ${fetchingTime}ms\n  - dedup: ${dedupTime}ms\n" +
+                "  - creation: ${creationTime}ms\n  - citation: ${citationTime}ms\n  - adding: ${addingTime}ms"
+        }
     }
 
     /**
@@ -207,11 +211,8 @@ class FetcherOrchestrator(
      * Deduplicates the results from the fetching part of the processing job.
      */
     private fun runDeduplication(results: FetchingResults, job: FetcherProcessingJob): FetchingResults {
-        val start = System.currentTimeMillis()
         val dedupedBackward = paperMatcher.deduplicatePapers(results.backwardRefs, job.similarityThreshold)
         val dedupedForward = paperMatcher.deduplicatePapers(results.forwardRefs, job.similarityThreshold)
-        val duration = System.currentTimeMillis() - start
-        logger.debug { "Deduplication took ${duration}ms" }
 
         val dedupResults = FetchingResults(dedupedBackward, dedupedForward)
 
@@ -386,5 +387,11 @@ class FetcherOrchestrator(
                 }
             }
         }
+    }
+
+    private suspend fun <T> measureTime(block: suspend () -> T): Pair<T, Long> {
+        val start = System.currentTimeMillis()
+        val result = block()
+        return result to System.currentTimeMillis() - start
     }
 }

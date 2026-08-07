@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.matching
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import se.uulm.snowballr.backend.model.dto.paper.Author
 import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
@@ -8,6 +9,8 @@ import se.uulm.snowballr.backend.model.dto.paper.toFetcherPaper
 import se.uulm.snowballr.backend.model.fetcher.FetcherMetadata
 import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
 import kotlin.math.abs
+
+private val logger = KotlinLogging.logger { }
 
 interface IPaperMatcher {
     /**
@@ -234,7 +237,7 @@ class PaperMatcher(override val config: PaperMatchingConfig) : IPaperMatcher {
             externalIds.putAll(paper.externalIds.associate { Pair(it.type, it.value) })
         }
 
-        return FetcherPaper(
+        val result = FetcherPaper(
             title = group.firstNotNullOfOrNull { it.title.ifBlank { null } } ?: first.title,
             externalIds = externalIds.map { ExternalId(it.key, it.value) },
             abstract = group.firstNotNullOfOrNull { it.abstract.ifBlank { null } } ?: first.abstract,
@@ -247,6 +250,12 @@ class PaperMatcher(override val config: PaperMatchingConfig) : IPaperMatcher {
             authors = group.firstOrNull { it.authors.isNotEmpty() }?.authors ?: first.authors,
             fetcherMetadata = mergedMetadata,
         )
+
+        logger.debug {
+            "Deduplication result: $result; Sources: $group"
+        }
+
+        return result
     }
 
     private fun Author.isNotBlank() = this.firstName.isNotBlank() && this.lastName.isNotBlank()
