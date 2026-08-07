@@ -1,21 +1,38 @@
 package se.uulm.snowballr.backend.matching
 
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertNotNull
 import org.junit.jupiter.api.assertNull
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.dto.paper.Author
 import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
+import se.uulm.snowballr.backend.model.dto.paper.toFetcherPaper
 
 private const val DELTA = 1e-9
 
 class PaperMatcherTest {
     private val defaultConfig = PaperMatchingConfig(1, 0.6, 0.3, 0.1)
     private val matcher = PaperMatcher(defaultConfig)
+    private val titleOnlyMatcher = PaperMatcher(PaperMatchingConfig(1, 1.0, 0.0, 0.0))
+
+    /**
+     * Creates two strings with a target similarity in [0, 100].
+     */
+    private fun getSimilarStrings(similarity: Int): Pair<String, String> {
+        require(similarity in 1..100)
+
+        val a = "a".repeat(100)
+        val b = "b".repeat(100 - similarity) + "a".repeat(similarity)
+
+        return Pair(a, b)
+    }
 
     @Nested
     inner class Similarity {
@@ -119,6 +136,56 @@ class PaperMatcherTest {
             val b = DataBuilder.createExampleFetcherPaper(title = "Deep Learning for NLP")
             assertEquals(1.0, matcher.similarity(a, b), DELTA)
         }
+
+        @Test
+        fun `When authors have blank names, then they do not contribute to the authors score`() {
+            val blankAuthors = listOf(Author("", ""))
+            val withBlankAuthors1 = DataBuilder.createExampleFetcherPaper(
+                title = "Quantum Computing",
+                abstract = "",
+                authors = blankAuthors,
+            )
+            val withBlankAuthors2 = DataBuilder.createExampleFetcherPaper(
+                title = "Medieval History",
+                abstract = "",
+                authors = blankAuthors,
+            )
+
+            val blankResult = matcher.similarity(withBlankAuthors1, withBlankAuthors2)
+            val emptyResult = matcher.similarity(
+                withBlankAuthors1.copy(authors = emptyList()),
+                withBlankAuthors2.copy(authors = emptyList()),
+            )
+
+            assertEquals(emptyResult, blankResult, DELTA)
+        }
+
+        @Test
+        fun `When both papers carry a blank external ID value, then it is not treated as an identity`() {
+            val blankExternalId = listOf(ExternalId(ExternalIdType.DOI, ""))
+            val a = DataBuilder.createExampleFetcherPaper(
+                title = "Quantum Computing",
+                abstract = "",
+                authors = emptyList(),
+                externalIds = blankExternalId,
+                year = 1990,
+            )
+            val b = DataBuilder.createExampleFetcherPaper(
+                title = "Medieval History",
+                abstract = "",
+                authors = emptyList(),
+                externalIds = blankExternalId,
+                year = 2020,
+            )
+
+            val blankResult = matcher.similarity(a, b)
+            val emptyResult = matcher.similarity(
+                a.copy(externalIds = emptyList()),
+                b.copy(externalIds = emptyList()),
+            )
+
+            assertEquals(emptyResult, blankResult, DELTA)
+        }
     }
 
     @Nested
@@ -173,6 +240,51 @@ class PaperMatcherTest {
             assertEquals(1, result.size)
             assertEquals("v1", result.first().fetcherMetadata["k"])
         }
+
+        @ParameterizedTest
+        @ValueSource(ints = [42, 69, 85, 100])
+        fun `When two papers score exactly at the threshold, then they are merged`(similarityInt: Int) {
+            val similarity = similarityInt / 100.0
+            val (titleA, titleB) = getSimilarStrings(similarityInt)
+
+            val a = DataBuilder.createExampleFetcherPaper(
+                title = titleA,
+                abstract = "",
+                authors = emptyList(),
+            )
+            val b = DataBuilder.createExampleFetcherPaper(
+                title = titleB,
+                abstract = "",
+                authors = emptyList(),
+            )
+            // Guard: the pair really does score exactly at the threshold
+            assertEquals(similarity, titleOnlyMatcher.similarity(a, b), DELTA)
+
+            val result = titleOnlyMatcher.deduplicatePapers(linkedSetOf(a, b), similarity.toFloat())
+
+            assertEquals(1, result.size)
+        }
+
+        @Test
+        fun `When papers have different external IDs of the same type, then the first is kept`() {
+            val a = DataBuilder.createExampleFetcherPaper(
+                title = "Deep Learning",
+                abstract = "",
+                authors = emptyList(),
+                externalIds = listOf(ExternalId(ExternalIdType.URL, "https://a.example")),
+            )
+            val b = DataBuilder.createExampleFetcherPaper(
+                title = "Deep Learning",
+                abstract = "",
+                authors = emptyList(),
+                externalIds = listOf(ExternalId(ExternalIdType.URL, "https://b.example")),
+            )
+
+            val result = matcher.deduplicatePapers(linkedSetOf(a, b), 0.5f)
+
+            assertEquals(1, result.size)
+            assertThat(result.first().externalIds).contains(ExternalId(ExternalIdType.URL, "https://a.example"))
+        }
     }
 
     @Nested
@@ -205,6 +317,51 @@ class PaperMatcherTest {
             val result = matcher.findMatch(fetched, listOf(poor, good), 0.5f)
             assertNotNull(result)
             assertEquals(good.id, result.id)
+        }
+
+        @ParameterizedTest
+        @ValueSource(ints = [42, 69, 85, 100])
+        fun `When a candidate scores exactly at the threshold, then it is returned`(similarityInt: Int) {
+            val similarity = similarityInt / 100.0
+            val (titleA, titleB) = getSimilarStrings(similarityInt)
+
+            val fetched = DataBuilder.createExampleFetcherPaper(
+                title = titleA,
+                abstract = "",
+                authors = emptyList(),
+            )
+            val candidate = DataBuilder.createExamplePaper(
+                title = titleB,
+                abstract = "",
+                authors = emptyList(),
+            )
+            // Guard: the pair really does score exactly at the threshold
+            assertEquals(similarity, titleOnlyMatcher.similarity(fetched, candidate.toFetcherPaper()), DELTA)
+
+            val result = titleOnlyMatcher.findMatch(fetched, listOf(candidate), similarity.toFloat())
+
+            assertNotNull(result)
+        }
+
+        @Test
+        fun `When a candidate shares only a blank external ID, then it is not matched`() {
+            val blankExternalId = listOf(ExternalId(ExternalIdType.DOI, ""))
+            val fetched = DataBuilder.createExampleFetcherPaper(
+                title = "Quantum Computing",
+                abstract = "",
+                authors = emptyList(),
+                externalIds = blankExternalId,
+                year = 2020,
+            )
+            val unrelatedCandidate = DataBuilder.createExamplePaper(
+                title = "Medieval History",
+                abstract = "",
+                authors = emptyList(),
+                externalIds = blankExternalId,
+                year = 1850,
+            )
+
+            assertNull(matcher.findMatch(fetched, listOf(unrelatedCandidate), 0.85f))
         }
     }
 

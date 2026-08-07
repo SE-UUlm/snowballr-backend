@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.matching
 
+import se.uulm.snowballr.backend.model.dto.paper.Author
 import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
 import se.uulm.snowballr.backend.model.dto.paper.Paper
@@ -86,6 +87,8 @@ class PaperMatcher(override val config: PaperMatchingConfig) : IPaperMatcher {
             // The abstract similarity accounts for 10% of the total similarity
             abstractWeight = 0.1,
         )
+
+        const val DELTA = 1e-6
     }
 
     override fun similarity(a: FetcherPaper, b: FetcherPaper): Double {
@@ -103,13 +106,15 @@ class PaperMatcher(override val config: PaperMatchingConfig) : IPaperMatcher {
             ),
         )
 
-        if (a.authors.isNotEmpty() && b.authors.isNotEmpty()) {
+        val authorsA = a.authors.filter { it.isNotBlank() }
+        val authorsB = b.authors.filter { it.isNotBlank() }
+        if (authorsA.isNotEmpty() && authorsB.isNotEmpty()) {
             components.add(
                 Component(
                     weight = config.authorsWeight,
                     score = jaccardSimilarity(
-                        Tokenization.authorSetTokens(a.authors),
-                        Tokenization.authorSetTokens(b.authors),
+                        Tokenization.authorSetTokens(authorsA),
+                        Tokenization.authorSetTokens(authorsB),
                     ),
                 ),
             )
@@ -135,7 +140,7 @@ class PaperMatcher(override val config: PaperMatchingConfig) : IPaperMatcher {
         val groups = mutableListOf<MutableList<FetcherPaper>>()
 
         for (paper in papers) {
-            val group = groups.firstOrNull { similarity(paper, it[0]) >= threshold }
+            val group = groups.firstOrNull { isSimilarityAboveThreshold(similarity(paper, it[0]), threshold) }
             if (group != null) {
                 group.add(paper)
             } else {
@@ -148,7 +153,7 @@ class PaperMatcher(override val config: PaperMatchingConfig) : IPaperMatcher {
 
     override fun findMatch(fetched: FetcherPaper, candidates: List<Paper>, threshold: Float): Paper? = candidates
         .map { candidate -> candidate to similarity(fetched, candidate.toFetcherPaper()) }
-        .filter { (_, score) -> score >= threshold }
+        .filter { (_, score) -> isSimilarityAboveThreshold(score, threshold) }
         .maxByOrNull { (_, score) -> score }
         ?.first
 
@@ -160,8 +165,15 @@ class PaperMatcher(override val config: PaperMatchingConfig) : IPaperMatcher {
 
     /**
      * Returns true if both [FetcherPaper]s have at least one equal external ID.
+     *
+     * External IDs with a blank value are filtered out.
      */
-    private fun haveSameExternalId(a: FetcherPaper, b: FetcherPaper) = a.externalIds.any { b.externalIds.contains(it) }
+    private fun haveSameExternalId(a: FetcherPaper, b: FetcherPaper): Boolean {
+        val externalIdsA = a.externalIds.filter { it.value.isNotBlank() }
+        val externalIdsB = b.externalIds.filter { it.value.isNotBlank() }
+
+        return externalIdsA.any { externalIdsB.contains(it) }
+    }
 
     /**
      * Returns the Jaccard Similarity of two sets of strings.
@@ -209,4 +221,8 @@ class PaperMatcher(override val config: PaperMatchingConfig) : IPaperMatcher {
             fetcherMetadata = mergedMetadata,
         )
     }
+
+    private fun Author.isNotBlank() = this.firstName.isNotBlank() && this.lastName.isNotBlank()
+
+    private fun isSimilarityAboveThreshold(similarity: Double, threshold: Float) = threshold - similarity < DELTA
 }
