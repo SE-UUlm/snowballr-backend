@@ -15,6 +15,7 @@ import se.uulm.snowballr.backend.model.dto.paper.Author
 import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
 import se.uulm.snowballr.backend.model.dto.paper.toFetcherPaper
+import java.time.OffsetDateTime
 
 private const val DELTA = 1e-9
 
@@ -447,6 +448,24 @@ class PaperMatcherTest {
             )
 
             assertNull(matcher.findMatch(fetched, listOf(unrelatedCandidate), 0.85f))
+        }
+
+        @Test
+        fun `When two candidates share the same score, then the one with the earlier creation date is returned`() {
+            val fetched = DataBuilder.createExampleFetcherPaper(title = "Quantum Computing")
+            val candidate1 = DataBuilder.createExamplePaper(
+                title = "Quack Computing",
+                createdAt = OffsetDateTime.parse("2025-03-12T12:00:00+00:00"),
+            )
+            val candidate2 = DataBuilder.createExamplePaper(
+                title = "Quack Computing",
+                createdAt = OffsetDateTime.parse("2024-03-12T12:00:00+00:00"),
+            )
+
+            val match = matcher.findMatch(fetched, listOf(candidate1, candidate2), 0.2f)
+
+            assertNotNull(match)
+            assertEquals(candidate2, match)
         }
     }
 }

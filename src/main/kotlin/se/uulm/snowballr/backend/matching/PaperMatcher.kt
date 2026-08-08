@@ -147,8 +147,10 @@ class PaperMatcher(override val config: PaperMatchingConfig) : IPaperMatcher {
     }
 
     override fun findMatch(fetched: FetcherPaper, candidates: List<Paper>, threshold: Float): Paper? = candidates
+        .asSequence()
         .map { candidate -> candidate to similarity(fetched, candidate.toFetcherPaper()) }
         .filter { (_, score) -> isSimilarityAboveThreshold(score, threshold) }
+        .sortedBy { (paper, _) -> paper.createdAt }
         .maxByOrNull { (_, score) -> score }
         ?.first
 
