@@ -277,6 +277,7 @@ kover {
     currentProject {
         instrumentation {
             disabledForTestTasks.add("integrationTest")
+            disabledForTestTasks.add("createApiSpec")
         }
     }
 

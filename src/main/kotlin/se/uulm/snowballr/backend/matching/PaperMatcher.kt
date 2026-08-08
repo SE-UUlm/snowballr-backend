@@ -105,12 +105,14 @@ class PaperMatcher(override val config: PaperMatchingConfig) : IPaperMatcher {
 
         val components = mutableListOf<Component>()
 
-        components.add(
-            Component(
-                weight = config.titleWeight,
-                score = Levenshtein.getNormalizedDistance(a.title.trim().lowercase(), b.title.trim().lowercase()),
-            ),
-        )
+        if (a.title.isNotBlank() && b.title.isNotBlank()) {
+            components.add(
+                Component(
+                    weight = config.titleWeight,
+                    score = Levenshtein.getNormalizedDistance(a.title.trim().lowercase(), b.title.trim().lowercase()),
+                ),
+            )
+        }
 
         val authorsA = a.authors.filter { it.isNotBlank() }
         val authorsB = b.authors.filter { it.isNotBlank() }
@@ -260,7 +262,7 @@ class PaperMatcher(override val config: PaperMatchingConfig) : IPaperMatcher {
         return result
     }
 
-    private fun Author.isNotBlank() = this.firstName.isNotBlank() && this.lastName.isNotBlank()
+    private fun Author.isNotBlank() = this.firstName.isNotBlank() || this.lastName.isNotBlank()
 
     private fun isSimilarityAboveThreshold(similarity: Double, threshold: Float) = threshold - similarity < DELTA
 }

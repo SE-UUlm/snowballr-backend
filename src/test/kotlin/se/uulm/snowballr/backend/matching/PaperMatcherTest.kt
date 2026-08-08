@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertNotNull
 import org.junit.jupiter.api.assertNull
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.ValueSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.dto.paper.Author
@@ -68,14 +69,30 @@ class PaperMatcherTest {
             assertTrue(matcher.similarity(a, b) > 0.0)
         }
 
-        @Test
-        fun `When both author lists are empty, then authors component is dropped`() {
+        @ParameterizedTest
+        @CsvSource(
+            value = [
+                "' ',John Doe",
+                "John Doe,' '",
+                "' ',' '",
+            ],
+        )
+        fun `When at least one author list is empty, then authors component is dropped`(
+            authorA: String,
+            authorB: String,
+        ) {
+            val authorsA = authorA.split(';').filter { it.isNotBlank() }.map { Author(it, "") }
+            val authorsB = authorB.split(';').filter { it.isNotBlank() }.map { Author("", it) }
             val a1 = DataBuilder.createExampleFetcherPaper(
                 title = "Some random title",
-                authors = emptyList(),
+                authors = authorsA,
                 abstract = "Some random abstract",
             )
-            val b1 = a1.copy(title = a1.title.reversed(), abstract = a1.abstract.reversed())
+            val b1 = DataBuilder.createExampleFetcherPaper(
+                title = a1.title.reversed(),
+                authors = authorsB,
+                abstract = a1.abstract.reversed(),
+            )
             val emptyResult = matcher.similarity(a1, b1)
 
             val altMatcher = PaperMatcher(defaultConfig.copy(authorsWeight = 0.0))
@@ -223,6 +240,36 @@ class PaperMatcherTest {
             )
 
             assertEquals(noIdsResult, urlResult, DELTA)
+        }
+
+        @ParameterizedTest
+        @CsvSource(
+            value = [
+                "' ',Example Title",
+                "Example Title,' '",
+                "' ',' '",
+            ],
+        )
+        fun `When at least one paper has a blank title, then title component is dropped`(
+            titleA: String,
+            titleB: String,
+        ) {
+            val authors = listOf(Author("John", "Doe"))
+            val a1 = DataBuilder.createExampleFetcherPaper(
+                title = titleA,
+                authors = authors,
+                abstract = "Some random abstract",
+            )
+            val b1 = a1.copy(title = titleB, abstract = a1.abstract.reversed())
+            val emptyResult = matcher.similarity(a1, b1)
+
+            val altMatcher = PaperMatcher(defaultConfig.copy(titleWeight = 0.0))
+            val a2 = a1.copy(title = "Some random title")
+            val b2 = b1.copy(title = "Title random some")
+            val noWeightResult = altMatcher.similarity(a2, b2)
+
+            // Dropping title is the same as not weighing its similarity
+            assertEquals(noWeightResult, emptyResult, DELTA)
         }
     }
 
