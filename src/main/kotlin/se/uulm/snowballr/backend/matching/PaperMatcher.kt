@@ -251,8 +251,10 @@ class PaperMatcher(override val config: PaperMatchingConfig) : IPaperMatcher {
             fetcherMetadata = mergedMetadata,
         )
 
-        logger.debug {
-            "Deduplication result: $result; Sources: $group"
+        if (group.size > 1) {
+            logger.debug {
+                "Deduplication result: $result; Sources: $group"
+            }
         }
 
         return result

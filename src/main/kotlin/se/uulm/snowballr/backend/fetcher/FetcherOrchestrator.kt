@@ -28,6 +28,7 @@ import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.isUniqueConstraintViolation
 import java.sql.SQLException
 import java.util.UUID
+import kotlin.math.roundToInt
 
 private val logger = KotlinLogging.logger { }
 
@@ -54,7 +55,7 @@ interface IFetcherOrchestrator {
     suspend fun enqueue(job: FetcherEnqueueJob)
 }
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 class FetcherOrchestrator(
     private val fetcherManager: IFetcherManager,
     private val projectRepo: IProjectTableRepo,
@@ -148,9 +149,19 @@ class FetcherOrchestrator(
         val (_, addingTime) = measureTime { runAddingPapersToProject(job, creationResults) }
 
         logger.info { "Finished fetcher processing job for paper ${job.paperId}" }
+        @Suppress("MagicNumber")
         logger.debug {
-            "Processing Times:\n  - fetching: ${fetchingTime}ms\n  - dedup: ${dedupTime}ms\n" +
-                "  - creation: ${creationTime}ms\n  - citation: ${citationTime}ms\n  - adding: ${addingTime}ms"
+            val total = fetchingTime + dedupTime + creationTime + citationTime + addingTime
+            fun per(t: Long) = "${(t / total.toDouble() * 1000.0).roundToInt() / 10.0}%"
+
+            """
+            Processing Times:
+              - fetching: ${fetchingTime.toString().padStart(6, ' ')}ms - ${per(fetchingTime).padStart(3, ' ')}
+              - dedup:    ${dedupTime.toString().padStart(6, ' ')}ms - ${per(dedupTime).padStart(3, ' ')}
+              - creation: ${creationTime.toString().padStart(6, ' ')}ms - ${per(creationTime).padStart(3, ' ')}
+              - citation: ${citationTime.toString().padStart(6, ' ')}ms - ${per(citationTime).padStart(3, ' ')}
+              - adding:   ${addingTime.toString().padStart(6, ' ')}ms - ${per(addingTime).padStart(3, ' ')}
+            """.trimIndent()
         }
     }
 
