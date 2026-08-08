@@ -316,10 +316,10 @@ class FetcherOrchestrator(
     }
 
     private suspend fun updateMetadataIfChanged(dbPaper: Paper, ref: FetcherPaper) {
-        val mergedMeta = paperMatcher.mergeMetadata(dbPaper.fetcherMetadata, ref.fetcherMetadata)
-        if (mergedMeta == dbPaper.fetcherMetadata) return
+        if (ref.fetcherMetadata.isEmpty()) return
+
         try {
-            paperRepo.updateFetcherMetadata(dbPaper.id, mergedMeta)
+            paperRepo.mergeFetcherMetadata(dbPaper.id, ref.fetcherMetadata)
         } catch (ex: SQLException) {
             logger.error(ex) {
                 "Failed to update fetcher metadata for paper ${dbPaper.id}: ${ex.message ?: "<empty>"}"

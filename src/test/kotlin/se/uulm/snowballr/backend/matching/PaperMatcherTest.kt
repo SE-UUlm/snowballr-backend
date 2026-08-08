@@ -449,29 +449,4 @@ class PaperMatcherTest {
             assertNull(matcher.findMatch(fetched, listOf(unrelatedCandidate), 0.85f))
         }
     }
-
-    @Nested
-    inner class MergeMetadata {
-        @Test
-        fun `When fetched and existing metadata have disjoint and overlapping keys, then existing wins on conflict`() {
-            val existing = mapOf("b" to "DB", "c" to "3")
-            val fetched = mapOf("a" to "1", "b" to "2")
-            val result = matcher.mergeMetadata(existing, fetched)
-            assertEquals(mapOf("a" to "1", "b" to "DB", "c" to "3"), result)
-        }
-
-        @Test
-        fun `When fetched metadata is empty, then existing metadata is returned unchanged`() {
-            val existing = mapOf("x" to "1")
-            val fetched = emptyMap<String, String>()
-            assertEquals(mapOf("x" to "1"), matcher.mergeMetadata(existing, fetched))
-        }
-
-        @Test
-        fun `When existing metadata is empty, then fetched metadata is returned`() {
-            val existing = emptyMap<String, String>()
-            val fetched = mapOf("a" to "1")
-            assertEquals(mapOf("a" to "1"), matcher.mergeMetadata(existing, fetched))
-        }
-    }
 }

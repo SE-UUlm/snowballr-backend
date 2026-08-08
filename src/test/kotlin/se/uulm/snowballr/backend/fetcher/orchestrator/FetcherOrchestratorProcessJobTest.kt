@@ -212,13 +212,6 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
                 coEvery {
                     paperRepoMock.getPapersByExternalIds(forwardRef.externalIds)
                 } returns listOf(forwardRef)
-                // fetcherMetadata is empty for both → merged equals DB metadata → no update needed
-                every {
-                    paperMatcherMock.mergeMetadata(backwardRef.fetcherMetadata, backwardFetcherRef.fetcherMetadata)
-                } returns emptyMap()
-                every {
-                    paperMatcherMock.mergeMetadata(forwardRef.fetcherMetadata, forwardFetcherRef.fetcherMetadata)
-                } returns emptyMap()
 
                 // Stop at paper citation
                 coEvery {
@@ -242,9 +235,16 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
             runOrchestratorTest { orchestrator ->
                 val job = DataBuilder.createExampleFetcherEnqueueJob()
                 val project = DataBuilder.createExampleProject(fetchers = exampleFetchers)
-                val backwardRef = DataBuilder.createExamplePaper(title = "Backward Paper", year = 2012)
-                val forwardRef = DataBuilder.createExamplePaper(title = "Forward Paper", year = 2013)
-                val metadata = mapOf("foo" to "bar")
+                val backwardRef = DataBuilder.createExamplePaper(
+                    title = "Backward Paper",
+                    year = 2012,
+                    fetcherMetadata = mapOf("foo" to "bar"),
+                )
+                val forwardRef = DataBuilder.createExamplePaper(
+                    title = "Forward Paper",
+                    year = 2013,
+                    fetcherMetadata = mapOf("foo" to "bar"),
+                )
 
                 val backwardFetcherRef = backwardRef.toFetcherPaper()
                 val forwardFetcherRef = forwardRef.toFetcherPaper()
@@ -264,14 +264,8 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
                 coEvery {
                     paperMatcherMock.findMatch(forwardFetcherRef, listOf(forwardRef), project.similarityThreshold)
                 } returns forwardRef
-                every {
-                    paperMatcherMock.mergeMetadata(backwardRef.fetcherMetadata, backwardFetcherRef.fetcherMetadata)
-                } returns metadata
-                every {
-                    paperMatcherMock.mergeMetadata(forwardRef.fetcherMetadata, forwardFetcherRef.fetcherMetadata)
-                } returns metadata
-                coJustRun { paperRepoMock.updateFetcherMetadata(backwardRef.id, metadata) }
-                coJustRun { paperRepoMock.updateFetcherMetadata(forwardRef.id, metadata) }
+                coJustRun { paperRepoMock.mergeFetcherMetadata(backwardRef.id, forwardFetcherRef.fetcherMetadata) }
+                coJustRun { paperRepoMock.mergeFetcherMetadata(forwardRef.id, forwardFetcherRef.fetcherMetadata) }
 
                 // Stop at paper citation
                 coEvery {
@@ -319,13 +313,6 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
                 coEvery {
                     paperRepoMock.getPapersByExternalIds(forwardRef.externalIds)
                 } returns listOf(forwardRef, forwardRef2)
-                // fetcherMetadata is empty for both → merged equals DB metadata → no update needed
-                every {
-                    paperMatcherMock.mergeMetadata(backwardRef.fetcherMetadata, backwardFetcherRef.fetcherMetadata)
-                } returns emptyMap()
-                every {
-                    paperMatcherMock.mergeMetadata(forwardRef.fetcherMetadata, forwardFetcherRef.fetcherMetadata)
-                } returns emptyMap()
 
                 // Stop at paper citation
                 coEvery {

@@ -444,36 +444,56 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable, PaperHasExternalId
     }
 
     @Nested
-    inner class UpdateFetcherMetadata {
+    inner class MergeFetcherMetadata {
         @Test
-        fun `When fetcher metadata is updated, then the stored metadata is replaced`() = runTest {
+        fun `When the merged metadata has new keys, then they are added to the stored metadata`() = runTest {
             val paperId = insertPaperAndGetId(fetcherMetadata = mapOf("old" to "value"))
-            val newMetadata = mapOf("id" to "123", "foo" to "bar")
 
-            repo.updateFetcherMetadata(paperId, newMetadata)
+            repo.mergeFetcherMetadata(paperId, mapOf("id" to "123", "foo" to "bar"))
 
             val paper = repo.getPaperById(paperId).getOrThrow()
-            assertEquals(newMetadata, paper.fetcherMetadata)
+            assertEquals(mapOf("old" to "value", "id" to "123", "foo" to "bar"), paper.fetcherMetadata)
         }
 
         @Test
-        fun `When fetcher metadata is updated, then modifiedAt is not changed`() = runTest {
+        fun `When the merged metadata has a stored key, then the stored value wins`() = runTest {
+            val paperId = insertPaperAndGetId(fetcherMetadata = mapOf("id" to "stored"))
+
+            repo.mergeFetcherMetadata(paperId, mapOf("id" to "fetched"))
+
+            val paper = repo.getPaperById(paperId).getOrThrow()
+            assertEquals(mapOf("id" to "stored"), paper.fetcherMetadata)
+        }
+
+        @Test
+        fun `When fetcher metadata is merged, then modifiedAt is not changed`() = runTest {
             val paperId = insertPaperAndGetId()
 
-            repo.updateFetcherMetadata(paperId, mapOf("id" to "123"))
+            repo.mergeFetcherMetadata(paperId, mapOf("id" to "123"))
 
             val paper = repo.getPaperById(paperId).getOrThrow()
             assertNull(paper.modifiedAt)
         }
 
         @Test
-        fun `When fetcher metadata is updated with an empty map, then the metadata is cleared`() = runTest {
+        fun `When fetcher metadata is merged with an empty map, then the stored metadata is unchanged`() = runTest {
             val paperId = insertPaperAndGetId(fetcherMetadata = mapOf("old" to "value"))
 
-            repo.updateFetcherMetadata(paperId, emptyMap())
+            repo.mergeFetcherMetadata(paperId, emptyMap())
 
             val paper = repo.getPaperById(paperId).getOrThrow()
-            assertThat(paper.fetcherMetadata).isEmpty()
+            assertEquals(mapOf("old" to "value"), paper.fetcherMetadata)
+        }
+
+        @Test
+        fun `When two merges interleave, then no keys are lost`() = runTest {
+            val paperId = insertPaperAndGetId()
+
+            repo.mergeFetcherMetadata(paperId, mapOf("a" to "1"))
+            repo.mergeFetcherMetadata(paperId, mapOf("b" to "2"))
+
+            val paper = repo.getPaperById(paperId).getOrThrow()
+            assertEquals(mapOf("a" to "1", "b" to "2"), paper.fetcherMetadata)
         }
     }
 }

@@ -7,6 +7,7 @@ import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.greaterEq
 import org.jetbrains.exposed.v1.core.inList
+import org.jetbrains.exposed.v1.core.java.UUIDColumnType
 import org.jetbrains.exposed.v1.core.lessEq
 import org.jetbrains.exposed.v1.core.or
 import org.jetbrains.exposed.v1.core.statements.StatementType
@@ -28,6 +29,7 @@ import se.uulm.snowballr.backend.model.incoming.paper.UpdatePaperRequest
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.association.PaperHasExternalIdTable
 import se.uulm.snowballr.backend.table.association.toExternalIdPair
+import se.uulm.snowballr.backend.table.columntypes.HStoreColumnType
 import se.uulm.snowballr.backend.table.toPaper
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -89,11 +91,13 @@ interface IPaperTableRepo {
     suspend fun getPapersByYear(year: Int, tolerance: Int): List<Paper>
 
     /**
-     * Updates only the fetcher metadata column of the paper with the given [id].
+     * Merges [metadata] into the fetcher metadata of the paper with the given [id].
      *
-     * Does not modify [PaperTable.modifiedAt] — this is a system-internal operation, not a user edit.
+     * Keyss that are already stored keep their stored value, keys that are only in [metadata] are added.
+     *
+     * This does not modify [PaperTable.modifiedAt] — this is a system-internal operation, not a user edit.
      */
-    suspend fun updateFetcherMetadata(id: UUID, metadata: FetcherMetadata)
+    suspend fun mergeFetcherMetadata(id: UUID, metadata: FetcherMetadata)
 }
 
 /**
@@ -253,10 +257,19 @@ class PaperTableRepo(
         getPapersWhere { (PaperTable.year greaterEq year - tolerance) and (PaperTable.year lessEq year + tolerance) }
     }
 
-    override suspend fun updateFetcherMetadata(id: UUID, metadata: FetcherMetadata): Unit = db.query {
-        PaperTable.update({ PaperTable.id eq id }) {
-            it[fetcherMetadata] = metadata
-        }
+    override suspend fun mergeFetcherMetadata(id: UUID, metadata: FetcherMetadata): Unit = db.query {
+        if (metadata.isEmpty()) return@query
+
+        val paperTable = PaperTable.tableName
+        val metadataColumn = PaperTable.fetcherMetadata.name
+
+        // Use hstore concatenation operator to merge metadata key-value pairs.
+        // The operator is right-biased, i.e., an existing value wins on conflict
+        exec(
+            stmt = "UPDATE $paperTable SET $metadataColumn = ?::hstore || $metadataColumn WHERE $paperTable.id = ?",
+            args = listOf(HStoreColumnType() to metadata, UUIDColumnType() to id),
+            explicitStatementType = StatementType.UPDATE,
+        )
     }
 
     /**

@@ -6,7 +6,6 @@ import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
 import se.uulm.snowballr.backend.model.dto.paper.Paper
 import se.uulm.snowballr.backend.model.dto.paper.toFetcherPaper
-import se.uulm.snowballr.backend.model.fetcher.FetcherMetadata
 import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
 import kotlin.math.abs
 
@@ -62,18 +61,6 @@ interface IPaperMatcher {
      * @return the highest-scoring candidate above [threshold], or `null` if none qualifies.
      */
     fun findMatch(fetched: FetcherPaper, candidates: List<Paper>, threshold: Float): Paper?
-
-    /**
-     * Merges fetched fetcher metadata into the existing metadata.
-     *
-     * The existing values take precedence on key conflicts: keys present in [existing] always
-     * overwrite the same keys from [fetched]. Keys present only in [fetched] are added.
-     *
-     * @param existing the existing [FetcherMetadata].
-     * @param fetched the newly fetched [FetcherMetadata].
-     * @return a merged [FetcherMetadata] map.
-     */
-    fun mergeMetadata(existing: FetcherMetadata, fetched: FetcherMetadata): FetcherMetadata
 }
 
 /**
@@ -164,12 +151,6 @@ class PaperMatcher(override val config: PaperMatchingConfig) : IPaperMatcher {
         .filter { (_, score) -> isSimilarityAboveThreshold(score, threshold) }
         .maxByOrNull { (_, score) -> score }
         ?.first
-
-    override fun mergeMetadata(existing: FetcherMetadata, fetched: FetcherMetadata): FetcherMetadata {
-        val merged = fetched.toMutableMap()
-        merged.putAll(existing)
-        return merged
-    }
 
     /**
      * Returns true if both [FetcherPaper]s have at least one equal external ID.
