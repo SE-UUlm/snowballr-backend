@@ -259,40 +259,60 @@ class FetcherOrchestrator(
      */
     private suspend fun createRefs(refs: Set<FetcherPaper>, threshold: Float): Set<Paper> {
         val result = mutableSetOf<Paper>()
+        val candidatesByYear = mutableMapOf<Int, List<Paper>>()
+
         for (ref in refs) {
-            val paper = resolveExistingPaper(ref, threshold) ?: createNewPaper(ref)
+            val paper = resolveByExternalIds(ref)
+                ?: resolveExistingPaper(ref, threshold, candidatesByYear)
+                ?: createNewPaper(ref)
+
             if (paper != null) result += paper
         }
         return result
     }
 
-    private suspend fun resolveExistingPaper(ref: FetcherPaper, threshold: Float): Paper? {
-        if (ref.externalIds.isNotEmpty()) {
-            val existingPapers = paperRepo.getPapersByExternalIds(ref.externalIds)
-                .sortedBy { it.createdAt }
+    private suspend fun resolveExistingPaper(
+        ref: FetcherPaper,
+        threshold: Float,
+        candidatesByYear: MutableMap<Int, List<Paper>>,
+    ): Paper? {
+        val byExternalId = resolveByExternalIds(ref)
+        if (byExternalId != null) return byExternalId
 
-            if (existingPapers.isNotEmpty()) {
-                if (existingPapers.size > 1) {
-                    logger.error {
-                        "External IDs of fetcher paper (${ref.externalIds}) refer to many existing papers: " +
-                            "$existingPapers"
-                    }
-                }
-
-                val paper = existingPapers.first()
-                updateMetadataIfChanged(paper, ref)
-                return paper
-            }
+        val candidates = candidatesByYear.getOrPut(ref.year) {
+            paperRepo.getPapersByYear(ref.year, paperMatcher.config.yearTolerance)
         }
-
-        val candidates = paperRepo.getPapersByYear(ref.year, paperMatcher.config.yearTolerance)
         val match = paperMatcher.findMatch(ref, candidates, threshold)
+
         if (match != null) {
             updateMetadataIfChanged(match, ref)
             return match
         }
 
         return null
+    }
+
+    /**
+     * Resolves a paper by the external IDs of [ref].
+     */
+    private suspend fun resolveByExternalIds(ref: FetcherPaper): Paper? {
+        if (ref.externalIds.isEmpty()) return null
+
+        val existingPapers = paperRepo.getPapersByExternalIds(ref.externalIds)
+            .sortedBy { it.createdAt }
+
+        if (existingPapers.isEmpty()) return null
+
+        if (existingPapers.size > 1) {
+            logger.error {
+                "External IDs of fetcher paper (${ref.externalIds}) refer to many existing papers: " +
+                    "$existingPapers"
+            }
+        }
+
+        val paper = existingPapers.first()
+        updateMetadataIfChanged(paper, ref)
+        return paper
     }
 
     private suspend fun updateMetadataIfChanged(dbPaper: Paper, ref: FetcherPaper) {

@@ -512,6 +512,49 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
 
             assertPaperCitationFailure()
         }
+
+        @Test
+        fun `When multiple refs share a year, then the candidates for that year are loaded once`() =
+            runOrchestratorTest { orchestrator ->
+                val job = DataBuilder.createExampleFetcherEnqueueJob()
+                val project = DataBuilder.createExampleProject(fetchers = exampleFetchers)
+                val firstRef = DataBuilder.createExamplePaper(
+                    title = "First",
+                    year = 2012,
+                    externalIds = emptyList(),
+                )
+                val secondRef = DataBuilder.createExamplePaper(
+                    title = "Second",
+                    year = 2012,
+                    externalIds = emptyList(),
+                )
+                val firstFetcherRef = firstRef.toFetcherPaper()
+                val secondFetcherRef = secondRef.toFetcherPaper()
+                val refs = setOf(firstFetcherRef, secondFetcherRef)
+                val candidates = listOf(DataBuilder.createExamplePaper(year = 2012))
+
+                mockRunFetching(job, refs, emptySet())
+                every { paperMatcherMock.deduplicatePapers(refs, any()) } returns refs
+                every { paperMatcherMock.deduplicatePapers(emptySet(), any()) } returns emptySet()
+                every { paperMatcherMock.config.yearTolerance } returns 1
+                coEvery { paperRepoMock.getPapersByYear(2012, 1) } returns candidates
+                coEvery { paperMatcherMock.findMatch(any(), candidates, project.similarityThreshold) } returns null
+                coEvery { paperRepoMock.createPaper(any()) } returns firstRef andThen secondRef
+
+                // Stop at adding papers to project
+                coJustRun { citationRepoMock.addBackwardReferencedPaper(job.projectPaper.paperId, any()) }
+                coEvery {
+                    projectPaperRepoMock.doesProjectPaperExist(project.id, any())
+                } throws TestSpecificException()
+
+                orchestrator.enqueueTestJob(job, project)
+
+                assertAddingPapersToProjectFailure()
+                coVerify(exactly = 2) { paperRepoMock.createPaper(any()) }
+                // Both refs are scored, but the year window is only loaded once
+                coVerify(exactly = 2) { paperMatcherMock.findMatch(any(), candidates, project.similarityThreshold) }
+                coVerify(exactly = 1) { paperRepoMock.getPapersByYear(2012, 1) }
+            }
     }
 
     @Nested
