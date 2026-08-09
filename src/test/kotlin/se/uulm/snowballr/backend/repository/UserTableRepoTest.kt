@@ -518,7 +518,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
             assertTrue(userSettings.areHotkeysShown)
             assertFalse(userSettings.isReviewModeEnabled)
             assertThat(userSettings.criteriaIds).isEmpty()
-            assertEquals(0F, userSettings.similarityThreshold)
+            assertEquals(0.85F, userSettings.similarityThreshold)
             assertEquals(2, userSettings.decisionMatrix.numberOfReviewers)
             assertNotEquals(ByteArray(0), userSettings.decisionMatrix.toByteArray())
             assertThat(userSettings.fetchers).isEmpty()

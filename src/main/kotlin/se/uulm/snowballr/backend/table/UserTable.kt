@@ -46,7 +46,7 @@ private val MAYBE_MAYBE_PATTERN = patternOf(
 private const val ARE_HOTKEYS_SHOWN_DEFAULT = true
 private const val IS_REVIEW_MODE_ENABLED_DEFAULT = false
 private val CRITERIA_IDS_DEFAULT = emptyList<UUID>()
-private const val SIMILARITY_THRESHOLD_DEFAULT = 0F
+private const val SIMILARITY_THRESHOLD_DEFAULT = 0.85F
 
 /**
  * This default decision matrix assumes two reviewers by default.

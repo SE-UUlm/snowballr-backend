@@ -4,9 +4,9 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertNull
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.auth.ACCESS_TOKEN_COOKIE_NAME
 import se.uulm.snowballr.backend.auth.REFRESH_TOKEN_COOKIE_NAME

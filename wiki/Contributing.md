@@ -384,11 +384,16 @@ To build the client locally, use the `buildTsClient` Gradle task.
 * [x] Jobs for fetching references can be enqueued
 * [x] Jobs are processed sequentially
 * [x] References are fetched for each fetcher configured in the project
-* [ ] Fetching results are merged and filtered (no duplicated data)
-* [ ] If fetched paper matches DB paper, paper in DB is updated and no new one is created (only checks externalId yet)
+* [x] Fetching results are merged and filtered (no duplicated data)
+* [x] If fetched paper matches DB paper, paper in DB is updated and no new one is created
 * [x] Non-existent papers are added to the DB
 * [x] Citation references are stored in DB
 * [x] Papers that are not already in another stage are added to the target stage
 * [x] `maxStage` of the project is bumped if necessary
 * [ ] Logging in job processing contains unique job ID (MDC)
 * [x] Failed jobs are caught and discarded so the consumer loop continues
+* [ ] Create Paper -> Existence check via similarity
+* [ ] Update Paper -> Existence check via similarity
+* [ ] Search Fetcher ProjectPaper Candidates -> Existence check via similarity
+* [ ] Investigate performance improvements for paper deduplication
+    * e.g. limit the length of the abstracts before comparing them

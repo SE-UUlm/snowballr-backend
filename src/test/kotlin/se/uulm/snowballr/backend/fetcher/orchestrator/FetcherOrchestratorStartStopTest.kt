@@ -1,12 +1,10 @@
 package se.uulm.snowballr.backend.fetcher.orchestrator
 
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class FetcherOrchestratorStartStopTest : FetcherOrchestratorTest() {
     @Test
     fun `When the orchestrator is started and stopped, then no exception is thrown`() = runTest {

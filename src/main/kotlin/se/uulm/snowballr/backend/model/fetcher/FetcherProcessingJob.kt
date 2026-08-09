@@ -13,4 +13,5 @@ data class FetcherProcessingJob(
     val targetStage: Int,
     val paperId: UUID,
     val triggeringUserId: UUID,
+    val similarityThreshold: Float,
 )

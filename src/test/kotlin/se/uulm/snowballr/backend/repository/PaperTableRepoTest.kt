@@ -211,7 +211,7 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable, PaperHasExternalId
 
             val updatedPaperDetails = paper.copy(
                 title = "Updated Title",
-                externalIds = listOf(ExternalId(ExternalIdType.URL, "https://updated-ex-id.com")),
+                externalIds = listOf(ExternalId(ExternalIdType.MAG, "1234567890")),
                 abstract = "Updated Abstract",
                 year = paper.year - 10,
                 publisher = "Updated Publisher",
@@ -226,7 +226,7 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable, PaperHasExternalId
             val end = OffsetDateTime.now()
 
             if ("paper.external_ids" in fieldMask) {
-                val updatedExternalId = ExternalId(ExternalIdType.URL, "https://updated-ex-id.com")
+                val updatedExternalId = ExternalId(ExternalIdType.MAG, "1234567890")
                 assertThat(updatedPaper.externalIds).isEqualTo(listOf(updatedExternalId))
             } else {
                 assertThat(updatedPaper.externalIds).isEqualTo(listOf(externalId))
@@ -365,6 +365,135 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable, PaperHasExternalId
             val papers = repo.getPapersByExternalIds(emptyList())
 
             assertEquals(0, papers.size)
+        }
+
+        @Test
+        fun `When a paper is found by one of its external IDs, then all of its external IDs are returned`() = runTest {
+            val paperId = insertPaperAndGetId()
+            val doi = insertExternalId(paperId, type = ExternalIdType.DOI, value = "10.1234/5678")
+            val mag = insertExternalId(paperId, type = ExternalIdType.MAG, value = "1234567890")
+
+            val papers = repo.getPapersByExternalIds(listOf(doi))
+
+            assertEquals(1, papers.size)
+            assertThat(papers.first().externalIds).containsExactlyInAnyOrder(doi, mag)
+        }
+    }
+
+    @Nested
+    inner class GetPapersByYear {
+        @Test
+        fun `When a paper's year exactly matches, then the paper is returned`() = runTest {
+            val paperId = insertPaperAndGetId(year = 2020)
+
+            val papers = repo.getPapersByYear(2020, tolerance = 0)
+
+            assertThat(papers.map { it.id }).containsExactly(paperId)
+        }
+
+        @Test
+        fun `When a paper's year is within the tolerance, then the paper is returned`() = runTest {
+            val paperId = insertPaperAndGetId(year = 2018)
+
+            val papers = repo.getPapersByYear(2020, tolerance = 2)
+
+            assertThat(papers.map { it.id }).containsExactly(paperId)
+        }
+
+        @Test
+        fun `When a paper's year is outside the tolerance, then the paper is not returned`() = runTest {
+            insertPaperAndGetId(year = 2015)
+
+            val papers = repo.getPapersByYear(2020, tolerance = 2)
+
+            assertEquals(0, papers.size)
+        }
+
+        @Test
+        fun `When multiple papers are within the tolerance, then all of them are returned`() = runTest {
+            val paper1 = insertPaperAndGetId(year = 2019)
+            val paper2 = insertPaperAndGetId(year = 2020)
+            val paper3 = insertPaperAndGetId(year = 2021)
+            insertPaperAndGetId(year = 1990)
+
+            val papers = repo.getPapersByYear(2020, tolerance = 1)
+
+            assertThat(papers.map { it.id }).containsExactlyInAnyOrder(paper1, paper2, paper3)
+        }
+
+        @Test
+        fun `When no paper matches the year, then an empty list is returned`() = runTest {
+            insertPaperAndGetId(year = 2020)
+
+            val papers = repo.getPapersByYear(1990, tolerance = 0)
+
+            assertEquals(0, papers.size)
+        }
+
+        @Test
+        fun `When a paper is found by year, then all of its external IDs are returned`() = runTest {
+            val paperId = insertPaperAndGetId(year = 2020)
+            val doi = insertExternalId(paperId, type = ExternalIdType.DOI, value = "10.1234/5678")
+            val mag = insertExternalId(paperId, type = ExternalIdType.MAG, value = "1234567890")
+
+            val papers = repo.getPapersByYear(2020, tolerance = 0)
+
+            assertEquals(1, papers.size)
+            assertThat(papers.first().externalIds).containsExactlyInAnyOrder(doi, mag)
+        }
+    }
+
+    @Nested
+    inner class MergeFetcherMetadata {
+        @Test
+        fun `When the merged metadata has new keys, then they are added to the stored metadata`() = runTest {
+            val paperId = insertPaperAndGetId(fetcherMetadata = mapOf("old" to "value"))
+
+            repo.mergeFetcherMetadata(paperId, mapOf("id" to "123", "foo" to "bar"))
+
+            val paper = repo.getPaperById(paperId).getOrThrow()
+            assertEquals(mapOf("old" to "value", "id" to "123", "foo" to "bar"), paper.fetcherMetadata)
+        }
+
+        @Test
+        fun `When the merged metadata has a stored key, then the stored value wins`() = runTest {
+            val paperId = insertPaperAndGetId(fetcherMetadata = mapOf("id" to "stored"))
+
+            repo.mergeFetcherMetadata(paperId, mapOf("id" to "fetched"))
+
+            val paper = repo.getPaperById(paperId).getOrThrow()
+            assertEquals(mapOf("id" to "stored"), paper.fetcherMetadata)
+        }
+
+        @Test
+        fun `When fetcher metadata is merged, then modifiedAt is not changed`() = runTest {
+            val paperId = insertPaperAndGetId()
+
+            repo.mergeFetcherMetadata(paperId, mapOf("id" to "123"))
+
+            val paper = repo.getPaperById(paperId).getOrThrow()
+            assertNull(paper.modifiedAt)
+        }
+
+        @Test
+        fun `When fetcher metadata is merged with an empty map, then the stored metadata is unchanged`() = runTest {
+            val paperId = insertPaperAndGetId(fetcherMetadata = mapOf("old" to "value"))
+
+            repo.mergeFetcherMetadata(paperId, emptyMap())
+
+            val paper = repo.getPaperById(paperId).getOrThrow()
+            assertEquals(mapOf("old" to "value"), paper.fetcherMetadata)
+        }
+
+        @Test
+        fun `When two merges interleave, then no keys are lost`() = runTest {
+            val paperId = insertPaperAndGetId()
+
+            repo.mergeFetcherMetadata(paperId, mapOf("a" to "1"))
+            repo.mergeFetcherMetadata(paperId, mapOf("b" to "2"))
+
+            val paper = repo.getPaperById(paperId).getOrThrow()
+            assertEquals(mapOf("a" to "1", "b" to "2"), paper.fetcherMetadata)
         }
     }
 }

@@ -5,8 +5,8 @@ import io.grpc.ServerCall
 import io.grpc.ServerCallHandler
 import io.mockk.mockk
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertNull
 
 class AuthRequestStateTest {
     @Test

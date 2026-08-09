@@ -9,6 +9,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
+import se.uulm.snowballr.backend.matching.IPaperMatcher
 import se.uulm.snowballr.backend.model.dto.paper.Paper
 import se.uulm.snowballr.backend.model.dto.paper.toFetcherPaper
 import se.uulm.snowballr.backend.model.exception.FetcherException
@@ -27,6 +28,7 @@ import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.isUniqueConstraintViolation
 import java.sql.SQLException
 import java.util.UUID
+import kotlin.math.roundToInt
 
 private val logger = KotlinLogging.logger { }
 
@@ -53,13 +55,15 @@ interface IFetcherOrchestrator {
     suspend fun enqueue(job: FetcherEnqueueJob)
 }
 
+@Suppress("LongParameterList", "TooManyFunctions")
 class FetcherOrchestrator(
     private val fetcherManager: IFetcherManager,
     private val projectRepo: IProjectTableRepo,
     private val paperRepo: IPaperTableRepo,
     private val citationRepo: ICitationTableRepo,
     private val projectPaperRepo: IProjectPaperTableRepo,
-    dispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val paperMatcher: IPaperMatcher,
+    dispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : IFetcherOrchestrator {
     private val queue = Channel<FetcherProcessingJob>(Channel.UNLIMITED)
 
@@ -115,6 +119,7 @@ class FetcherOrchestrator(
             targetStage = job.projectPaper.stage + 1,
             paperId = job.projectPaper.paperId,
             triggeringUserId = job.triggeringUserId,
+            similarityThreshold = project.similarityThreshold,
         )
 
         val result = queue.trySend(processingJob)
@@ -133,19 +138,31 @@ class FetcherOrchestrator(
 
         val paper = paperRepo.getPaperById(job.paperId).getOrThrow()
 
-        val fetchingResults = runFetching(job, paper)
+        val (fetchingResults, fetchingTime) = measureTime { runFetching(job, paper) }
 
-        // TODO: paper filtering/merging
-        // fetching from multiple fetchers will probably return the same papers from different fetchers
-        // first merge fetched papers then merge with existing paper in DB (if existent)
+        val (dedupResults, dedupTime) = measureTime { runDeduplication(fetchingResults, job) }
 
-        val creationResults = runPaperCreation(fetchingResults)
+        val (creationResults, creationTime) = measureTime { runPaperCreation(dedupResults, job) }
 
-        runPaperCitation(job.paperId, creationResults)
+        val (_, citationTime) = measureTime { runPaperCitation(job.paperId, creationResults) }
 
-        runAddingPapersToProject(job, creationResults)
+        val (_, addingTime) = measureTime { runAddingPapersToProject(job, creationResults) }
 
         logger.info { "Finished fetcher processing job for paper ${job.paperId}" }
+        @Suppress("MagicNumber")
+        logger.debug {
+            val total = fetchingTime + dedupTime + creationTime + citationTime + addingTime
+            fun per(t: Long) = "${(t / total.toDouble() * 1000.0).roundToInt() / 10.0}%"
+
+            """
+            Processing Times:
+              - fetching: ${fetchingTime.toString().padStart(6, ' ')}ms - ${per(fetchingTime).padStart(3, ' ')}
+              - dedup:    ${dedupTime.toString().padStart(6, ' ')}ms - ${per(dedupTime).padStart(3, ' ')}
+              - creation: ${creationTime.toString().padStart(6, ' ')}ms - ${per(creationTime).padStart(3, ' ')}
+              - citation: ${citationTime.toString().padStart(6, ' ')}ms - ${per(citationTime).padStart(3, ' ')}
+              - adding:   ${addingTime.toString().padStart(6, ' ')}ms - ${per(addingTime).padStart(3, ' ')}
+            """.trimIndent()
+        }
     }
 
     /**
@@ -185,7 +202,7 @@ class FetcherOrchestrator(
 
         for ((fetcher, options) in fetchers) {
             try {
-                val fetchedPapers = fetchCall(fetcher, paper.toFetcherPaper(), options)
+                val fetchedPapers = fetchCall.invoke(fetcher, paper.toFetcherPaper(), options)
                 set += fetchedPapers
             } catch (ex: FetcherException) {
                 logger.error(ex) {
@@ -202,55 +219,116 @@ class FetcherOrchestrator(
     }
 
     /**
+     * Deduplicates the results from the fetching part of the processing job.
+     */
+    private fun runDeduplication(results: FetchingResults, job: FetcherProcessingJob): FetchingResults {
+        val dedupedBackward = paperMatcher.deduplicatePapers(results.backwardRefs, job.similarityThreshold)
+        val dedupedForward = paperMatcher.deduplicatePapers(results.forwardRefs, job.similarityThreshold)
+
+        val dedupResults = FetchingResults(dedupedBackward, dedupedForward)
+
+        if (results.allRefs.size != dedupResults.allRefs.size) {
+            logger.info {
+                "Deduplicated fetching results (Backward: ${dedupedBackward.size}/${results.backwardRefs.size}; " +
+                    "Forward: ${dedupedForward.size}/${results.forwardRefs.size})"
+            }
+        }
+
+        return dedupResults
+    }
+
+    /**
      * Runs the paper creation part of the job processing.
      *
      * For both sets in [results] the paper data is stored in the DB if not already existent.
      */
-    private suspend fun runPaperCreation(results: FetchingResults): PaperCreationResults {
-        val createdBackwardRefs = createRefs(results.backwardRefs)
+    private suspend fun runPaperCreation(results: FetchingResults, job: FetcherProcessingJob): PaperCreationResults {
+        val createdBackwardRefs = createRefs(results.backwardRefs, job.similarityThreshold)
         logger.info { "Created ${createdBackwardRefs.size} backward referenced papers" }
-        val createdForwardRefs = createRefs(results.forwardRefs)
+        val createdForwardRefs = createRefs(results.forwardRefs, job.similarityThreshold)
         logger.info { "Created ${createdForwardRefs.size} forward referenced papers" }
 
         return PaperCreationResults(createdBackwardRefs, createdForwardRefs)
     }
 
     /**
-     * Creates a DB paper for each of the [FetcherPaper]s in [refs].
-     *
-     * If a paper already exists in the DB, no paper is added and the existent paper is retrieved and added to the
-     * result set.
+     * Resolves each [FetcherPaper] in [refs] against the DB:
+     * 1. External-ID fast path — if an exact match exists, merge metadata and reuse it.
+     * 2. Year-filtered similarity fallback — if a similar paper is found, merge metadata and reuse it.
+     * 3. No match — create a new paper.
      */
-    private suspend fun createRefs(refs: Set<FetcherPaper>): Set<Paper> {
-        val createdPaperRefs = mutableSetOf<Paper>()
+    private suspend fun createRefs(refs: Set<FetcherPaper>, threshold: Float): Set<Paper> {
+        val result = mutableSetOf<Paper>()
+        val candidatesByYear = mutableMapOf<Int, List<Paper>>()
 
         for (ref in refs) {
-            if (ref.externalIds.isNotEmpty()) {
-                // TODO: replace with check for whole paper data by similarity not only external ID
-                val existingPapers = paperRepo.getPapersByExternalIds(ref.externalIds)
+            val paper = resolveByExternalIds(ref)
+                ?: resolveExistingPaper(ref, threshold, candidatesByYear)
+                ?: createNewPaper(ref)
 
-                if (existingPapers.isNotEmpty()) {
-                    if (existingPapers.size > 1) {
-                        logger.error {
-                            "External IDs of fetcher paper (${ref.externalIds}) refer to many existing papers: " +
-                                "$existingPapers"
-                        }
-                    }
+            if (paper != null) result += paper
+        }
+        return result
+    }
 
-                    // TODO: merge data
-                    createdPaperRefs += existingPapers
-                    continue
-                }
-            }
+    private suspend fun resolveExistingPaper(
+        ref: FetcherPaper,
+        threshold: Float,
+        candidatesByYear: MutableMap<Int, List<Paper>>,
+    ): Paper? {
+        val candidates = candidatesByYear.getOrPut(ref.year) {
+            paperRepo.getPapersByYear(ref.year, paperMatcher.config.yearTolerance)
+        }
+        val match = paperMatcher.findMatch(ref, candidates, threshold)
 
-            try {
-                createdPaperRefs += paperRepo.createPaper(CreatePaperRequest.fromFetcherPaper(ref))
-            } catch (ex: SQLException) {
-                logger.error(ex) { "Failed to create paper for fetched paper: ${ex.message ?: "<empty>"}" }
+        if (match != null) {
+            mergeMetadata(match, ref)
+            return match
+        }
+
+        return null
+    }
+
+    /**
+     * Resolves a paper by the external IDs of [ref].
+     */
+    private suspend fun resolveByExternalIds(ref: FetcherPaper): Paper? {
+        if (ref.externalIds.isEmpty()) return null
+
+        val existingPapers = paperRepo.getPapersByExternalIds(ref.externalIds)
+            .sortedBy { it.createdAt }
+
+        if (existingPapers.isEmpty()) return null
+
+        if (existingPapers.size > 1) {
+            logger.error {
+                "External IDs of fetcher paper (${ref.externalIds}) refer to many existing papers: " +
+                    "$existingPapers"
             }
         }
 
-        return createdPaperRefs
+        val paper = existingPapers.first()
+        mergeMetadata(paper, ref)
+        return paper
+    }
+
+    private suspend fun mergeMetadata(dbPaper: Paper, ref: FetcherPaper) {
+        if (ref.fetcherMetadata.isEmpty()) return
+
+        try {
+            paperRepo.mergeFetcherMetadata(dbPaper.id, ref.fetcherMetadata)
+        } catch (ex: SQLException) {
+            logger.error(ex) {
+                "Failed to merge fetcher metadata for paper ${dbPaper.id}: ${ex.message ?: "<empty>"}"
+            }
+        }
+    }
+
+    private suspend fun createNewPaper(ref: FetcherPaper): Paper? = try {
+        paperRepo.createPaper(CreatePaperRequest.fromFetcherPaper(ref))
+    } catch (ex: SQLException) {
+        logger.error(ex) { "Failed to create paper for fetched paper: ${ex.message ?: "<empty>"}" }
+        null
     }
 
     /**
@@ -281,7 +359,7 @@ class FetcherOrchestrator(
         var addedCitations = 0
         for (ref in refs) {
             try {
-                citeCall(paperId, ref.id)
+                citeCall.invoke(paperId, ref.id)
                 addedCitations++
             } catch (ex: SQLException) {
                 // A unique constraint violation is okay (no-op)
@@ -337,5 +415,11 @@ class FetcherOrchestrator(
                 }
             }
         }
+    }
+
+    private suspend fun <T> measureTime(block: suspend () -> T): Pair<T, Long> {
+        val start = System.currentTimeMillis()
+        val result = block()
+        return result to System.currentTimeMillis() - start
     }
 }

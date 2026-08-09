@@ -45,9 +45,4 @@ enum class ExternalIdType(val displayName: String) {
      * [Semantic Scholar](https://www.semanticscholar.org/).
      */
     SEMANTIC_SCHOLAR("Semantic Scholar"),
-
-    /**
-     * Arbitrary URL.
-     */
-    URL("URL"),
 }

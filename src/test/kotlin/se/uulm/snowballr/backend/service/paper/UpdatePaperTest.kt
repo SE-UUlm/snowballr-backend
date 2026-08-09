@@ -79,7 +79,7 @@ class UpdatePaperTest : PaperServiceTest() {
         runTest {
             val externalIds = listOf(
                 ExternalId(ExternalIdType.DOI, "10.1000/existingdoi"),
-                ExternalId(ExternalIdType.URL, "https://example.com"),
+                ExternalId(ExternalIdType.ACL, "1234567890"),
             )
             val request = getExampleRequest().copy(externalIds = externalIds)
             val existingPapers = listOf(

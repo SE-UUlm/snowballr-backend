@@ -5,6 +5,7 @@ import io.mockk.clearAllMocks
 import io.mockk.coEvery
 import io.mockk.coJustRun
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestCoroutineScheduler
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.AfterEach
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.fetcher.FetcherOrchestrator
 import se.uulm.snowballr.backend.fetcher.IFetcherManager
+import se.uulm.snowballr.backend.matching.IPaperMatcher
 import se.uulm.snowballr.backend.model.dto.paper.Paper
 import se.uulm.snowballr.backend.model.dto.paper.toFetcherPaper
 import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
@@ -31,6 +33,7 @@ sealed class FetcherOrchestratorTest {
     val paperRepoMock = mockk<IPaperTableRepo>()
     val citationRepoMock = mockk<ICitationTableRepo>()
     val projectPaperRepoMock = mockk<IProjectPaperTableRepo>()
+    val paperMatcherMock = mockk<IPaperMatcher>()
 
     private val allMocks = arrayOf(
         fetcherManagerMock,
@@ -38,6 +41,7 @@ sealed class FetcherOrchestratorTest {
         paperRepoMock,
         citationRepoMock,
         projectPaperRepoMock,
+        paperMatcherMock,
     )
 
     @AfterEach
@@ -60,6 +64,7 @@ sealed class FetcherOrchestratorTest {
         paperRepo = paperRepoMock,
         citationRepo = citationRepoMock,
         projectPaperRepo = projectPaperRepoMock,
+        paperMatcher = paperMatcherMock,
         dispatcher = UnconfinedTestDispatcher(scheduler),
     )
 
@@ -122,6 +127,19 @@ sealed class FetcherOrchestratorTest {
         val forwardFetcherRefs = forwardRefs.map(Paper::toFetcherPaper).toSet()
 
         mockRunFetching(job, backwardFetcherRefs, forwardFetcherRefs)
+
+        // Deduplication passes through
+        every { paperMatcherMock.deduplicatePapers(backwardFetcherRefs, any()) } returns backwardFetcherRefs
+        every { paperMatcherMock.deduplicatePapers(forwardFetcherRefs, any()) } returns forwardFetcherRefs
+
+        every { paperMatcherMock.config.yearTolerance } returns 1
+
+        // No year-based candidates → falls through to createPaper
+        for (ref in backwardFetcherRefs + forwardFetcherRefs) {
+            coEvery { paperRepoMock.getPapersByYear(ref.year, 1) } returns emptyList()
+            coEvery { paperMatcherMock.findMatch(ref, emptyList(), any()) } returns null
+        }
+
         for (backwardRef in backwardRefs) {
             val backwardFetcherRef = backwardRef.toFetcherPaper()
             coEvery {
