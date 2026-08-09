@@ -276,16 +276,13 @@ class FetcherOrchestrator(
         threshold: Float,
         candidatesByYear: MutableMap<Int, List<Paper>>,
     ): Paper? {
-        val byExternalId = resolveByExternalIds(ref)
-        if (byExternalId != null) return byExternalId
-
         val candidates = candidatesByYear.getOrPut(ref.year) {
             paperRepo.getPapersByYear(ref.year, paperMatcher.config.yearTolerance)
         }
         val match = paperMatcher.findMatch(ref, candidates, threshold)
 
         if (match != null) {
-            updateMetadataIfChanged(match, ref)
+            mergeMetadata(match, ref)
             return match
         }
 
@@ -311,18 +308,18 @@ class FetcherOrchestrator(
         }
 
         val paper = existingPapers.first()
-        updateMetadataIfChanged(paper, ref)
+        mergeMetadata(paper, ref)
         return paper
     }
 
-    private suspend fun updateMetadataIfChanged(dbPaper: Paper, ref: FetcherPaper) {
+    private suspend fun mergeMetadata(dbPaper: Paper, ref: FetcherPaper) {
         if (ref.fetcherMetadata.isEmpty()) return
 
         try {
             paperRepo.mergeFetcherMetadata(dbPaper.id, ref.fetcherMetadata)
         } catch (ex: SQLException) {
             logger.error(ex) {
-                "Failed to update fetcher metadata for paper ${dbPaper.id}: ${ex.message ?: "<empty>"}"
+                "Failed to merge fetcher metadata for paper ${dbPaper.id}: ${ex.message ?: "<empty>"}"
             }
         }
     }

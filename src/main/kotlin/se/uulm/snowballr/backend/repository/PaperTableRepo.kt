@@ -93,7 +93,7 @@ interface IPaperTableRepo {
     /**
      * Merges [metadata] into the fetcher metadata of the paper with the given [id].
      *
-     * Keyss that are already stored keep their stored value, keys that are only in [metadata] are added.
+     * Keys that are already stored keep their stored value, keys that are only in [metadata] are added.
      *
      * This does not modify [PaperTable.modifiedAt] — this is a system-internal operation, not a user edit.
      */
@@ -260,7 +260,7 @@ class PaperTableRepo(
     override suspend fun mergeFetcherMetadata(id: UUID, metadata: FetcherMetadata): Unit = db.query {
         if (metadata.isEmpty()) return@query
 
-        val paperTable = PaperTable.tableName
+        val paperTable = "\"${PaperTable.tableName}\""
         val metadataColumn = PaperTable.fetcherMetadata.name
 
         // Use hstore concatenation operator to merge metadata key-value pairs.

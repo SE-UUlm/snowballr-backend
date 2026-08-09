@@ -371,6 +371,26 @@ class PaperMatcherTest {
             assertEquals(1, result.size)
             assertThat(result.first().externalIds).contains(ExternalId(ExternalIdType.URL, "https://a.example"))
         }
+
+        @Test
+        fun `When the first paper has an unknown year, then the merged paper keeps the known year`() {
+            val sharedExternalId = listOf(ExternalId(ExternalIdType.DOI, "10.1234/5678"))
+            val withoutYear = DataBuilder.createExampleFetcherPaper(
+                title = "Deep Learning",
+                externalIds = sharedExternalId,
+                year = 0,
+            )
+            val withYear = DataBuilder.createExampleFetcherPaper(
+                title = "Deep Learning",
+                externalIds = sharedExternalId,
+                year = 2020,
+            )
+
+            val result = matcher.deduplicatePapers(linkedSetOf(withoutYear, withYear), 0.5f)
+
+            assertEquals(1, result.size)
+            assertEquals(2020, result.first().year)
+        }
     }
 
     @Nested

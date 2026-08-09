@@ -226,7 +226,7 @@ class PaperMatcher(override val config: PaperMatchingConfig) : IPaperMatcher {
             title = group.firstNotNullOfOrNull { it.title.ifBlank { null } } ?: first.title,
             externalIds = externalIds.map { ExternalId(it.key, it.value) },
             abstract = group.firstNotNullOfOrNull { it.abstract.ifBlank { null } } ?: first.abstract,
-            year = first.year,
+            year = group.firstOrNull { it.year > 0 }?.year ?: first.year,
             publisher = group.firstNotNullOfOrNull { it.publisher.ifBlank { null } } ?: first.publisher,
             publicationType = group.firstNotNullOfOrNull { it.publicationType.ifBlank { null } }
                 ?: first.publicationType,

@@ -17,7 +17,7 @@ import snowballr.ProjectOuterClass.ReviewDecisionMatrix
  */
 object ProjectValidator {
     const val NAME_MAX_LENGTH = 100
-    const val SIMILARITY_THRESHOLD_MIN_VALUE = 0.0f
+    const val SIMILARITY_THRESHOLD_MIN_VALUE = 0.2f
     const val SIMILARITY_THRESHOLD_MAX_VALUE = 1.0f
     const val NUMBER_OF_REVIEWERS_MIN_VALUE = 1
     const val NUMBER_OF_REVIEWERS_MAX_VALUE = 10
