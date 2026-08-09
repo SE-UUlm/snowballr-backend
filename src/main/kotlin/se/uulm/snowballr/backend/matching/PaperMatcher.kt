@@ -23,7 +23,7 @@ interface IPaperMatcher {
      * Scoring rules:
      * - If both papers share at least one [ExternalId], returns 1.0 immediately.
      * - If both papers have at least one conflicting [ExternalId], returns 0.0 immediately.
-     *   - A conflict means same type, but different value. The type [ExternalIdType.URL] is excluded from this.
+     *   - A conflict means same type, but different value.
      * - If the publication years differ by more than the configured threshold, returns 0.0 immediately.
      * - Otherwise, the score is a weighted combination of:
      *   - **Title**: normalized Levenshtein similarity.
@@ -169,17 +169,13 @@ class PaperMatcher(override val config: PaperMatchingConfig) : IPaperMatcher {
      * Returns true if both [FetcherPaper]s have at least one conflicting external ID.
      *
      * Two external IDs are conflicting if they both have the same type, but a different value.
-     * The external ID type [ExternalIdType.URL] is excluded from this, since two different URLs might point to the same
-     * resource. I.e, different URLs are not a fast path to a clear no-similarity decision.
      * External IDs with a blank value are filtered out.
      */
     private fun haveConflictingExternalId(a: FetcherPaper, b: FetcherPaper): Boolean {
         val (externalIdsA, externalIdsB) = normalizeExternalIds(a, b)
 
         return externalIdsA.any { exA ->
-            externalIdsB.any { exB ->
-                exA.type != ExternalIdType.URL && exA.type == exB.type && exA.value != exB.value
-            }
+            externalIdsB.any { exB -> exA.type == exB.type && exA.value != exB.value }
         }
     }
 

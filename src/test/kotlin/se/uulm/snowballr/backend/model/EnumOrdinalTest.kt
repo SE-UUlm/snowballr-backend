@@ -148,7 +148,6 @@ class EnumOrdinalTest {
                     ExternalIdType.PUB_MED_CENTRAL -> 6
                     ExternalIdType.DBLP -> 7
                     ExternalIdType.SEMANTIC_SCHOLAR -> 8
-                    ExternalIdType.URL -> 9
                 }
             assertEquals(expectedOrdinal, value.ordinal)
         }

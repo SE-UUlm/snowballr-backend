@@ -53,7 +53,7 @@ class RegressionTest : IntegrationTest() {
                 val request = CreatePaperRequest.fromPaper(
                     DataBuilder.createExamplePaper(
                         title = "Paper $i",
-                        externalIds = listOf(ExternalId(ExternalIdType.URL, "External ID $i")),
+                        externalIds = listOf(ExternalId(ExternalIdType.DOI, "External ID $i")),
                     ),
                 )
                 papers += paperService.createPaper(request)

@@ -1,6 +1,5 @@
 package se.uulm.snowballr.backend.matching
 
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
@@ -50,7 +49,7 @@ class PaperMatcherTest {
         fun `When both papers share an External ID, but also have others, then similarity is 1`() {
             val sameExternalId = ExternalId(ExternalIdType.DOI, "doi:10.1/abc")
             val externalId1 = ExternalId(ExternalIdType.SEMANTIC_SCHOLAR, "12345")
-            val externalId2 = ExternalId(ExternalIdType.URL, "https://example.com")
+            val externalId2 = ExternalId(ExternalIdType.MAG, "1234567890")
             val a = DataBuilder.createExampleFetcherPaper(externalIds = listOf(sameExternalId, externalId1))
             val b = DataBuilder.createExampleFetcherPaper(externalIds = listOf(externalId2, sameExternalId))
             assertEquals(1.0, matcher.similarity(a, b), DELTA)
@@ -221,28 +220,6 @@ class PaperMatcherTest {
             assertEquals(0.0, matcher.similarity(a, b), DELTA)
         }
 
-        @Test
-        fun `When both papers have a conflicting URL, then the similarity is determined by the paper components`() {
-            val externalIdsA = listOf(
-                ExternalId(ExternalIdType.MAG, "123456"),
-                ExternalId(ExternalIdType.URL, "https://example.org"),
-            )
-            val externalIdsB = listOf(
-                ExternalId(ExternalIdType.SEMANTIC_SCHOLAR, "123456"),
-                ExternalId(ExternalIdType.URL, "https://redirect-to-example.org"),
-            )
-            val a = DataBuilder.createExampleFetcherPaper(externalIds = externalIdsA)
-            val b = DataBuilder.createExampleFetcherPaper(externalIds = externalIdsB)
-
-            val urlResult = matcher.similarity(a, b)
-            val noIdsResult = matcher.similarity(
-                a.copy(externalIds = emptyList()),
-                b.copy(externalIds = emptyList()),
-            )
-
-            assertEquals(noIdsResult, urlResult, DELTA)
-        }
-
         @ParameterizedTest
         @CsvSource(
             value = [
@@ -349,27 +326,6 @@ class PaperMatcherTest {
             val result = titleOnlyMatcher.deduplicatePapers(linkedSetOf(a, b), similarity.toFloat())
 
             assertEquals(1, result.size)
-        }
-
-        @Test
-        fun `When papers have different external IDs of the same type, then the first is kept`() {
-            val a = DataBuilder.createExampleFetcherPaper(
-                title = "Deep Learning",
-                abstract = "",
-                authors = emptyList(),
-                externalIds = listOf(ExternalId(ExternalIdType.URL, "https://a.example")),
-            )
-            val b = DataBuilder.createExampleFetcherPaper(
-                title = "Deep Learning",
-                abstract = "",
-                authors = emptyList(),
-                externalIds = listOf(ExternalId(ExternalIdType.URL, "https://b.example")),
-            )
-
-            val result = matcher.deduplicatePapers(linkedSetOf(a, b), 0.5f)
-
-            assertEquals(1, result.size)
-            assertThat(result.first().externalIds).contains(ExternalId(ExternalIdType.URL, "https://a.example"))
         }
 
         @Test

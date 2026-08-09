@@ -211,7 +211,7 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable, PaperHasExternalId
 
             val updatedPaperDetails = paper.copy(
                 title = "Updated Title",
-                externalIds = listOf(ExternalId(ExternalIdType.URL, "https://updated-ex-id.com")),
+                externalIds = listOf(ExternalId(ExternalIdType.MAG, "1234567890")),
                 abstract = "Updated Abstract",
                 year = paper.year - 10,
                 publisher = "Updated Publisher",
@@ -226,7 +226,7 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable, PaperHasExternalId
             val end = OffsetDateTime.now()
 
             if ("paper.external_ids" in fieldMask) {
-                val updatedExternalId = ExternalId(ExternalIdType.URL, "https://updated-ex-id.com")
+                val updatedExternalId = ExternalId(ExternalIdType.MAG, "1234567890")
                 assertThat(updatedPaper.externalIds).isEqualTo(listOf(updatedExternalId))
             } else {
                 assertThat(updatedPaper.externalIds).isEqualTo(listOf(externalId))
@@ -371,12 +371,12 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable, PaperHasExternalId
         fun `When a paper is found by one of its external IDs, then all of its external IDs are returned`() = runTest {
             val paperId = insertPaperAndGetId()
             val doi = insertExternalId(paperId, type = ExternalIdType.DOI, value = "10.1234/5678")
-            val url = insertExternalId(paperId, type = ExternalIdType.URL, value = "https://example.com")
+            val mag = insertExternalId(paperId, type = ExternalIdType.MAG, value = "1234567890")
 
             val papers = repo.getPapersByExternalIds(listOf(doi))
 
             assertEquals(1, papers.size)
-            assertThat(papers.first().externalIds).containsExactlyInAnyOrder(doi, url)
+            assertThat(papers.first().externalIds).containsExactlyInAnyOrder(doi, mag)
         }
     }
 
@@ -434,12 +434,12 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable, PaperHasExternalId
         fun `When a paper is found by year, then all of its external IDs are returned`() = runTest {
             val paperId = insertPaperAndGetId(year = 2020)
             val doi = insertExternalId(paperId, type = ExternalIdType.DOI, value = "10.1234/5678")
-            val url = insertExternalId(paperId, type = ExternalIdType.URL, value = "https://example.com")
+            val mag = insertExternalId(paperId, type = ExternalIdType.MAG, value = "1234567890")
 
             val papers = repo.getPapersByYear(2020, tolerance = 0)
 
             assertEquals(1, papers.size)
-            assertThat(papers.first().externalIds).containsExactlyInAnyOrder(doi, url)
+            assertThat(papers.first().externalIds).containsExactlyInAnyOrder(doi, mag)
         }
     }
 
