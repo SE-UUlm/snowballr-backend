@@ -128,6 +128,7 @@ class PaperMatcher(override val config: PaperMatchingConfig) : IPaperMatcher {
         }
 
         val totalWeight = components.sumOf { it.weight }
+        if (totalWeight == 0.0) return 0.0
         return components.sumOf { it.score * it.weight / totalWeight }
     }
 
