@@ -12,6 +12,7 @@ import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicatePaperException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
+import se.uulm.snowballr.backend.model.incoming.paper.PaperField
 import se.uulm.snowballr.backend.model.incoming.paper.UpdatePaperRequest
 import java.util.UUID
 
@@ -71,7 +72,7 @@ class UpdatePaperTest : PaperServiceTest() {
                 paperRepoMock.getPapersByExternalIds(externalIds)
             } returns listOf(existingPaperWithSameExternalId)
 
-            assertThrows<DuplicatePaperException> { service.updatePaper(request, listOf("paper.external_ids")) }
+            assertThrows<DuplicatePaperException> { service.updatePaper(request, listOf(PaperField.EXTERNAL_IDS)) }
         }
 
     @Test
@@ -90,7 +91,7 @@ class UpdatePaperTest : PaperServiceTest() {
             coEvery { paperRepoMock.ensurePaperExists(paperId) } just Runs
             coEvery { paperRepoMock.getPapersByExternalIds(externalIds) } returns existingPapers
 
-            assertThrows<DuplicatePaperException> { service.updatePaper(request, listOf("paper.external_ids")) }
+            assertThrows<DuplicatePaperException> { service.updatePaper(request, listOf(PaperField.EXTERNAL_IDS)) }
         }
 
     @Test
@@ -100,10 +101,10 @@ class UpdatePaperTest : PaperServiceTest() {
             val examplePaper = DataBuilder.createExamplePaper(id = paperId)
 
             coEvery { paperRepoMock.ensurePaperExists(paperId) } just Runs
-            coEvery { paperRepoMock.updatePaper(request, listOf("paper.external_ids")) } returns examplePaper
+            coEvery { paperRepoMock.updatePaper(request, listOf(PaperField.EXTERNAL_IDS)) } returns examplePaper
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paperId) } returns emptyList()
 
-            service.updatePaper(request, listOf("paper.external_ids"))
+            service.updatePaper(request, listOf(PaperField.EXTERNAL_IDS))
 
             coVerify(exactly = 0) { paperRepoMock.getPapersByExternalIds(any()) }
         }
@@ -123,11 +124,11 @@ class UpdatePaperTest : PaperServiceTest() {
             coEvery { paperRepoMock.getPapersByExternalIds(request.externalIds) } returns
                 listOf(existingPaperWithSameExternalId)
             coEvery {
-                paperRepoMock.updatePaper(request, listOf("paper.external_ids"))
+                paperRepoMock.updatePaper(request, listOf(PaperField.EXTERNAL_IDS))
             } returns existingPaperWithSameExternalId
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paperId) } returns emptyList()
 
-            val result = service.updatePaper(request, listOf("paper.external_ids"))
+            val result = service.updatePaper(request, listOf(PaperField.EXTERNAL_IDS))
 
             assertPaperEquality(existingPaperWithSameExternalId, result)
         }

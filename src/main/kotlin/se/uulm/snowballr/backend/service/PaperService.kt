@@ -6,6 +6,7 @@ import se.uulm.snowballr.backend.model.dto.paper.Paper
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicatePaperException
 import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
+import se.uulm.snowballr.backend.model.incoming.paper.PaperField
 import se.uulm.snowballr.backend.model.incoming.paper.UpdatePaperRequest
 import se.uulm.snowballr.backend.model.outgoing.paper.PaperResponse
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
@@ -33,7 +34,7 @@ interface IPaperService {
     /**
      * Service implementation of [SnowballRService.updatePaper].
      */
-    suspend fun updatePaper(request: UpdatePaperRequest, paths: List<String>): PaperResponse
+    suspend fun updatePaper(request: UpdatePaperRequest, paths: List<PaperField>): PaperResponse
 
     /**
      * Service implementation of [SnowballRService.createPaper].
@@ -63,10 +64,11 @@ class PaperService(
     override suspend fun getForwardReferencedPapers(paperId: UUID): List<PaperResponse> =
         getReferencePapers(paperId, citationRepo::getForwardReferencedPaperIdsOfPaperById)
 
-    override suspend fun updatePaper(request: UpdatePaperRequest, paths: List<String>): PaperResponse {
+    override suspend fun updatePaper(request: UpdatePaperRequest, paths: List<PaperField>): PaperResponse {
         repo.ensurePaperExists(request.paperId)
 
-        if (paths.contains("paper.external_ids") && request.externalIds.isNotEmpty()) {
+        val isExternalIdChange = paths.contains(PaperField.EXTERNAL_IDS) && request.externalIds.isNotEmpty()
+        if (isExternalIdChange) {
             val existingPapers = repo.getPapersByExternalIds(request.externalIds)
 
             if (existingPapers.any { it.id != request.paperId }) {

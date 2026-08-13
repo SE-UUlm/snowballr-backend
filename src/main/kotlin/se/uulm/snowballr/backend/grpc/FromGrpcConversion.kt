@@ -11,6 +11,7 @@ import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
+import se.uulm.snowballr.backend.model.incoming.paper.PaperField
 import snowballr.CriterionOuterClass
 import snowballr.ProjectOuterClass
 import snowballr.ReviewOuterClass
@@ -114,3 +115,5 @@ fun userStatusFromGrpc(status: UserOuterClass.UserStatus): UserStatus = when (st
         @Suppress("UseCheckOrError")
         throw IllegalStateException(INVALID_CONVERSION_MESSAGE)
 }
+
+fun paperFieldFromGrpc(fieldMaskPath: String): PaperField = PaperField.entries.first { it.grpcPath == fieldMaskPath }

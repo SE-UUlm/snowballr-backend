@@ -625,7 +625,7 @@ class SnowballRServer(
                     publicationType = request.paper.publicationType,
                     authors = request.paper.authorsList.map { Author(it.firstName, it.lastName) },
                 ),
-                FieldMaskUtil.normalize(request.mask).pathsList,
+                FieldMaskUtil.normalize(request.mask).pathsList.map { paperFieldFromGrpc(it) },
             ).toGrpc()
 
         override suspend fun getForwardReferencedPapers(request: Base.Id): PaperOuterClass.Paper.List =

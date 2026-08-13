@@ -9,6 +9,7 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicatePaperException
+import se.uulm.snowballr.backend.model.incoming.paper.PaperField
 import se.uulm.snowballr.backend.model.incoming.paper.UpdatePaperRequest
 
 class PaperIntegrationTest : IntegrationTest() {
@@ -52,7 +53,7 @@ class PaperIntegrationTest : IntegrationTest() {
             val paper = createPaper("Original Title")
             val request = UpdatePaperRequest.fromPaperResponse(paper).copy(title = "Updated Title")
 
-            val result = paperService.updatePaper(request, listOf("paper.title"))
+            val result = paperService.updatePaper(request, listOf(PaperField.TITLE))
 
             assertEquals("Updated Title", result.title)
 
@@ -65,7 +66,7 @@ class PaperIntegrationTest : IntegrationTest() {
             val paper = createPaper()
             val request = UpdatePaperRequest.fromPaperResponse(paper).copy(year = 2000)
 
-            paperService.updatePaper(request, listOf("paper.year"))
+            paperService.updatePaper(request, listOf(PaperField.YEAR))
 
             val fetched = paperService.getPaperById(paper.id)
             assertEquals(2000, fetched.year)
@@ -79,7 +80,7 @@ class PaperIntegrationTest : IntegrationTest() {
             val other = createPaper(externalIds = listOf(otherExternalId))
             val request = UpdatePaperRequest.fromPaperResponse(other).copy(externalIds = listOf(externalId))
 
-            assertThrows<DuplicatePaperException> { paperService.updatePaper(request, listOf("paper.external_ids")) }
+            assertThrows<DuplicatePaperException> { paperService.updatePaper(request, listOf(PaperField.EXTERNAL_IDS)) }
         }
     }
 }
