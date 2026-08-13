@@ -4,6 +4,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import se.uulm.snowballr.backend.context.RequestContext
 import se.uulm.snowballr.backend.model.auth.AuthenticationStatus
@@ -25,7 +26,7 @@ class AuthController(private val authService: IAuthenticationService) {
     fun getAuthStatus(): AuthenticationStatus = RequestContext.current().authStatus
 
     @PostMapping("/verify-email")
-    fun verifyEmail(token: String) = onRequest { authService.verifyEmail(token) }
+    fun verifyEmail(@RequestParam token: String) = onRequest { authService.verifyEmail(token) }
 
     @PostMapping("/change-password")
     fun changePassword(@RequestBody request: ChangePasswordRequest) = onRequest { authService.changePassword(request) }
