@@ -469,7 +469,7 @@ class SnowballRServer(
             request: ProjectOuterClass.Project.Information.Get,
         ): ProjectOuterClass.Project.Information = projectService.getProjectInformation(
             projectId = parseUUID(request.projectId, EntityType.PROJECT),
-            paths = FieldMaskUtil.normalize(request.mask).pathsList,
+            fields = FieldMaskUtil.normalize(request.mask).pathsList.map { projectInfoFieldFromGrpc(it) }.toSet(),
         ).toGrpc()
 
         override suspend fun getDecisionStatisticsForStage(

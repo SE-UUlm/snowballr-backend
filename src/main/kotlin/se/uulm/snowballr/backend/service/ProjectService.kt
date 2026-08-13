@@ -16,6 +16,7 @@ import se.uulm.snowballr.backend.model.fetcher.FetcherOptions
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.ProjectField
+import se.uulm.snowballr.backend.model.incoming.project.ProjectInfoField
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.outgoing.project.ProjectDecisionCount
 import se.uulm.snowballr.backend.model.outgoing.project.ProjectDecisionStatistics
@@ -72,7 +73,7 @@ interface IProjectService {
     /**
      * Service implementation of [SnowballRService.getProjectInformation].
      */
-    suspend fun getProjectInformation(projectId: UUID, paths: List<String>): ProjectInformation
+    suspend fun getProjectInformation(projectId: UUID, fields: Set<ProjectInfoField>): ProjectInformation
 
     /**
      * Service implementation of [SnowballRService.getDecisionStatisticsForStage].
@@ -190,29 +191,29 @@ class ProjectService(
             ProjectResponse.fromProject(updatedProject)
         }
 
-    override suspend fun getProjectInformation(projectId: UUID, paths: List<String>): ProjectInformation =
+    override suspend fun getProjectInformation(projectId: UUID, fields: Set<ProjectInfoField>): ProjectInformation =
         withUser(userRepo) { currentUser ->
             accessChecker.isAllowedToReadProject(currentUser, projectId)
 
             val project = repo.getProjectById(projectId).getOrThrow()
             var info = ProjectInformation(0F, OffsetDateTime.MIN, OffsetDateTime.MIN)
 
-            val has = if (paths.isNotEmpty()) {
-                { path: String -> path in paths }
+            val has = if (fields.isNotEmpty()) {
+                { field: ProjectInfoField -> field in fields }
             } else {
                 { _ -> true }
             }
 
-            if (has("project_progress")) {
+            if (has(ProjectInfoField.PROJECT_PROGRESS)) {
                 val progress = projectPaperRepo.getProjectProgress(projectId)
                 info = info.copy(progress = progress)
             }
 
-            if (has("creation_date")) {
+            if (has(ProjectInfoField.CREATION_DATE)) {
                 info = info.copy(creationDate = project.createdAt)
             }
 
-            if (has("last_stage_started")) {
+            if (has(ProjectInfoField.LAST_STAGE_STARTED)) {
                 info = info.copy(lastStageStarted = project.currentStageStartedAt)
             }
 
