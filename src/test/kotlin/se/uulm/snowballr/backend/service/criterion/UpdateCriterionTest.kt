@@ -12,7 +12,7 @@ import se.uulm.snowballr.backend.model.incoming.criterion.CriterionField
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 
 class UpdateCriterionTest : CriterionServiceTest() {
-    private val allPaths = CriterionField.entries.toList()
+    private val allFields = CriterionField.entries.toSet()
 
     private fun getExampleRequest(criterion: Criterion) = UpdateCriterionRequest(
         criterionId = criterion.id,
@@ -32,7 +32,7 @@ class UpdateCriterionTest : CriterionServiceTest() {
         mockCurrentUser(user)
         coEvery { criterionRepoMock.getCriterionById(criterion.id) } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { service.updateCriterion(request, allPaths) }
+        assertThrows<TestSpecificException> { service.updateCriterion(request, allFields) }
     }
 
     @Test
@@ -48,7 +48,7 @@ class UpdateCriterionTest : CriterionServiceTest() {
             criterionAccessCheckerMock.isAllowedToUpdateCriterion(user, criterion)
         } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { service.updateCriterion(request, allPaths) }
+        assertThrows<TestSpecificException> { service.updateCriterion(request, allFields) }
     }
 
     @Test
@@ -61,9 +61,9 @@ class UpdateCriterionTest : CriterionServiceTest() {
         mockCurrentUser(user)
         coEvery { criterionRepoMock.getCriterionById(criterion.id) } returns Result.success(criterion)
         coJustRun { criterionAccessCheckerMock.isAllowedToUpdateCriterion(user, criterion) }
-        coEvery { criterionRepoMock.updateCriterion(request, allPaths) } returns criterion
+        coEvery { criterionRepoMock.updateCriterion(request, allFields) } returns criterion
 
-        val result = service.updateCriterion(request, allPaths)
+        val result = service.updateCriterion(request, allFields)
 
         assertCriterionEquality(criterion, result)
     }

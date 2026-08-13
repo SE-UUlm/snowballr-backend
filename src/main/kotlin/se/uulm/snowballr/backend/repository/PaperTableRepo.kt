@@ -66,9 +66,13 @@ interface IPaperTableRepo {
     suspend fun createPaper(request: CreatePaperRequest): Paper
 
     /**
-     * Updates an existing paper in the database with the provided new values.
+     * Updates an existent paper in the database with the provided new information.
+     *
+     * @param request The update request containing the new paper details.
+     * @param paths The fields that should be updated.
+     * @return The updated [Paper] object reflecting the changes from the [request].
      */
-    suspend fun updatePaper(request: UpdatePaperRequest, paths: List<PaperField>): Paper
+    suspend fun updatePaper(request: UpdatePaperRequest, paths: Set<PaperField>): Paper
 
     /**
      * Retrieves a list of papers whose title partially or fully match the [query].
@@ -181,7 +185,7 @@ class PaperTableRepo(
         getPaperById(paperId).getOrThrow()
     }
 
-    override suspend fun updatePaper(request: UpdatePaperRequest, paths: List<PaperField>): Paper = db.query {
+    override suspend fun updatePaper(request: UpdatePaperRequest, paths: Set<PaperField>): Paper = db.query {
         if (paths.isEmpty()) {
             return@query getPaperById(request.paperId).getOrThrow()
         }

@@ -85,7 +85,7 @@ class AuthenticationService(
             role = updatedUser.role,
             status = updatedUser.status,
         )
-        repo.updateUser(userUpdate, listOf(UserField.STATUS))
+        repo.updateUser(userUpdate, setOf(UserField.STATUS))
 
         // Remove the verification token after successful verification
         verificationTokenRepo.deleteVerificationToken(token)

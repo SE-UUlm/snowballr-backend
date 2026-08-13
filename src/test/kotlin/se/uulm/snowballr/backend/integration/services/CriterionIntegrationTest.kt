@@ -96,7 +96,7 @@ class CriterionIntegrationTest : IntegrationTest() {
                 category = criterion.category,
             )
 
-            val result = criterionService.updateCriterion(request, listOf(CriterionField.NAME))
+            val result = criterionService.updateCriterion(request, setOf(CriterionField.NAME))
             assertEquals("New Name", result.name)
 
             val fetched = criterionService.getCriterionById(criterion.id)
@@ -114,7 +114,7 @@ class CriterionIntegrationTest : IntegrationTest() {
                 category = CriterionCategory.HARD_EXCLUSION,
             )
 
-            criterionService.updateCriterion(request, listOf(CriterionField.CATEGORY))
+            criterionService.updateCriterion(request, setOf(CriterionField.CATEGORY))
 
             val fetched = criterionService.getCriterionById(criterion.id)
             assertEquals(CriterionCategory.HARD_EXCLUSION, fetched.category)

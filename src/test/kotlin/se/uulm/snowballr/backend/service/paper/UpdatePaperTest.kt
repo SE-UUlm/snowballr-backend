@@ -36,10 +36,10 @@ class UpdatePaperTest : PaperServiceTest() {
         val examplePaper = DataBuilder.createExamplePaper(id = paperId, authors = listOf(exampleAuthor))
 
         coEvery { paperRepoMock.ensurePaperExists(paperId) } just Runs
-        coEvery { paperRepoMock.updatePaper(request, emptyList()) } returns examplePaper
+        coEvery { paperRepoMock.updatePaper(request, emptySet()) } returns examplePaper
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paperId) } returns emptyList()
 
-        val result = service.updatePaper(request, emptyList())
+        val result = service.updatePaper(request, emptySet())
 
         assertPaperEquality(examplePaper, result)
 
@@ -53,7 +53,7 @@ class UpdatePaperTest : PaperServiceTest() {
         coEvery { paperRepoMock.ensurePaperExists(paperId) } throws PaperNotFoundException(paperId)
 
         assertThrows<PaperNotFoundException> {
-            service.updatePaper(request, emptyList())
+            service.updatePaper(request, emptySet())
         }
     }
 
@@ -72,7 +72,7 @@ class UpdatePaperTest : PaperServiceTest() {
                 paperRepoMock.getPapersByExternalIds(externalIds)
             } returns listOf(existingPaperWithSameExternalId)
 
-            assertThrows<DuplicatePaperException> { service.updatePaper(request, listOf(PaperField.EXTERNAL_IDS)) }
+            assertThrows<DuplicatePaperException> { service.updatePaper(request, setOf(PaperField.EXTERNAL_IDS)) }
         }
 
     @Test
@@ -91,7 +91,7 @@ class UpdatePaperTest : PaperServiceTest() {
             coEvery { paperRepoMock.ensurePaperExists(paperId) } just Runs
             coEvery { paperRepoMock.getPapersByExternalIds(externalIds) } returns existingPapers
 
-            assertThrows<DuplicatePaperException> { service.updatePaper(request, listOf(PaperField.EXTERNAL_IDS)) }
+            assertThrows<DuplicatePaperException> { service.updatePaper(request, setOf(PaperField.EXTERNAL_IDS)) }
         }
 
     @Test
@@ -101,10 +101,10 @@ class UpdatePaperTest : PaperServiceTest() {
             val examplePaper = DataBuilder.createExamplePaper(id = paperId)
 
             coEvery { paperRepoMock.ensurePaperExists(paperId) } just Runs
-            coEvery { paperRepoMock.updatePaper(request, listOf(PaperField.EXTERNAL_IDS)) } returns examplePaper
+            coEvery { paperRepoMock.updatePaper(request, setOf(PaperField.EXTERNAL_IDS)) } returns examplePaper
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paperId) } returns emptyList()
 
-            service.updatePaper(request, listOf(PaperField.EXTERNAL_IDS))
+            service.updatePaper(request, setOf(PaperField.EXTERNAL_IDS))
 
             coVerify(exactly = 0) { paperRepoMock.getPapersByExternalIds(any()) }
         }
@@ -124,11 +124,11 @@ class UpdatePaperTest : PaperServiceTest() {
             coEvery { paperRepoMock.getPapersByExternalIds(request.externalIds) } returns
                 listOf(existingPaperWithSameExternalId)
             coEvery {
-                paperRepoMock.updatePaper(request, listOf(PaperField.EXTERNAL_IDS))
+                paperRepoMock.updatePaper(request, setOf(PaperField.EXTERNAL_IDS))
             } returns existingPaperWithSameExternalId
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paperId) } returns emptyList()
 
-            val result = service.updatePaper(request, listOf(PaperField.EXTERNAL_IDS))
+            val result = service.updatePaper(request, setOf(PaperField.EXTERNAL_IDS))
 
             assertPaperEquality(existingPaperWithSameExternalId, result)
         }
@@ -144,10 +144,10 @@ class UpdatePaperTest : PaperServiceTest() {
         )
 
         coEvery { paperRepoMock.ensurePaperExists(paperId) } just Runs
-        coEvery { paperRepoMock.updatePaper(request, emptyList()) } returns updatedPaper
+        coEvery { paperRepoMock.updatePaper(request, emptySet()) } returns updatedPaper
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paperId) } returns emptyList()
 
-        service.updatePaper(request, emptyList())
+        service.updatePaper(request, emptySet())
         coVerify(exactly = 0) { paperRepoMock.getPapersByExternalIds(any()) }
     }
 }

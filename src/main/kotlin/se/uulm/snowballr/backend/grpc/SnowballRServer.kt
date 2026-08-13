@@ -286,7 +286,7 @@ class SnowballRServer(
             userService.getUserByEmail(request.email).toGrpc()
 
         override suspend fun updateUser(request: UserOuterClass.User.Update): UserOuterClass.User {
-            val paths = FieldMaskUtil.normalize(request.mask).pathsList.map { userFieldFromGrpc(it) }
+            val paths = FieldMaskUtil.normalize(request.mask).pathsList.map { userFieldFromGrpc(it) }.toSet()
 
             val hasUnspecifiedRole = request.user.role == UserOuterClass.UserRole.USER_ROLE_UNSPECIFIED
             val role = if (!paths.contains(UserField.ROLE) && hasUnspecifiedRole) {
@@ -525,7 +525,7 @@ class SnowballRServer(
                 description = request.criterion.description,
                 category = criterionCategoryFromGrpc(request.criterion.category),
             ),
-            FieldMaskUtil.normalize(request.mask).pathsList.map { criterionFieldFromGrpc(it) },
+            FieldMaskUtil.normalize(request.mask).pathsList.map { criterionFieldFromGrpc(it) }.toSet(),
         ).toGrpc()
 
         override suspend fun deleteCriterion(request: Base.Id): Base.Nothing = super.deleteCriterion(request)
@@ -627,7 +627,7 @@ class SnowballRServer(
                     publicationType = request.paper.publicationType,
                     authors = request.paper.authorsList.map { Author(it.firstName, it.lastName) },
                 ),
-                FieldMaskUtil.normalize(request.mask).pathsList.map { paperFieldFromGrpc(it) },
+                FieldMaskUtil.normalize(request.mask).pathsList.map { paperFieldFromGrpc(it) }.toSet(),
             ).toGrpc()
 
         override suspend fun getForwardReferencedPapers(request: Base.Id): PaperOuterClass.Paper.List =

@@ -100,8 +100,8 @@ interface IProjectTableRepo {
     /**
      * Updates an existent project in the database with the provided new information.
      *
-     * @param request The update request containing the new project details, such as the new name.
-     * @param paths The field mask paths that should be updated.
+     * @param request The update request containing the new project details.
+     * @param paths The fields that should be updated.
      * @return The updated [Project] object reflecting the changes from the [request].
      */
     suspend fun updateProject(request: UpdateProjectRequest, paths: Set<ProjectField>): Project

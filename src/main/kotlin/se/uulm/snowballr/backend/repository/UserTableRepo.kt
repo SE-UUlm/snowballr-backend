@@ -104,11 +104,11 @@ interface IUserTableRepo {
     /**
      * Updates an existent user in the database with the provided new information.
      *
-     * @param request The update request containing the new user details, such as the new first name.
-     * @param paths The field mask paths that should be updated.
+     * @param request The update request containing the new user details.
+     * @param paths The fields that should be updated.
      * @return The updated [User] object reflecting the changes from the [request].
      */
-    suspend fun updateUser(request: UpdateUserRequest, paths: List<UserField>): User
+    suspend fun updateUser(request: UpdateUserRequest, paths: Set<UserField>): User
 
     /**
      * Performs a soft-delete meaning the user with the given [id] is not removed from the database, but only the
@@ -296,7 +296,7 @@ class UserTableRepo(
         }
     }
 
-    override suspend fun updateUser(request: UpdateUserRequest, paths: List<UserField>): User = db.query {
+    override suspend fun updateUser(request: UpdateUserRequest, paths: Set<UserField>): User = db.query {
         if (paths.isEmpty()) {
             return@query getUserById(request.userId).getOrThrow()
         }

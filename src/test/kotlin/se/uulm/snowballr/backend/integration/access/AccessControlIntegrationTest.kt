@@ -103,7 +103,7 @@ class AccessControlIntegrationTest : IntegrationTest() {
 
             actAsUser(member.id) {
                 assertThrows<UnauthorizedException> {
-                    criterionService.updateCriterion(request, listOf(CriterionField.NAME))
+                    criterionService.updateCriterion(request, setOf(CriterionField.NAME))
                 }
             }
         }

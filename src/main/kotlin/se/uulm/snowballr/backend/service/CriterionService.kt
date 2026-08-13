@@ -28,7 +28,7 @@ interface ICriterionService {
     /**
      * Service implementation of [SnowballRService.updateCriterion].
      */
-    suspend fun updateCriterion(request: UpdateCriterionRequest, paths: List<CriterionField>): Criterion
+    suspend fun updateCriterion(request: UpdateCriterionRequest, paths: Set<CriterionField>): Criterion
 
     /**
      * Service implementation of [SnowballRService.getAllCriteriaForProject].
@@ -80,7 +80,7 @@ class CriterionService(
             criterion
         }
 
-    override suspend fun updateCriterion(request: UpdateCriterionRequest, paths: List<CriterionField>): Criterion =
+    override suspend fun updateCriterion(request: UpdateCriterionRequest, paths: Set<CriterionField>): Criterion =
         withUser(userRepo) { currentUser ->
             val criterion = repo.getCriterionById(request.criterionId).getOrThrow()
 

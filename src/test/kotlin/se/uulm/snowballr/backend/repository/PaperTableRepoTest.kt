@@ -209,7 +209,7 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable, PaperHasExternalId
                 val request = UpdatePaperRequest.fromPaper(updatedPaperDetails)
 
                 val start = OffsetDateTime.now()
-                val updatedPaper = repo.updatePaper(request, listOf(field))
+                val updatedPaper = repo.updatePaper(request, setOf(field))
                 val end = OffsetDateTime.now()
 
                 val excluded = PaperField.entries.filter { field != it }
@@ -255,7 +255,7 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable, PaperHasExternalId
             val paper = repo.getPaperById(paperId).getOrThrow()
             val request = UpdatePaperRequest.fromPaper(paper)
 
-            val updatedPaper = repo.updatePaper(request, emptyList())
+            val updatedPaper = repo.updatePaper(request, emptySet())
 
             assertEquals(paper, updatedPaper)
             assertNull(updatedPaper.modifiedAt)

@@ -108,7 +108,7 @@ class UserIntegrationTest : IntegrationTest() {
                 status = currentUser.status,
             )
 
-            val updatedUser = userService.updateUser(request, listOf(UserField.FIRST_NAME))
+            val updatedUser = userService.updateUser(request, setOf(UserField.FIRST_NAME))
 
             assertEquals(newFirstName, updatedUser.firstName)
         }
@@ -127,7 +127,7 @@ class UserIntegrationTest : IntegrationTest() {
                 status = otherUser.status,
             )
 
-            val updatedUser = userService.updateUser(request, listOf(UserField.FIRST_NAME))
+            val updatedUser = userService.updateUser(request, setOf(UserField.FIRST_NAME))
 
             assertEquals(newFirstName, updatedUser.firstName)
         }
@@ -148,7 +148,7 @@ class UserIntegrationTest : IntegrationTest() {
 
                 actAsUser(nonAdminUser.id) {
                     assertThrows<UnauthorizedUpdateException> {
-                        userService.updateUser(request, listOf(UserField.ROLE))
+                        userService.updateUser(request, setOf(UserField.ROLE))
                     }
                 }
             }
@@ -168,7 +168,7 @@ class UserIntegrationTest : IntegrationTest() {
                     status = existingUser.status,
                 )
 
-                assertThrows<DuplicateUserException> { userService.updateUser(request, listOf(UserField.EMAIL)) }
+                assertThrows<DuplicateUserException> { userService.updateUser(request, setOf(UserField.EMAIL)) }
             }
     }
 

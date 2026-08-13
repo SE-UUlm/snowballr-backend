@@ -274,7 +274,7 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                 category = CriterionCategory.INCLUSION,
             )
 
-            val updatedCriterion = repo.updateCriterion(request, listOf(field))
+            val updatedCriterion = repo.updateCriterion(request, setOf(field))
 
             val excluded = CriterionField.entries.filter { field != it }
 

@@ -228,7 +228,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
                     status = UserStatus.DELETED,
                 )
 
-                val updatedUser = repo.updateUser(request, listOf(field))
+                val updatedUser = repo.updateUser(request, setOf(field))
 
                 val excluded = UserField.entries.filter { field != it }
 
@@ -270,7 +270,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
             )
 
             assertThrows<SQLException> {
-                repo.updateUser(updateRequest, listOf(UserField.EMAIL))
+                repo.updateUser(updateRequest, setOf(UserField.EMAIL))
             }
         }
 
@@ -280,7 +280,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
             val user = repo.getUserById(userId).getOrThrow()
             val request = UpdateUserRequest.fromUser(user)
 
-            val updatedUser = repo.updateUser(request, emptyList())
+            val updatedUser = repo.updateUser(request, emptySet())
 
             assertEquals(user, updatedUser)
             assertNull(updatedUser.modifiedAt)

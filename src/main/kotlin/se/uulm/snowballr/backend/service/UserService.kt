@@ -50,7 +50,7 @@ interface IUserService {
     /**
      * Service implementation of [SnowballRService.updateUser].
      */
-    suspend fun updateUser(request: UpdateUserRequest, paths: List<UserField>): User
+    suspend fun updateUser(request: UpdateUserRequest, paths: Set<UserField>): User
 
     /**
      * Service implementation of [SnowballRService.softDeleteUser].
@@ -152,7 +152,7 @@ class UserService(
         logger.info { "User ${user.id} registered (${user.email})" }
     }
 
-    override suspend fun updateUser(request: UpdateUserRequest, paths: List<UserField>): User =
+    override suspend fun updateUser(request: UpdateUserRequest, paths: Set<UserField>): User =
         withUser(userRepo) { currentUser ->
             val targetUser = userRepo.getUserById(request.userId).getOrThrow()
 
