@@ -105,14 +105,21 @@ class AuthWorkflowIntegrationTest(@Autowired private val mvc: MockMvc) {
             .andExpect(status().isOk)
             .andExpect(content().string(containsString("AUTHENTICATED")))
 
+        // A cookie-authenticated, state-changing request without the X-Requested-With header is rejected as a
+        // CSRF defense-in-depth measure - a forged same-site request cannot set custom headers.
+        mvc.perform(changePasswordRequest(sessionCookieHeader, password, newPassword))
+            .andExpect(status().isForbidden)
+
         mvc.perform(
-            post("${Routes.AUTH_ROUTE}/change-password")
-                .header("Cookie", sessionCookieHeader)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"oldPassword":"$password","newPassword":"$newPassword"}"""),
+            changePasswordRequest(sessionCookieHeader, password, newPassword)
+                .header("X-Requested-With", "XMLHttpRequest"),
         ).andExpect(status().isOk)
 
-        val logoutResult = mvc.perform(post("${Routes.AUTH_ROUTE}/logout").header("Cookie", sessionCookieHeader))
+        val logoutResult = mvc.perform(
+            post("${Routes.AUTH_ROUTE}/logout")
+                .header("Cookie", sessionCookieHeader)
+                .header("X-Requested-With", "XMLHttpRequest"),
+        )
             .andExpect(status().isOk)
             .andReturn()
 
@@ -134,6 +141,12 @@ class AuthWorkflowIntegrationTest(@Autowired private val mvc: MockMvc) {
         setCookieHeaders.firstOrNull { it.startsWith("$name=") }?.run {
             removePrefix("$name=").substringBefore(";")
         }
+
+    private fun changePasswordRequest(sessionCookieHeader: String, oldPassword: String, newPassword: String) =
+        post("${Routes.AUTH_ROUTE}/change-password")
+            .header("Cookie", sessionCookieHeader)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""{"oldPassword":"$oldPassword","newPassword":"$newPassword"}""")
 
     private companion object {
         val db = TestDatabase()
