@@ -21,9 +21,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import se.uulm.snowballr.backend.auth.IAuthenticationManager
 import se.uulm.snowballr.backend.auth.ICookieManager
-import se.uulm.snowballr.backend.env.Env
 import se.uulm.snowballr.backend.env.EnvReader
-import se.uulm.snowballr.backend.openapi.OpenApiContractTest.Companion.COMMITTED_SPEC
 import se.uulm.snowballr.backend.rest.SnowballRApplication
 import se.uulm.snowballr.backend.service.IAuthenticationService
 import se.uulm.snowballr.backend.service.IProjectService
@@ -99,14 +97,9 @@ class OpenApiContractTest(@Autowired private val mvc: MockMvc) {
         @JvmStatic
         @BeforeAll
         fun startTestKoin() {
-            val miscellaneous = mockk<Env.Miscellaneous>()
-            every { miscellaneous.authBypassEnabled } returns true
-
-            val env = mockk<Env>()
-            every { env.miscellaneous } returns miscellaneous
-
             val envReader = mockk<EnvReader>()
-            every { envReader.env } returns env
+            every { envReader.env.miscellaneous.authBypassEnabled } returns true
+            every { envReader.env.http.port } returns 8080
 
             startKoin {
                 modules(
