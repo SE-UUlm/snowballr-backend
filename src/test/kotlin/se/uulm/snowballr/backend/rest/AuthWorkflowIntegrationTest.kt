@@ -170,6 +170,7 @@ class AuthWorkflowIntegrationTest(@Autowired private val mvc: MockMvc) {
                 authBypassEnabled = false,
                 frontendBaseUrl = "http://localhost:3000",
             )
+            every { envReaderMock.env.http.port } returns 8080
             coJustRun { fetcherOrchestratorMock.enqueue(any()) }
 
             startKoin {
