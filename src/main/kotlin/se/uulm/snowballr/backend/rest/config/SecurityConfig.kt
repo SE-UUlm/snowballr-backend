@@ -36,9 +36,11 @@ class SecurityConfig(
                 it.requestMatchers(HttpMethod.GET, "${Routes.AUTH_ROUTE}/status").permitAll()
                 it.requestMatchers(HttpMethod.POST, "${Routes.AUTH_ROUTE}/logout").permitAll()
 
-                // Infra / docs endpoints are public.
+                // Infra / docs endpoints are public. Only the actuator endpoints actually exposed today
+                // (management.endpoints.web.exposure.include is not overridden) are listed explicitly, so that
+                // exposing more endpoints later requires consciously widening this rule too.
                 it.requestMatchers(
-                    "/actuator/**",
+                    "/actuator/health",
                     "/api-docs",
                     "/api-docs.yaml",
                     "/swagger/**",
