@@ -5,6 +5,7 @@ import dev.detekt.gradle.DetektCreateBaselineTask
 import kotlinx.kover.gradle.plugin.dsl.AggregationType
 import kotlinx.kover.gradle.plugin.dsl.CoverageUnit
 import kotlinx.kover.gradle.plugin.dsl.GroupingEntityType
+import java.io.File
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 
@@ -144,17 +145,47 @@ kotlin {
 }
 
 val fetcherVenvDir = layout.projectDirectory.dir(".venv").asFile
-val fetcherVenvPython: String = if (System.getProperty("os.name").startsWith("Windows", ignoreCase = true)) {
+val isWindows = System.getProperty("os.name").startsWith("Windows", ignoreCase = true)
+val fetcherVenvPython: String = if (isWindows) {
     fetcherVenvDir.resolve("Scripts/python.exe").absolutePath
 } else {
     fetcherVenvDir.resolve("bin/python3").absolutePath
+}
+
+/**
+ * Resolve uv executable explicitly since an IDE might not be able to access it.
+ *
+ * The order is as follows:
+ * - override via `UV_EXECUTABLE`
+ * - search in `PATH`
+ * - fallback to common install locations.
+ */
+val uvExecutable: String by lazy {
+    val executableName = if (isWindows) "uv.exe" else "uv"
+    val override = System.getenv("UV_EXECUTABLE")
+    val pathDirs = System.getenv("PATH").orEmpty().split(File.pathSeparatorChar)
+    val homeDir = System.getProperty("user.home")
+    val fallbackDirs = listOf(
+        "$homeDir/.local/bin",
+        "$homeDir/.cargo/bin",
+        "/usr/local/bin",
+        "/opt/homebrew/bin",
+    )
+
+    override
+        ?: (pathDirs + fallbackDirs)
+            .asSequence()
+            .map { File(it, executableName) }
+            .firstOrNull { it.isFile }
+            ?.absolutePath
+        ?: executableName
 }
 
 tasks.register<Exec>("createFetcherVenv") {
     group = "application"
     description = "Creates the local Python virtual environment for fetcher plugins."
     workingDir = projectDir
-    commandLine("uv", "venv", "--allow-existing", ".venv")
+    commandLine(uvExecutable, "venv", "--allow-existing", ".venv")
 }
 
 tasks.register<Exec>("syncFetcherPythonDeps") {
@@ -162,7 +193,7 @@ tasks.register<Exec>("syncFetcherPythonDeps") {
     description = "Synchronizes Python fetcher dependencies from requirements.txt using uv."
     dependsOn("createFetcherVenv")
     workingDir = projectDir
-    commandLine("uv", "pip", "install", "--python", fetcherVenvPython, "-r", "requirements.txt")
+    commandLine(uvExecutable, "pip", "install", "--python", fetcherVenvPython, "-r", "requirements.txt")
 }
 
 tasks.register("setupFetcherPython") {
