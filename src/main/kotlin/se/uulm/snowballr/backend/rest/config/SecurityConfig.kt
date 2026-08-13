@@ -33,6 +33,8 @@ class SecurityConfig(
                 it.requestMatchers(HttpMethod.POST, Routes.USERS_ROUTE).permitAll()
                 it.requestMatchers(HttpMethod.POST, "${Routes.AUTH_ROUTE}/login").permitAll()
                 it.requestMatchers(HttpMethod.POST, "${Routes.AUTH_ROUTE}/verify-email").permitAll()
+                it.requestMatchers(HttpMethod.GET, "${Routes.AUTH_ROUTE}/status").permitAll()
+                it.requestMatchers(HttpMethod.POST, "${Routes.AUTH_ROUTE}/logout").permitAll()
 
                 // Infra / docs endpoints are public.
                 it.requestMatchers(
