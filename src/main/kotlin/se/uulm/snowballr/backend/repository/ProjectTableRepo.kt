@@ -213,7 +213,12 @@ class ProjectTableRepo(
             .map { it.toProject() }
     }
 
+    @Suppress("CognitiveComplexMethod")
     override suspend fun updateProject(request: UpdateProjectRequest, paths: Set<ProjectField>): Project = db.query {
+        if (paths.isEmpty()) {
+            return@query getProjectById(request.projectId).getOrThrow()
+        }
+
         val isUpdatingDecisionMatrix = isUpdatingDecisionMatrix(paths)
         val project = if (isUpdatingDecisionMatrix) getProjectByIdOrNull(request.projectId) else null
 
@@ -238,6 +243,7 @@ class ProjectTableRepo(
             if (isUpdatingDecisionMatrix && project != null) {
                 it.applyDecisionMatrixUpdate(project, request.settings, paths)
             }
+
             it[modifiedAt] = OffsetDateTime.now()
         }
     }

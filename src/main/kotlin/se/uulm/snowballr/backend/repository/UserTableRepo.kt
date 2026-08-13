@@ -297,6 +297,10 @@ class UserTableRepo(
     }
 
     override suspend fun updateUser(request: UpdateUserRequest, paths: List<UserField>): User = db.query {
+        if (paths.isEmpty()) {
+            return@query getUserById(request.userId).getOrThrow()
+        }
+
         UserTable.updateByIdAndGet(request.userId, ResultRow::toUser) {
             for (field in paths) {
                 when (field) {

@@ -334,6 +334,18 @@ class ProjectTableRepoTest :
                     repo.updateProject(request, setOf(ProjectField.NUMBER_OF_REVIEWERS))
                 }
             }
+
+        @Test
+        fun `When a project is updated with an empty field mask, then nothing is updated`() = runTest {
+            val projectId = insertProjectAndGetId(createdBy = testUserId)
+            val project = repo.getProjectById(projectId).getOrThrow()
+            val request = UpdateProjectRequest.fromProject(project)
+
+            val updatedProject = repo.updateProject(request, emptySet())
+
+            assertEquals(project, updatedProject)
+            assertNull(updatedProject.modifiedAt)
+        }
     }
 
     @Nested

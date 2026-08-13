@@ -273,6 +273,18 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
                 repo.updateUser(updateRequest, listOf(UserField.EMAIL))
             }
         }
+
+        @Test
+        fun `When a user is updated with an empty field mask, then nothing is updated`() = runTest {
+            val userId = insertUserAndGetId()
+            val user = repo.getUserById(userId).getOrThrow()
+            val request = UpdateUserRequest.fromUser(user)
+
+            val updatedUser = repo.updateUser(request, emptyList())
+
+            assertEquals(user, updatedUser)
+            assertNull(updatedUser.modifiedAt)
+        }
     }
 
     @Nested
