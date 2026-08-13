@@ -279,11 +279,10 @@ class ProjectService(
         }
 
         when (currentStatus) {
-            ProjectStatus.DELETED -> {
+            ProjectStatus.DELETED ->
                 throw FailedPreconditionException(
                     "The project has been deleted and can therefore not be updated anymore.",
                 )
-            }
 
             ProjectStatus.ARCHIVED -> {
                 val isOnlyStatusUpdate = paths.size == 1 && isStatusUpdate
@@ -313,15 +312,8 @@ class ProjectService(
                     )
                 }
             }
-
-            ProjectStatus.ACTIVE -> {
-                // no restrictions
-            }
-
-            ProjectStatus.CLEARED,
-            -> {
-                error("Project is an unspecified status: $currentStatus")
-            }
+            ProjectStatus.ACTIVE -> { /* no restrictions */ }
+            ProjectStatus.CLEARED -> error("Project is an unspecified status: $currentStatus")
         }
     }
 
