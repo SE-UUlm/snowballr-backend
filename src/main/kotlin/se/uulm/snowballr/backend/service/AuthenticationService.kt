@@ -16,6 +16,7 @@ import se.uulm.snowballr.backend.model.exception.notfound.VerificationTokenNotFo
 import se.uulm.snowballr.backend.model.incoming.authentication.ChangePasswordRequest
 import se.uulm.snowballr.backend.model.incoming.authentication.LoginRequest
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
+import se.uulm.snowballr.backend.model.incoming.user.UserField
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.IVerificationTokenTableRepo
 import java.time.OffsetDateTime
@@ -84,7 +85,7 @@ class AuthenticationService(
             role = updatedUser.role,
             status = updatedUser.status,
         )
-        repo.updateUser(userUpdate, listOf("user.status"))
+        repo.updateUser(userUpdate, listOf(UserField.STATUS))
 
         // Remove the verification token after successful verification
         verificationTokenRepo.deleteVerificationToken(token)

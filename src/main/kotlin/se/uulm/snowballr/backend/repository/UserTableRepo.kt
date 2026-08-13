@@ -26,6 +26,7 @@ import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
+import se.uulm.snowballr.backend.model.incoming.user.UserField
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.toUser
 import se.uulm.snowballr.backend.table.toUserSettings
@@ -107,7 +108,7 @@ interface IUserTableRepo {
      * @param paths The field mask paths that should be updated.
      * @return The updated [User] object reflecting the changes from the [request].
      */
-    suspend fun updateUser(request: UpdateUserRequest, paths: List<String>): User
+    suspend fun updateUser(request: UpdateUserRequest, paths: List<UserField>): User
 
     /**
      * Performs a soft-delete meaning the user with the given [id] is not removed from the database, but only the
@@ -295,15 +296,15 @@ class UserTableRepo(
         }
     }
 
-    override suspend fun updateUser(request: UpdateUserRequest, paths: List<String>): User = db.query {
+    override suspend fun updateUser(request: UpdateUserRequest, paths: List<UserField>): User = db.query {
         UserTable.updateByIdAndGet(request.userId, ResultRow::toUser) {
             for (field in paths) {
                 when (field) {
-                    "user.email" -> it[email] = request.email
-                    "user.first_name" -> it[firstName] = request.firstName
-                    "user.last_name" -> it[lastName] = request.lastName
-                    "user.role" -> it[role] = request.role
-                    "user.status" -> it[status] = request.status
+                    UserField.EMAIL -> it[email] = request.email
+                    UserField.FIRST_NAME -> it[firstName] = request.firstName
+                    UserField.LAST_NAME -> it[lastName] = request.lastName
+                    UserField.ROLE -> it[role] = request.role
+                    UserField.STATUS -> it[status] = request.status
                 }
             }
 

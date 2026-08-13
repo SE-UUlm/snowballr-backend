@@ -17,6 +17,7 @@ import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateUserException
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
+import se.uulm.snowballr.backend.model.incoming.user.UserField
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
@@ -49,7 +50,7 @@ interface IUserService {
     /**
      * Service implementation of [SnowballRService.updateUser].
      */
-    suspend fun updateUser(request: UpdateUserRequest, paths: List<String>): User
+    suspend fun updateUser(request: UpdateUserRequest, paths: List<UserField>): User
 
     /**
      * Service implementation of [SnowballRService.softDeleteUser].
@@ -151,19 +152,19 @@ class UserService(
         logger.info { "User ${user.id} registered (${user.email})" }
     }
 
-    override suspend fun updateUser(request: UpdateUserRequest, paths: List<String>): User =
+    override suspend fun updateUser(request: UpdateUserRequest, paths: List<UserField>): User =
         withUser(userRepo) { currentUser ->
             val targetUser = userRepo.getUserById(request.userId).getOrThrow()
 
             accessChecker.isAllowedToUpdateUser(currentUser, targetUser)
 
             // If the role is changed, the requesting user must be a server admin.
-            if (paths.contains("user.role")) {
+            if (paths.contains(UserField.ROLE)) {
                 accessChecker.isAllowedToUpdateUserRole(currentUser, request.userId)
             }
 
             // If the email is changed, there must not yet exist an account with that email address.
-            if (paths.contains("user.email") && userRepo.doesUserExistByEmail(request.email)) {
+            if (paths.contains(UserField.EMAIL) && userRepo.doesUserExistByEmail(request.email)) {
                 throw DuplicateUserException(request.email)
             }
 

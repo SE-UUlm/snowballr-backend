@@ -19,6 +19,7 @@ import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadAl
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedUpdateException
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
+import se.uulm.snowballr.backend.model.incoming.user.UserField
 
 class UserIntegrationTest : IntegrationTest() {
     @Nested
@@ -107,7 +108,7 @@ class UserIntegrationTest : IntegrationTest() {
                 status = currentUser.status,
             )
 
-            val updatedUser = userService.updateUser(request, listOf("user.first_name"))
+            val updatedUser = userService.updateUser(request, listOf(UserField.FIRST_NAME))
 
             assertEquals(newFirstName, updatedUser.firstName)
         }
@@ -126,7 +127,7 @@ class UserIntegrationTest : IntegrationTest() {
                 status = otherUser.status,
             )
 
-            val updatedUser = userService.updateUser(request, listOf("user.first_name"))
+            val updatedUser = userService.updateUser(request, listOf(UserField.FIRST_NAME))
 
             assertEquals(newFirstName, updatedUser.firstName)
         }
@@ -146,7 +147,9 @@ class UserIntegrationTest : IntegrationTest() {
                 )
 
                 actAsUser(nonAdminUser.id) {
-                    assertThrows<UnauthorizedUpdateException> { userService.updateUser(request, listOf("user.role")) }
+                    assertThrows<UnauthorizedUpdateException> {
+                        userService.updateUser(request, listOf(UserField.ROLE))
+                    }
                 }
             }
 
@@ -165,7 +168,7 @@ class UserIntegrationTest : IntegrationTest() {
                     status = existingUser.status,
                 )
 
-                assertThrows<DuplicateUserException> { userService.updateUser(request, listOf("user.email")) }
+                assertThrows<DuplicateUserException> { userService.updateUser(request, listOf(UserField.EMAIL)) }
             }
     }
 

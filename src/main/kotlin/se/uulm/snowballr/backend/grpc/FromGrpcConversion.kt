@@ -14,6 +14,7 @@ import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.incoming.criterion.CriterionField
 import se.uulm.snowballr.backend.model.incoming.paper.PaperField
 import se.uulm.snowballr.backend.model.incoming.project.ProjectField
+import se.uulm.snowballr.backend.model.incoming.user.UserField
 import snowballr.CriterionOuterClass
 import snowballr.ProjectOuterClass
 import snowballr.ReviewOuterClass
@@ -125,3 +126,5 @@ fun projectFieldFromGrpc(fieldMaskPath: String): ProjectField =
 
 fun criterionFieldFromGrpc(fieldMaskPath: String): CriterionField =
     CriterionField.entries.first { it.grpcPath == fieldMaskPath }
+
+fun userFieldFromGrpc(fieldMaskPath: String): UserField = UserField.entries.first { it.grpcPath == fieldMaskPath }

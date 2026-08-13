@@ -46,6 +46,7 @@ import se.uulm.snowballr.backend.model.incoming.projectmember.UpdateProjectMembe
 import se.uulm.snowballr.backend.model.incoming.review.CreateReviewRequest
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
+import se.uulm.snowballr.backend.model.incoming.user.UserField
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.scheduler.SchedulerManager
 import se.uulm.snowballr.backend.service.IAuthenticationService
@@ -285,17 +286,17 @@ class SnowballRServer(
             userService.getUserByEmail(request.email).toGrpc()
 
         override suspend fun updateUser(request: UserOuterClass.User.Update): UserOuterClass.User {
-            val paths = FieldMaskUtil.normalize(request.mask).pathsList
+            val paths = FieldMaskUtil.normalize(request.mask).pathsList.map { userFieldFromGrpc(it) }
 
             val hasUnspecifiedRole = request.user.role == UserOuterClass.UserRole.USER_ROLE_UNSPECIFIED
-            val role = if (!paths.contains("user.role") && hasUnspecifiedRole) {
+            val role = if (!paths.contains(UserField.ROLE) && hasUnspecifiedRole) {
                 UserRole.DEFAULT
             } else {
                 userRoleFromGrpc(request.user.role)
             }
 
             val hasUnspecifiedStatus = request.user.status == UserOuterClass.UserStatus.USER_STATUS_UNSPECIFIED
-            val status = if (!paths.contains("user.status") && hasUnspecifiedStatus) {
+            val status = if (!paths.contains(UserField.STATUS) && hasUnspecifiedStatus) {
                 UserStatus.ACTIVE
             } else {
                 userStatusFromGrpc(request.user.status)
