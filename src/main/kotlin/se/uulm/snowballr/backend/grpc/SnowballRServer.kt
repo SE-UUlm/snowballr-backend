@@ -39,6 +39,7 @@ import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
 import se.uulm.snowballr.backend.model.incoming.paper.UpdatePaperRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
+import se.uulm.snowballr.backend.model.incoming.project.ProjectField
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectSettingRequest
 import se.uulm.snowballr.backend.model.incoming.projectmember.UpdateProjectMemberRoleRequest
@@ -412,11 +413,11 @@ class SnowballRServer(
             projectService.getProjectById(parseProjectId(request)).toGrpc()
 
         override suspend fun updateProject(request: ProjectOuterClass.Project.Update): ProjectOuterClass.Project {
-            val paths = FieldMaskUtil.normalize(request.mask).pathsList.toSet()
+            val paths = FieldMaskUtil.normalize(request.mask).pathsList.map { projectFieldFromGrpc(it) }.toSet()
 
             val hasUnspecifiedStatus =
                 request.project.status == ProjectOuterClass.ProjectStatus.PROJECT_STATUS_UNSPECIFIED
-            val status = if (!paths.contains("project.status") && hasUnspecifiedStatus) {
+            val status = if (!paths.contains(ProjectField.STATUS) && hasUnspecifiedStatus) {
                 ProjectStatus.ACTIVE
             } else {
                 projectStatusFromGrpc(request.project.status)
@@ -425,7 +426,7 @@ class SnowballRServer(
             val hasUnspecifiedSnowballingType = request.project.settings.snowballingType ==
                 ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_UNSPECIFIED
             val snowballingType =
-                if (!paths.contains("project.settings.snowballing_type") && hasUnspecifiedSnowballingType) {
+                if (!paths.contains(ProjectField.SNOWBALLING_TYPE) && hasUnspecifiedSnowballingType) {
                     SnowballingType.BOTH
                 } else {
                     snowballingTypeFromGrpc(request.project.settings.snowballingType)

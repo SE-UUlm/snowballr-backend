@@ -27,6 +27,7 @@ import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.alreadyexists.DuplicateReviewException
 import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
+import se.uulm.snowballr.backend.model.incoming.project.ProjectField
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectSettingRequest
 import se.uulm.snowballr.backend.model.incoming.review.CreateReviewRequest
@@ -140,7 +141,7 @@ class CreateReviewTest : ReviewServiceTest() {
         coJustRun { projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, updatedPaperDecision) }
         if (project.status != ProjectStatus.ACTIVE_LOCKED) {
             coJustRun {
-                projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id), setOf("project.status"))
+                projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id), setOf(ProjectField.STATUS))
             }
         }
         if (updatedPaperDecision == PaperDecision.ACCEPTED) {
@@ -168,7 +169,7 @@ class CreateReviewTest : ReviewServiceTest() {
         assertEquals(selectedCriteriaIds, review.selectedCriteriaIds)
 
         coVerify(exactly = 1) {
-            projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id), setOf("project.status"))
+            projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id), setOf(ProjectField.STATUS))
         }
     }
 
@@ -304,7 +305,7 @@ class CreateReviewTest : ReviewServiceTest() {
                 projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.DECLINED)
             }
             coJustRun {
-                projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id), setOf("project.status"))
+                projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id), setOf(ProjectField.STATUS))
             }
 
             service.createReview(createReviewRequest)
@@ -351,7 +352,7 @@ class CreateReviewTest : ReviewServiceTest() {
                 projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.DECLINED)
             }
             coJustRun {
-                projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id), setOf("project.status"))
+                projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id), setOf(ProjectField.STATUS))
             }
 
             service.createReview(createReviewRequest)
@@ -386,7 +387,7 @@ class CreateReviewTest : ReviewServiceTest() {
                 projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.IN_REVIEW)
             }
             coJustRun {
-                projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id), setOf("project.status"))
+                projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id), setOf(ProjectField.STATUS))
             }
 
             service.createReview(createReviewRequest)

@@ -15,6 +15,7 @@ import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateP
 import se.uulm.snowballr.backend.model.exception.invalidargument.StageOutOfRangeException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedCreateException
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
+import se.uulm.snowballr.backend.model.incoming.project.ProjectField
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.review.CreateReviewRequest
 import se.uulm.snowballr.backend.model.outgoing.project.ProjectResponse
@@ -40,7 +41,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
 
         return projectService.updateProject(
             UpdateProjectRequest.fromProjectResponse(projectUpdate),
-            setOf("project.settings.decision_matrix.number_of_reviewers"),
+            setOf(ProjectField.NUMBER_OF_REVIEWERS),
         )
     }
 

@@ -15,6 +15,7 @@ import se.uulm.snowballr.backend.model.fetcher.FetcherMap
 import se.uulm.snowballr.backend.model.fetcher.FetcherOptions
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
+import se.uulm.snowballr.backend.model.incoming.project.ProjectField
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.outgoing.project.ProjectDecisionCount
 import se.uulm.snowballr.backend.model.outgoing.project.ProjectDecisionStatistics
@@ -66,7 +67,7 @@ interface IProjectService {
     /**
      * Service implementation of [SnowballRService.updateProject].
      */
-    suspend fun updateProject(request: UpdateProjectRequest, paths: Set<String>): ProjectResponse
+    suspend fun updateProject(request: UpdateProjectRequest, paths: Set<ProjectField>): ProjectResponse
 
     /**
      * Service implementation of [SnowballRService.getProjectInformation].
@@ -162,7 +163,7 @@ class ProjectService(
     override suspend fun getAllDeletedProjectsForUser(userId: UUID): List<ProjectResponse> =
         getAllProjectsForUserAndStatus(userId, setOf(ProjectStatus.DELETED))
 
-    override suspend fun updateProject(request: UpdateProjectRequest, paths: Set<String>): ProjectResponse =
+    override suspend fun updateProject(request: UpdateProjectRequest, paths: Set<ProjectField>): ProjectResponse =
         withUser(userRepo) { currentUser ->
             accessChecker.isProjectOrServerAdmin(currentUser, request.projectId, AccessType.UPDATE)
 
@@ -174,7 +175,7 @@ class ProjectService(
             val finalStatus = determineEffectiveProjectStatus(request.projectId, request.status)
             var finalRequest = request.copy(status = finalStatus)
 
-            if (paths.contains("project.settings.fetchers")) {
+            if (paths.contains(ProjectField.FETCHERS)) {
                 val sanitizedFetchersMap = sanitizeFetchersMap(finalRequest.settings.fetchers)
 
                 finalRequest = finalRequest.copy(settings = finalRequest.settings.copy(fetchers = sanitizedFetchersMap))
@@ -271,9 +272,9 @@ class ProjectService(
     private fun validateProjectUpdate(
         currentStatus: ProjectStatus,
         requestedStatus: ProjectStatus,
-        paths: Set<String>,
+        paths: Set<ProjectField>,
     ) {
-        val isStatusUpdate = paths.contains("project.status")
+        val isStatusUpdate = paths.contains(ProjectField.STATUS)
         require(!(isStatusUpdate && requestedStatus == ProjectStatus.DELETED)) {
             "The project status cannot be set to DELETED via the update method. Use SoftDeleteProject instead."
         }
@@ -305,7 +306,7 @@ class ProjectService(
 
             ProjectStatus.ACTIVE_LOCKED -> {
                 // all project settings are SLR settings
-                val isChangingSettings = paths.any { it.startsWith("project.settings.") }
+                val isChangingSettings = paths.any { it.isSettingsField() }
                 if (isChangingSettings) {
                     throw FailedPreconditionException(
                         "The project is locked and therefore no SLR settings can be modified.",

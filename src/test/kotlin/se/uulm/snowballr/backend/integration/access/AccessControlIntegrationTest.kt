@@ -13,6 +13,7 @@ import se.uulm.snowballr.backend.model.exception.UnauthorizedException
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
+import se.uulm.snowballr.backend.model.incoming.project.ProjectField
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.projectmember.UpdateProjectMemberRoleRequest
 import se.uulm.snowballr.backend.model.outgoing.project.ProjectResponse
@@ -44,7 +45,7 @@ class AccessControlIntegrationTest : IntegrationTest() {
             val request = UpdateProjectRequest.fromProjectResponse(project)
 
             actAsUser(member.id) {
-                assertThrows<UnauthorizedException> { projectService.updateProject(request, setOf("project.name")) }
+                assertThrows<UnauthorizedException> { projectService.updateProject(request, setOf(ProjectField.NAME)) }
             }
         }
 

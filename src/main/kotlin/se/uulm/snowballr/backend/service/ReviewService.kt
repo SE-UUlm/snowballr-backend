@@ -15,6 +15,7 @@ import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.alreadyexists.DuplicateReviewException
 import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
+import se.uulm.snowballr.backend.model.incoming.project.ProjectField
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectSettingRequest
 import se.uulm.snowballr.backend.model.incoming.review.CreateReviewRequest
@@ -216,6 +217,6 @@ class ReviewService(
             ),
         )
 
-        projectRepo.updateProject(request, setOf("project.status"))
+        projectRepo.updateProject(request, setOf(ProjectField.STATUS))
     }
 }

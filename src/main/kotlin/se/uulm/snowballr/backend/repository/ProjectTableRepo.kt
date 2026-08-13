@@ -25,6 +25,7 @@ import se.uulm.snowballr.backend.model.dto.review.Review
 import se.uulm.snowballr.backend.model.dto.user.UserSettings
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
+import se.uulm.snowballr.backend.model.incoming.project.ProjectField
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectSettingRequest
 import se.uulm.snowballr.backend.table.ProjectTable
@@ -103,7 +104,7 @@ interface IProjectTableRepo {
      * @param paths The field mask paths that should be updated.
      * @return The updated [Project] object reflecting the changes from the [request].
      */
-    suspend fun updateProject(request: UpdateProjectRequest, paths: Set<String>): Project
+    suspend fun updateProject(request: UpdateProjectRequest, paths: Set<ProjectField>): Project
 
     /**
      * Checks if the project with the given [projectId] is locked.
@@ -212,14 +213,28 @@ class ProjectTableRepo(
             .map { it.toProject() }
     }
 
-    override suspend fun updateProject(request: UpdateProjectRequest, paths: Set<String>): Project = db.query {
+    override suspend fun updateProject(request: UpdateProjectRequest, paths: Set<ProjectField>): Project = db.query {
         val isUpdatingDecisionMatrix = isUpdatingDecisionMatrix(paths)
         val project = if (isUpdatingDecisionMatrix) getProjectByIdOrNull(request.projectId) else null
 
+        val settings = request.settings
         ProjectTable.updateByIdAndGet(request.projectId, ResultRow::toProject) {
-            it.applyProjectStatusUpdate(request, paths)
-            it.applyProjectNameUpdate(request, paths)
-            it.applySlrProjectUpdates(request.settings, paths)
+            for (path in paths) {
+                when (path) {
+                    ProjectField.NAME -> it[ProjectTable.name] = request.name
+                    ProjectField.STATUS -> it[ProjectTable.status] = request.status
+                    ProjectField.SIMILARITY_THRESHOLD ->
+                        it[ProjectTable.similarityThreshold] = settings.similarityThreshold
+                    ProjectField.SNOWBALLING_TYPE -> it[ProjectTable.snowballingType] = settings.snowballingType
+                    ProjectField.REVIEW_MAYBE_ALLOWED ->
+                        it[ProjectTable.reviewMaybeAllowed] = settings.reviewMaybeAllowed
+                    ProjectField.FETCHERS -> it[ProjectTable.fetchers] = settings.fetchers
+                    ProjectField.NUMBER_OF_REVIEWERS,
+                    ProjectField.DECISION_MATRIX_PATTERNS,
+                    -> { /* decision matrix is handled below */ }
+                }
+            }
+
             if (isUpdatingDecisionMatrix && project != null) {
                 it.applyDecisionMatrixUpdate(project, request.settings, paths)
             }
@@ -321,46 +336,18 @@ class ProjectTableRepo(
         }
     }
 
-    private fun UpdateStatement.applyProjectNameUpdate(project: UpdateProjectRequest, paths: Set<String>) {
-        if ("project.name" in paths) {
-            this[ProjectTable.name] = project.name
-        }
-    }
-
-    private fun UpdateStatement.applyProjectStatusUpdate(project: UpdateProjectRequest, paths: Set<String>) {
-        if ("project.status" in paths) {
-            this[ProjectTable.status] = project.status
-        }
-    }
-
-    private fun UpdateStatement.applySlrProjectUpdates(settings: UpdateProjectSettingRequest, paths: Set<String>) {
-        if ("project.settings.similarity_threshold" in paths) {
-            this[ProjectTable.similarityThreshold] = settings.similarityThreshold
-        }
-        if ("project.settings.snowballing_type" in paths) {
-            this[ProjectTable.snowballingType] = settings.snowballingType
-        }
-        if ("project.settings.review_maybe_allowed" in paths) {
-            this[ProjectTable.reviewMaybeAllowed] = settings.reviewMaybeAllowed
-        }
-        if ("project.settings.fetchers" in paths) {
-            this[ProjectTable.fetchers] = settings.fetchers
-        }
-    }
-
-    private fun isUpdatingDecisionMatrix(paths: Set<String>) =
-        paths.any { it.startsWith("project.settings.decision_matrix") }
+    private fun isUpdatingDecisionMatrix(paths: Set<ProjectField>) = paths.any { it.isDecisionMatrixField() }
 
     private fun UpdateStatement.applyDecisionMatrixUpdate(
         project: Project,
         settings: UpdateProjectSettingRequest,
-        paths: Set<String>,
+        paths: Set<ProjectField>,
     ) {
         var decisionMatrix = project.reviewDecisionMatrix
-        if ("project.settings.decision_matrix.number_of_reviewers" in paths) {
+        if (ProjectField.NUMBER_OF_REVIEWERS in paths) {
             decisionMatrix = decisionMatrix.copy(numberOfReviewers = settings.decisionMatrix.numberOfReviewers)
         }
-        if ("project.settings.decision_matrix.patterns" in paths) {
+        if (ProjectField.DECISION_MATRIX_PATTERNS in paths) {
             decisionMatrix = decisionMatrix.copy(patterns = settings.decisionMatrix.patterns)
         }
         this[ProjectTable.reviewDecisionMatrixBinary] = decisionMatrix.toByteArray()

@@ -16,6 +16,7 @@ import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.fetcher.FetcherInformationWithId
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
+import se.uulm.snowballr.backend.model.incoming.project.ProjectField
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import kotlin.test.assertContains
 
@@ -63,7 +64,7 @@ class ProjectIntegrationTest : IntegrationTest() {
             val updatedProject = project.copy(name = "Updated Name")
             val request = UpdateProjectRequest.fromProjectResponse(updatedProject)
 
-            val result = projectService.updateProject(request, setOf("project.name"))
+            val result = projectService.updateProject(request, setOf(ProjectField.NAME))
 
             assertEquals("Updated Name", result.name)
 
@@ -78,7 +79,7 @@ class ProjectIntegrationTest : IntegrationTest() {
             val updatedProject = project.copy(status = ProjectStatus.ARCHIVED)
             val request = UpdateProjectRequest.fromProjectResponse(updatedProject)
 
-            projectService.updateProject(request, setOf("project.status"))
+            projectService.updateProject(request, setOf(ProjectField.STATUS))
 
             val activeProjects = projectService.getAllProjectsForUser(testUserId)
             assertFalse(activeProjects.any { it.id == project.id })
@@ -91,7 +92,7 @@ class ProjectIntegrationTest : IntegrationTest() {
             val updatedProject = project.copy(status = ProjectStatus.ARCHIVED)
             val request = UpdateProjectRequest.fromProjectResponse(updatedProject)
 
-            projectService.updateProject(request, setOf("project.status"))
+            projectService.updateProject(request, setOf(ProjectField.STATUS))
 
             val archivedProjects = projectService.getAllArchivedProjectsForUser(testUserId)
             assertTrue(archivedProjects.any { it.id == project.id })
@@ -125,7 +126,7 @@ class ProjectIntegrationTest : IntegrationTest() {
                 )
                 val request = UpdateProjectRequest.fromProjectResponse(updatedProject)
 
-                val result = projectService.updateProject(request, setOf("project.settings.fetchers"))
+                val result = projectService.updateProject(request, setOf(ProjectField.FETCHERS))
 
                 val fetchersMap = result.fetchers
                 assertContains(fetchersMap.keys, "existent-fetcher")
@@ -163,7 +164,7 @@ class ProjectIntegrationTest : IntegrationTest() {
                 val request = UpdateProjectRequest.fromProjectResponse(updatedProject)
 
                 assertThrows<FailedPreconditionException> {
-                    projectService.updateProject(request, setOf("project.settings.fetchers"))
+                    projectService.updateProject(request, setOf(ProjectField.FETCHERS))
                 }
             }
     }
