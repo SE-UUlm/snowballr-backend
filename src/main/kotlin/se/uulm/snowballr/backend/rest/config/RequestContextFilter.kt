@@ -48,14 +48,18 @@ class RequestContextFilter(
 
         publishAuthentication(context)
 
+        // Cookies queued above (pre-emptive token refresh / refresh-failure clearing) must be flushed before
+        // the handler runs: Set-Cookie is silently dropped once the response has committed, which a handler
+        // streaming a large body can do mid-write. Cookies queued by the handler itself (e.g. login, logout)
+        // are flushed afterward, in the finally block; a cookie changed again by the handler is re-flushed.
+        val cookiesWrittenBeforeHandler = writeQueuedCookies(context, response)
+
         try {
             RequestContext.with(context) {
                 filterChain.doFilter(request, response)
             }
         } finally {
-            // Cookies may have been queued above (pre-emptive token refresh / clearing) or by the handler
-            // itself (e.g. login, logout). Both are flushed together now that the handler has run.
-            writeQueuedCookies(context, response)
+            writeQueuedCookies(context, response, alreadyWritten = cookiesWrittenBeforeHandler)
             SecurityContextHolder.clearContext()
         }
     }
@@ -77,10 +81,23 @@ class RequestContextFilter(
         return request.getHeader(REQUESTED_WITH_HEADER) == REQUESTED_WITH_VALUE
     }
 
-    private fun writeQueuedCookies(context: RequestContext, response: HttpServletResponse) {
-        context.cookies.forEach { (name, value) ->
-            cookieManager.buildAuthCookieString(name, value)?.let { response.addHeader(SET_COOKIE_HEADER, it) }
+    /**
+     * Writes cookies queued on [context] that either weren't in [alreadyWritten] or whose value has changed
+     * since. Returns the full current set of queued cookies, so a later call can pass it back as
+     * [alreadyWritten] to avoid re-writing (or missing a change to) the same cookie.
+     */
+    private fun writeQueuedCookies(
+        context: RequestContext,
+        response: HttpServletResponse,
+        alreadyWritten: Map<String, String?> = emptyMap(),
+    ): Map<String, String?> {
+        val currentCookies = context.cookies
+        currentCookies.forEach { (name, value) ->
+            if (!alreadyWritten.containsKey(name) || alreadyWritten[name] != value) {
+                cookieManager.buildAuthCookieString(name, value)?.let { response.addHeader(SET_COOKIE_HEADER, it) }
+            }
         }
+        return currentCookies
     }
 
     private fun publishAuthentication(context: RequestContext) {
