@@ -121,7 +121,9 @@ class AuthWorkflowIntegrationTest(@Autowired private val mvc: MockMvc) {
         assertEquals("", extractCookieValue(logoutCookieHeaders, "refresh_token"), "logout did not clear refresh_token")
 
         // No Cookie header this time: a real browser would have dropped the cookies logout just cleared.
-        mvc.perform(get("${Routes.AUTH_ROUTE}/status")).andExpect(status().isUnauthorized)
+        mvc.perform(get("${Routes.AUTH_ROUTE}/status"))
+            .andExpect(status().isOk)
+            .andExpect(content().string(containsString("UNAUTHENTICATED")))
     }
 
     /**
