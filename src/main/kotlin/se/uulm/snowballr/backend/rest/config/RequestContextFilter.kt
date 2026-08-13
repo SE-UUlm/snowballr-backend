@@ -34,8 +34,6 @@ class RequestContextFilter(
             authenticate(request, context)
         }
 
-        // Queued cookies come from pre-emptive token refresh / clearing, which happen above (before the handler).
-        writeQueuedCookies(context, response)
         publishAuthentication(context)
 
         try {
@@ -43,6 +41,9 @@ class RequestContextFilter(
                 filterChain.doFilter(request, response)
             }
         } finally {
+            // Cookies may have been queued above (pre-emptive token refresh / clearing) or by the handler
+            // itself (e.g. login, logout). Both are flushed together now that the handler has run.
+            writeQueuedCookies(context, response)
             SecurityContextHolder.clearContext()
         }
     }
