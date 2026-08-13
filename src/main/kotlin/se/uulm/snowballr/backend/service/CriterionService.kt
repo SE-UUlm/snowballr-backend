@@ -6,6 +6,7 @@ import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
+import se.uulm.snowballr.backend.model.incoming.criterion.CriterionField
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
@@ -27,7 +28,7 @@ interface ICriterionService {
     /**
      * Service implementation of [SnowballRService.updateCriterion].
      */
-    suspend fun updateCriterion(request: UpdateCriterionRequest, paths: List<String>): Criterion
+    suspend fun updateCriterion(request: UpdateCriterionRequest, paths: List<CriterionField>): Criterion
 
     /**
      * Service implementation of [SnowballRService.getAllCriteriaForProject].
@@ -79,7 +80,7 @@ class CriterionService(
             criterion
         }
 
-    override suspend fun updateCriterion(request: UpdateCriterionRequest, paths: List<String>): Criterion =
+    override suspend fun updateCriterion(request: UpdateCriterionRequest, paths: List<CriterionField>): Criterion =
         withUser(userRepo) { currentUser ->
             val criterion = repo.getCriterionById(request.criterionId).getOrThrow()
 

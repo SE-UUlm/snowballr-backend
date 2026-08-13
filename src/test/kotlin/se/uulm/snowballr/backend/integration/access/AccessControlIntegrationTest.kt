@@ -11,6 +11,7 @@ import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
+import se.uulm.snowballr.backend.model.incoming.criterion.CriterionField
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.ProjectField
@@ -102,7 +103,7 @@ class AccessControlIntegrationTest : IntegrationTest() {
 
             actAsUser(member.id) {
                 assertThrows<UnauthorizedException> {
-                    criterionService.updateCriterion(request, listOf("criterion.name"))
+                    criterionService.updateCriterion(request, listOf(CriterionField.NAME))
                 }
             }
         }

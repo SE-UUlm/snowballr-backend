@@ -8,15 +8,11 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion
+import se.uulm.snowballr.backend.model.incoming.criterion.CriterionField
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 
 class UpdateCriterionTest : CriterionServiceTest() {
-    private val allPaths = listOf(
-        "criterion.tag",
-        "criterion.name",
-        "criterion.description",
-        "criterion.category",
-    )
+    private val allPaths = CriterionField.entries.toList()
 
     private fun getExampleRequest(criterion: Criterion) = UpdateCriterionRequest(
         criterionId = criterion.id,

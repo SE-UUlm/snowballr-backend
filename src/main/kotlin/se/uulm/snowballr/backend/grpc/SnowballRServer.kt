@@ -524,7 +524,7 @@ class SnowballRServer(
                 description = request.criterion.description,
                 category = criterionCategoryFromGrpc(request.criterion.category),
             ),
-            FieldMaskUtil.normalize(request.mask).pathsList,
+            FieldMaskUtil.normalize(request.mask).pathsList.map { criterionFieldFromGrpc(it) },
         ).toGrpc()
 
         override suspend fun deleteCriterion(request: Base.Id): Base.Nothing = super.deleteCriterion(request)

@@ -12,6 +12,7 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
+import se.uulm.snowballr.backend.model.incoming.criterion.CriterionField
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.toCriterion
@@ -59,7 +60,7 @@ interface ICriterionTableRepo {
      * @param paths The field mask paths that should be updated.
      * @return The updated [Criterion] object reflecting the changes from the [request].
      */
-    suspend fun updateCriterion(request: UpdateCriterionRequest, paths: List<String>): Criterion
+    suspend fun updateCriterion(request: UpdateCriterionRequest, paths: List<CriterionField>): Criterion
 
     /**
      * Deletes a list of criteria from the database based on their IDs.
@@ -124,18 +125,19 @@ class CriterionTableRepo(
         }
     }
 
-    override suspend fun updateCriterion(request: UpdateCriterionRequest, paths: List<String>): Criterion = db.query {
-        CriterionTable.updateByIdAndGet(request.criterionId, ResultRow::toCriterion) {
-            for (field in paths) {
-                when (field) {
-                    "criterion.tag" -> it[tag] = request.tag
-                    "criterion.name" -> it[name] = request.name
-                    "criterion.description" -> it[description] = request.description
-                    "criterion.category" -> it[category] = request.category
+    override suspend fun updateCriterion(request: UpdateCriterionRequest, paths: List<CriterionField>): Criterion =
+        db.query {
+            CriterionTable.updateByIdAndGet(request.criterionId, ResultRow::toCriterion) {
+                for (field in paths) {
+                    when (field) {
+                        CriterionField.TAG -> it[tag] = request.tag
+                        CriterionField.NAME -> it[name] = request.name
+                        CriterionField.DESCRIPTION -> it[description] = request.description
+                        CriterionField.CATEGORY -> it[category] = request.category
+                    }
                 }
             }
         }
-    }
 
     override suspend fun deleteCriteriaByIds(ids: List<UUID>) {
         val deletedIds = db.query {

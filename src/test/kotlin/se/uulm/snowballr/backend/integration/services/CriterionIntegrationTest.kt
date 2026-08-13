@@ -9,6 +9,7 @@ import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
+import se.uulm.snowballr.backend.model.incoming.criterion.CriterionField
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.outgoing.project.ProjectResponse
@@ -95,7 +96,7 @@ class CriterionIntegrationTest : IntegrationTest() {
                 category = criterion.category,
             )
 
-            val result = criterionService.updateCriterion(request, listOf("criterion.name"))
+            val result = criterionService.updateCriterion(request, listOf(CriterionField.NAME))
             assertEquals("New Name", result.name)
 
             val fetched = criterionService.getCriterionById(criterion.id)
@@ -113,7 +114,7 @@ class CriterionIntegrationTest : IntegrationTest() {
                 category = CriterionCategory.HARD_EXCLUSION,
             )
 
-            criterionService.updateCriterion(request, listOf("criterion.category"))
+            criterionService.updateCriterion(request, listOf(CriterionField.CATEGORY))
 
             val fetched = criterionService.getCriterionById(criterion.id)
             assertEquals(CriterionCategory.HARD_EXCLUSION, fetched.category)

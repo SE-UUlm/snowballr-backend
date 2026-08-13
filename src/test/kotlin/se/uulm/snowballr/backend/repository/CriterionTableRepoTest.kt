@@ -9,14 +9,14 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertInstanceOf
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.Arguments
-import org.junit.jupiter.params.provider.MethodSource
+import org.junit.jupiter.params.provider.EnumSource
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion.ProjectCriterion
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion.UserCriterion
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
+import se.uulm.snowballr.backend.model.incoming.criterion.CriterionField
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertCriterionAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGetId
@@ -31,16 +31,6 @@ import java.util.UUID
 
 class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTable), true) {
     private val repo = CriterionTableRepo(db)
-
-    companion object {
-        @JvmStatic
-        fun validFieldMasks(): List<Arguments> = listOf(
-            Arguments.of(listOf("criterion.tag")),
-            Arguments.of(listOf("criterion.name")),
-            Arguments.of(listOf("criterion.description")),
-            Arguments.of(listOf("criterion.category")),
-        )
-    }
 
     @Nested
     inner class GetCriterionById {
@@ -268,10 +258,10 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
 
     @Nested
     inner class UpdateCriterion {
-        @ParameterizedTest(name = "Update the fields {0}")
-        @MethodSource("se.uulm.snowballr.backend.repository.CriterionTableRepoTest#validFieldMasks")
-        fun `When a criterion is updated, then only the fields specified in the field mask are updated and the updated criterion is returned`(
-            fieldMask: List<String>,
+        @ParameterizedTest(name = "Update the field {0}")
+        @EnumSource(CriterionField::class)
+        fun `When a criterion is updated, then only the fields specified in the field mask are updated`(
+            field: CriterionField,
         ) = runTest {
             val projectId = insertProjectAndGetId(createdBy = testUserId)
             val criterionId = insertCriterionAndGetId(projectId = projectId, createdBy = testUserId)
@@ -284,27 +274,26 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                 category = CriterionCategory.INCLUSION,
             )
 
-            val updatedCriterion = repo.updateCriterion(request, fieldMask)
+            val updatedCriterion = repo.updateCriterion(request, listOf(field))
 
-            if ("criterion.tag" in fieldMask) {
-                assertEquals("Updated Tag", updatedCriterion.tag)
-            } else {
-                assertEquals("Test Tag", updatedCriterion.tag)
+            val excluded = CriterionField.entries.filter { field != it }
+
+            // Included
+            when (field) {
+                CriterionField.TAG -> assertEquals("Updated Tag", updatedCriterion.tag)
+                CriterionField.NAME -> assertEquals("Updated Criterion", updatedCriterion.name)
+                CriterionField.DESCRIPTION -> assertEquals("Updated Description", updatedCriterion.description)
+                CriterionField.CATEGORY -> assertEquals(CriterionCategory.INCLUSION, updatedCriterion.category)
             }
-            if ("criterion.name" in fieldMask) {
-                assertEquals("Updated Criterion", updatedCriterion.name)
-            } else {
-                assertEquals("Test Criterion", updatedCriterion.name)
-            }
-            if ("criterion.description" in fieldMask) {
-                assertEquals("Updated Description", updatedCriterion.description)
-            } else {
-                assertEquals("Test Description", updatedCriterion.description)
-            }
-            if ("criterion.category" in fieldMask) {
-                assertEquals(CriterionCategory.INCLUSION, updatedCriterion.category)
-            } else {
-                assertEquals(CriterionCategory.EXCLUSION, updatedCriterion.category)
+
+            // Excluded
+            for (path in excluded) {
+                when (path) {
+                    CriterionField.TAG -> assertEquals("Test Tag", updatedCriterion.tag)
+                    CriterionField.NAME -> assertEquals("Test Criterion", updatedCriterion.name)
+                    CriterionField.DESCRIPTION -> assertEquals("Test Description", updatedCriterion.description)
+                    CriterionField.CATEGORY -> assertEquals(CriterionCategory.EXCLUSION, updatedCriterion.category)
+                }
             }
         }
     }
