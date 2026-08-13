@@ -17,7 +17,7 @@ import java.util.UUID
 
 @RestController
 @RequestMapping(Routes.PROJECTS_ROUTE)
-class ProjectsController(val projectService: IProjectService) {
+class ProjectsController(private val projectService: IProjectService) {
     @GetMapping
     fun getAllProjects(): List<ProjectResponse> = onRequest { projectService.getAllProjects() }
 

@@ -12,7 +12,7 @@ import se.uulm.snowballr.backend.service.IUserService
 
 @RestController
 @RequestMapping(Routes.USERS_ROUTE)
-class UsersController(val userService: IUserService) {
+class UsersController(private val userService: IUserService) {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun register(@RequestBody request: RegisterRequest) = onRequest { userService.register(request) }
