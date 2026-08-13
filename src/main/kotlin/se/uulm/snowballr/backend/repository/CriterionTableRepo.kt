@@ -57,10 +57,10 @@ interface ICriterionTableRepo {
      * Updates an existent criterion in the database with the provided new information.
      *
      * @param request The update request containing the new criterion details.
-     * @param paths The fields that should be updated.
+     * @param fields The fields that should be updated.
      * @return The updated [Criterion] object reflecting the changes from the [request].
      */
-    suspend fun updateCriterion(request: UpdateCriterionRequest, paths: Set<CriterionField>): Criterion
+    suspend fun updateCriterion(request: UpdateCriterionRequest, fields: Set<CriterionField>): Criterion
 
     /**
      * Deletes a list of criteria from the database based on their IDs.
@@ -125,10 +125,10 @@ class CriterionTableRepo(
         }
     }
 
-    override suspend fun updateCriterion(request: UpdateCriterionRequest, paths: Set<CriterionField>): Criterion =
+    override suspend fun updateCriterion(request: UpdateCriterionRequest, fields: Set<CriterionField>): Criterion =
         db.query {
             CriterionTable.updateByIdAndGet(request.criterionId, ResultRow::toCriterion) {
-                for (field in paths) {
+                for (field in fields) {
                     when (field) {
                         CriterionField.TAG -> it[tag] = request.tag
                         CriterionField.NAME -> it[name] = request.name

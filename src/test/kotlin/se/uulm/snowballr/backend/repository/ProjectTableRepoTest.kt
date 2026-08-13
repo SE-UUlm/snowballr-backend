@@ -196,16 +196,12 @@ class ProjectTableRepoTest :
         @ParameterizedTest(name = "Update the field {0}")
         @EnumSource(ProjectField::class)
         @Suppress("LongMethod", "CyclomaticComplexMethod")
-        fun `When a project is updated, then only the fields specified in the field mask are updated`(
-            field: ProjectField,
-        ) = runTest {
+        fun `When a project is updated, then only the specified field is updated`(field: ProjectField) = runTest {
             val originalStatus = ProjectStatus.ACTIVE
             val projectId = insertProjectAndGetId(name = "Test Project", originalStatus, createdBy = testUserId)
-            val originalProject = repo.getProjectById(projectId).getOrThrow()
-
             val pattern = DecisionMatrixPattern(decision = PaperDecision.ACCEPTED, entries = emptyList())
             val request = UpdateProjectRequest(
-                projectId = originalProject.id,
+                projectId = projectId,
                 name = "Updated Project",
                 status = ProjectStatus.ARCHIVED,
                 settings = UpdateProjectSettingRequest(
@@ -224,10 +220,12 @@ class ProjectTableRepoTest :
                 ),
             )
 
+            val start = OffsetDateTime.now()
             val updatedProject = repo.updateProject(request, setOf(field))
+            val end = OffsetDateTime.now()
+
             val fetchers = updatedProject.fetchers
             val fetcher = fetchers["test fetcher"]
-
             val excluded = ProjectField.entries.filter { field != it }
 
             // Included
@@ -254,8 +252,8 @@ class ProjectTableRepoTest :
             }
 
             // Excluded
-            for (path in excluded) {
-                when (path) {
+            for (excludedField in excluded) {
+                when (excludedField) {
                     ProjectField.NAME -> assertEquals("Test Project", updatedProject.name)
                     ProjectField.STATUS -> assertEquals(originalStatus, updatedProject.status)
                     ProjectField.SIMILARITY_THRESHOLD -> assertEquals(0F, updatedProject.similarityThreshold)
@@ -271,6 +269,8 @@ class ProjectTableRepoTest :
                         assertEquals(0, updatedProject.reviewDecisionMatrix.patterns.size)
                 }
             }
+
+            assertThat(updatedProject.modifiedAt).isBetweenWithDelta(start, end)
         }
 
         @Test
@@ -336,7 +336,7 @@ class ProjectTableRepoTest :
             }
 
         @Test
-        fun `When a project is updated with an empty field mask, then nothing is updated`() = runTest {
+        fun `When a project is updated without any specified fields, then nothing is updated`() = runTest {
             val projectId = insertProjectAndGetId(createdBy = testUserId)
             val project = repo.getProjectById(projectId).getOrThrow()
             val request = UpdateProjectRequest.fromProject(project)

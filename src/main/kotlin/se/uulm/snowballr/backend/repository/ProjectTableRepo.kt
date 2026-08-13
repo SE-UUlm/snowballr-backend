@@ -101,10 +101,10 @@ interface IProjectTableRepo {
      * Updates an existent project in the database with the provided new information.
      *
      * @param request The update request containing the new project details.
-     * @param paths The fields that should be updated.
+     * @param fields The fields that should be updated.
      * @return The updated [Project] object reflecting the changes from the [request].
      */
-    suspend fun updateProject(request: UpdateProjectRequest, paths: Set<ProjectField>): Project
+    suspend fun updateProject(request: UpdateProjectRequest, fields: Set<ProjectField>): Project
 
     /**
      * Checks if the project with the given [projectId] is locked.
@@ -214,18 +214,18 @@ class ProjectTableRepo(
     }
 
     @Suppress("CognitiveComplexMethod")
-    override suspend fun updateProject(request: UpdateProjectRequest, paths: Set<ProjectField>): Project = db.query {
-        if (paths.isEmpty()) {
+    override suspend fun updateProject(request: UpdateProjectRequest, fields: Set<ProjectField>): Project = db.query {
+        if (fields.isEmpty()) {
             return@query getProjectById(request.projectId).getOrThrow()
         }
 
-        val isUpdatingDecisionMatrix = isUpdatingDecisionMatrix(paths)
+        val isUpdatingDecisionMatrix = isUpdatingDecisionMatrix(fields)
         val project = if (isUpdatingDecisionMatrix) getProjectByIdOrNull(request.projectId) else null
 
         val settings = request.settings
         ProjectTable.updateByIdAndGet(request.projectId, ResultRow::toProject) {
-            for (path in paths) {
-                when (path) {
+            for (field in fields) {
+                when (field) {
                     ProjectField.NAME -> it[ProjectTable.name] = request.name
                     ProjectField.STATUS -> it[ProjectTable.status] = request.status
                     ProjectField.SIMILARITY_THRESHOLD ->
@@ -234,6 +234,7 @@ class ProjectTableRepo(
                     ProjectField.REVIEW_MAYBE_ALLOWED ->
                         it[ProjectTable.reviewMaybeAllowed] = settings.reviewMaybeAllowed
                     ProjectField.FETCHERS -> it[ProjectTable.fetchers] = settings.fetchers
+
                     ProjectField.NUMBER_OF_REVIEWERS,
                     ProjectField.DECISION_MATRIX_PATTERNS,
                     -> { /* decision matrix is handled below */ }
@@ -241,7 +242,7 @@ class ProjectTableRepo(
             }
 
             if (isUpdatingDecisionMatrix && project != null) {
-                it.applyDecisionMatrixUpdate(project, request.settings, paths)
+                it.applyDecisionMatrixUpdate(project, request.settings, fields)
             }
 
             it[modifiedAt] = OffsetDateTime.now()
@@ -342,18 +343,18 @@ class ProjectTableRepo(
         }
     }
 
-    private fun isUpdatingDecisionMatrix(paths: Set<ProjectField>) = paths.any { it.isDecisionMatrixField() }
+    private fun isUpdatingDecisionMatrix(fields: Set<ProjectField>) = fields.any { it.isDecisionMatrixField() }
 
     private fun UpdateStatement.applyDecisionMatrixUpdate(
         project: Project,
         settings: UpdateProjectSettingRequest,
-        paths: Set<ProjectField>,
+        fields: Set<ProjectField>,
     ) {
         var decisionMatrix = project.reviewDecisionMatrix
-        if (ProjectField.NUMBER_OF_REVIEWERS in paths) {
+        if (ProjectField.NUMBER_OF_REVIEWERS in fields) {
             decisionMatrix = decisionMatrix.copy(numberOfReviewers = settings.decisionMatrix.numberOfReviewers)
         }
-        if (ProjectField.DECISION_MATRIX_PATTERNS in paths) {
+        if (ProjectField.DECISION_MATRIX_PATTERNS in fields) {
             decisionMatrix = decisionMatrix.copy(patterns = settings.decisionMatrix.patterns)
         }
         this[ProjectTable.reviewDecisionMatrixBinary] = decisionMatrix.toByteArray()

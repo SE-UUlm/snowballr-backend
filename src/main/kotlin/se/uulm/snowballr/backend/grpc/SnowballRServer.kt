@@ -286,17 +286,17 @@ class SnowballRServer(
             userService.getUserByEmail(request.email).toGrpc()
 
         override suspend fun updateUser(request: UserOuterClass.User.Update): UserOuterClass.User {
-            val paths = FieldMaskUtil.normalize(request.mask).pathsList.map { userFieldFromGrpc(it) }.toSet()
+            val fields = FieldMaskUtil.normalize(request.mask).pathsList.map { userFieldFromGrpc(it) }.toSet()
 
             val hasUnspecifiedRole = request.user.role == UserOuterClass.UserRole.USER_ROLE_UNSPECIFIED
-            val role = if (!paths.contains(UserField.ROLE) && hasUnspecifiedRole) {
+            val role = if (!fields.contains(UserField.ROLE) && hasUnspecifiedRole) {
                 UserRole.DEFAULT
             } else {
                 userRoleFromGrpc(request.user.role)
             }
 
             val hasUnspecifiedStatus = request.user.status == UserOuterClass.UserStatus.USER_STATUS_UNSPECIFIED
-            val status = if (!paths.contains(UserField.STATUS) && hasUnspecifiedStatus) {
+            val status = if (!fields.contains(UserField.STATUS) && hasUnspecifiedStatus) {
                 UserStatus.ACTIVE
             } else {
                 userStatusFromGrpc(request.user.status)
@@ -311,7 +311,7 @@ class SnowballRServer(
                     role = role,
                     status = status,
                 ),
-                paths,
+                fields,
             ).toGrpc()
         }
 
@@ -414,11 +414,11 @@ class SnowballRServer(
             projectService.getProjectById(parseProjectId(request)).toGrpc()
 
         override suspend fun updateProject(request: ProjectOuterClass.Project.Update): ProjectOuterClass.Project {
-            val paths = FieldMaskUtil.normalize(request.mask).pathsList.map { projectFieldFromGrpc(it) }.toSet()
+            val fields = FieldMaskUtil.normalize(request.mask).pathsList.map { projectFieldFromGrpc(it) }.toSet()
 
             val hasUnspecifiedStatus =
                 request.project.status == ProjectOuterClass.ProjectStatus.PROJECT_STATUS_UNSPECIFIED
-            val status = if (!paths.contains(ProjectField.STATUS) && hasUnspecifiedStatus) {
+            val status = if (!fields.contains(ProjectField.STATUS) && hasUnspecifiedStatus) {
                 ProjectStatus.ACTIVE
             } else {
                 projectStatusFromGrpc(request.project.status)
@@ -427,7 +427,7 @@ class SnowballRServer(
             val hasUnspecifiedSnowballingType = request.project.settings.snowballingType ==
                 ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_UNSPECIFIED
             val snowballingType =
-                if (!paths.contains(ProjectField.SNOWBALLING_TYPE) && hasUnspecifiedSnowballingType) {
+                if (!fields.contains(ProjectField.SNOWBALLING_TYPE) && hasUnspecifiedSnowballingType) {
                     SnowballingType.BOTH
                 } else {
                     snowballingTypeFromGrpc(request.project.settings.snowballingType)
@@ -446,7 +446,7 @@ class SnowballRServer(
                         decisionMatrix = reviewDecisionMatrixFromGrpc(request.project.settings.decisionMatrix),
                     ),
                 ),
-                paths,
+                fields,
             ).toGrpc()
         }
 

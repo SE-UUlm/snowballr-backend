@@ -260,12 +260,9 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
     inner class UpdateCriterion {
         @ParameterizedTest(name = "Update the field {0}")
         @EnumSource(CriterionField::class)
-        fun `When a criterion is updated, then only the fields specified in the field mask are updated`(
-            field: CriterionField,
-        ) = runTest {
+        fun `When a criterion is updated, then only the specified field is updated`(field: CriterionField) = runTest {
             val projectId = insertProjectAndGetId(createdBy = testUserId)
             val criterionId = insertCriterionAndGetId(projectId = projectId, createdBy = testUserId)
-            repo.getCriterionById(criterionId).getOrThrow()
             val request = UpdateCriterionRequest(
                 criterionId = criterionId,
                 tag = "Updated Tag",
@@ -287,8 +284,8 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
             }
 
             // Excluded
-            for (path in excluded) {
-                when (path) {
+            for (excludedField in excluded) {
+                when (excludedField) {
                     CriterionField.TAG -> assertEquals("Test Tag", updatedCriterion.tag)
                     CriterionField.NAME -> assertEquals("Test Criterion", updatedCriterion.name)
                     CriterionField.DESCRIPTION -> assertEquals("Test Description", updatedCriterion.description)

@@ -67,7 +67,7 @@ interface IProjectService {
     /**
      * Service implementation of [SnowballRService.updateProject].
      */
-    suspend fun updateProject(request: UpdateProjectRequest, paths: Set<ProjectField>): ProjectResponse
+    suspend fun updateProject(request: UpdateProjectRequest, fields: Set<ProjectField>): ProjectResponse
 
     /**
      * Service implementation of [SnowballRService.getProjectInformation].
@@ -163,29 +163,29 @@ class ProjectService(
     override suspend fun getAllDeletedProjectsForUser(userId: UUID): List<ProjectResponse> =
         getAllProjectsForUserAndStatus(userId, setOf(ProjectStatus.DELETED))
 
-    override suspend fun updateProject(request: UpdateProjectRequest, paths: Set<ProjectField>): ProjectResponse =
+    override suspend fun updateProject(request: UpdateProjectRequest, fields: Set<ProjectField>): ProjectResponse =
         withUser(userRepo) { currentUser ->
             accessChecker.isProjectOrServerAdmin(currentUser, request.projectId, AccessType.UPDATE)
 
             val project = repo.getProjectById(request.projectId).getOrThrow()
             val currentStatus = project.status
 
-            validateProjectUpdate(currentStatus, request.status, paths)
+            validateProjectUpdate(currentStatus, request.status, fields)
 
             val finalStatus = determineEffectiveProjectStatus(request.projectId, request.status)
             var finalRequest = request.copy(status = finalStatus)
 
-            if (paths.contains(ProjectField.FETCHERS)) {
+            if (fields.contains(ProjectField.FETCHERS)) {
                 val sanitizedFetchersMap = sanitizeFetchersMap(finalRequest.settings.fetchers)
 
                 finalRequest = finalRequest.copy(settings = finalRequest.settings.copy(fetchers = sanitizedFetchersMap))
             }
 
-            val updatedProject = repo.updateProject(finalRequest, paths)
-            if (paths.contains("project.status") && currentStatus != finalStatus) {
+            val updatedProject = repo.updateProject(finalRequest, fields)
+            if (fields.contains(ProjectField.STATUS) && currentStatus != finalStatus) {
                 logger.info { "Project ${request.projectId} status changed: $currentStatus -> $finalStatus" }
             } else {
-                logger.info { "Project ${request.projectId} updated: ${paths.joinToString()}" }
+                logger.info { "Project ${request.projectId} updated: ${fields.joinToString()}" }
             }
             ProjectResponse.fromProject(updatedProject)
         }
@@ -272,9 +272,9 @@ class ProjectService(
     private fun validateProjectUpdate(
         currentStatus: ProjectStatus,
         requestedStatus: ProjectStatus,
-        paths: Set<ProjectField>,
+        fields: Set<ProjectField>,
     ) {
-        val isStatusUpdate = paths.contains(ProjectField.STATUS)
+        val isStatusUpdate = fields.contains(ProjectField.STATUS)
         require(!(isStatusUpdate && requestedStatus == ProjectStatus.DELETED)) {
             "The project status cannot be set to DELETED via the update method. Use SoftDeleteProject instead."
         }
@@ -286,7 +286,7 @@ class ProjectService(
                 )
 
             ProjectStatus.ARCHIVED -> {
-                val isOnlyStatusUpdate = paths.size == 1 && isStatusUpdate
+                val isOnlyStatusUpdate = fields.size == 1 && isStatusUpdate
                 if (!isOnlyStatusUpdate) {
                     throw FailedPreconditionException(
                         "The project is archived and therefore only the 'status' field can be updated.",
@@ -306,7 +306,7 @@ class ProjectService(
 
             ProjectStatus.ACTIVE_LOCKED -> {
                 // all project settings are SLR settings
-                val isChangingSettings = paths.any { it.isSettingsField() }
+                val isChangingSettings = fields.any { it.isSettingsField() }
                 if (isChangingSettings) {
                     throw FailedPreconditionException(
                         "The project is locked and therefore no SLR settings can be modified.",

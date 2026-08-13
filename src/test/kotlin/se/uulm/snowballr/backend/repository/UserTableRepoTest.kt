@@ -215,43 +215,45 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
     inner class UpdateUser {
         @ParameterizedTest(name = "Update the field {0}")
         @EnumSource(UserField::class)
-        fun `When a user is updated, then only the fields specified in the field mask are updated`(field: UserField) =
-            runTest {
-                val userId = insertUserAndGetId(email = "test.user@example.com")
-                val originalUser = repo.getUserById(userId).getOrThrow()
-                val request = UpdateUserRequest(
-                    userId = originalUser.id,
-                    firstName = "John",
-                    lastName = "Doe",
-                    email = "updated.user@example.com",
-                    role = UserRole.ADMIN,
-                    status = UserStatus.DELETED,
-                )
+        fun `When a user is updated, then only the specified field is updated`(field: UserField) = runTest {
+            val userId = insertUserAndGetId(email = "test.user@example.com")
+            val request = UpdateUserRequest(
+                userId = userId,
+                firstName = "John",
+                lastName = "Doe",
+                email = "updated.user@example.com",
+                role = UserRole.ADMIN,
+                status = UserStatus.DELETED,
+            )
 
-                val updatedUser = repo.updateUser(request, setOf(field))
+            val start = OffsetDateTime.now()
+            val updatedUser = repo.updateUser(request, setOf(field))
+            val end = OffsetDateTime.now()
 
-                val excluded = UserField.entries.filter { field != it }
+            val excluded = UserField.entries.filter { field != it }
 
-                // Included
-                when (field) {
-                    UserField.EMAIL -> assertEquals("updated.user@example.com", updatedUser.email)
-                    UserField.FIRST_NAME -> assertEquals("John", updatedUser.firstName)
-                    UserField.LAST_NAME -> assertEquals("Doe", updatedUser.lastName)
-                    UserField.ROLE -> assertEquals(UserRole.ADMIN, updatedUser.role)
-                    UserField.STATUS -> assertEquals(UserStatus.DELETED, updatedUser.status)
-                }
+            // Included
+            when (field) {
+                UserField.EMAIL -> assertEquals("updated.user@example.com", updatedUser.email)
+                UserField.FIRST_NAME -> assertEquals("John", updatedUser.firstName)
+                UserField.LAST_NAME -> assertEquals("Doe", updatedUser.lastName)
+                UserField.ROLE -> assertEquals(UserRole.ADMIN, updatedUser.role)
+                UserField.STATUS -> assertEquals(UserStatus.DELETED, updatedUser.status)
+            }
 
-                // Excluded
-                for (path in excluded) {
-                    when (path) {
-                        UserField.EMAIL -> assertEquals("test.user@example.com", updatedUser.email)
-                        UserField.FIRST_NAME -> assertEquals("Test", updatedUser.firstName)
-                        UserField.LAST_NAME -> assertEquals("User", updatedUser.lastName)
-                        UserField.ROLE -> assertEquals(UserRole.DEFAULT, updatedUser.role)
-                        UserField.STATUS -> assertEquals(UserStatus.ACTIVE, updatedUser.status)
-                    }
+            // Excluded
+            for (excludedField in excluded) {
+                when (excludedField) {
+                    UserField.EMAIL -> assertEquals("test.user@example.com", updatedUser.email)
+                    UserField.FIRST_NAME -> assertEquals("Test", updatedUser.firstName)
+                    UserField.LAST_NAME -> assertEquals("User", updatedUser.lastName)
+                    UserField.ROLE -> assertEquals(UserRole.DEFAULT, updatedUser.role)
+                    UserField.STATUS -> assertEquals(UserStatus.ACTIVE, updatedUser.status)
                 }
             }
+
+            assertThat(updatedUser.modifiedAt).isBetweenWithDelta(start, end)
+        }
 
         @Test
         fun `When a user's email should be updated to an existent email, then an SQLException is thrown`() = runTest {
@@ -275,7 +277,7 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
         }
 
         @Test
-        fun `When a user is updated with an empty field mask, then nothing is updated`() = runTest {
+        fun `When a user is updated without any specified fields, then nothing is updated`() = runTest {
             val userId = insertUserAndGetId()
             val user = repo.getUserById(userId).getOrThrow()
             val request = UpdateUserRequest.fromUser(user)

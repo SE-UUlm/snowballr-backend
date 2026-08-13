@@ -50,7 +50,7 @@ interface IUserService {
     /**
      * Service implementation of [SnowballRService.updateUser].
      */
-    suspend fun updateUser(request: UpdateUserRequest, paths: Set<UserField>): User
+    suspend fun updateUser(request: UpdateUserRequest, fields: Set<UserField>): User
 
     /**
      * Service implementation of [SnowballRService.softDeleteUser].
@@ -152,24 +152,24 @@ class UserService(
         logger.info { "User ${user.id} registered (${user.email})" }
     }
 
-    override suspend fun updateUser(request: UpdateUserRequest, paths: Set<UserField>): User =
+    override suspend fun updateUser(request: UpdateUserRequest, fields: Set<UserField>): User =
         withUser(userRepo) { currentUser ->
             val targetUser = userRepo.getUserById(request.userId).getOrThrow()
 
             accessChecker.isAllowedToUpdateUser(currentUser, targetUser)
 
             // If the role is changed, the requesting user must be a server admin.
-            if (paths.contains(UserField.ROLE)) {
+            if (fields.contains(UserField.ROLE)) {
                 accessChecker.isAllowedToUpdateUserRole(currentUser, request.userId)
             }
 
             // If the email is changed, there must not yet exist an account with that email address.
-            if (paths.contains(UserField.EMAIL) && userRepo.doesUserExistByEmail(request.email)) {
+            if (fields.contains(UserField.EMAIL) && userRepo.doesUserExistByEmail(request.email)) {
                 throw DuplicateUserException(request.email)
             }
 
-            val updatedUser = userRepo.updateUser(request, paths)
-            logger.info { "User ${targetUser.id} updated: ${paths.joinToString()}" }
+            val updatedUser = userRepo.updateUser(request, fields)
+            logger.info { "User ${targetUser.id} updated: ${fields.joinToString()}" }
             updatedUser
         }
 

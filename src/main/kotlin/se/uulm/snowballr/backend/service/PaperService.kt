@@ -34,7 +34,7 @@ interface IPaperService {
     /**
      * Service implementation of [SnowballRService.updatePaper].
      */
-    suspend fun updatePaper(request: UpdatePaperRequest, paths: Set<PaperField>): PaperResponse
+    suspend fun updatePaper(request: UpdatePaperRequest, fields: Set<PaperField>): PaperResponse
 
     /**
      * Service implementation of [SnowballRService.createPaper].
@@ -64,10 +64,10 @@ class PaperService(
     override suspend fun getForwardReferencedPapers(paperId: UUID): List<PaperResponse> =
         getReferencePapers(paperId, citationRepo::getForwardReferencedPaperIdsOfPaperById)
 
-    override suspend fun updatePaper(request: UpdatePaperRequest, paths: Set<PaperField>): PaperResponse {
+    override suspend fun updatePaper(request: UpdatePaperRequest, fields: Set<PaperField>): PaperResponse {
         repo.ensurePaperExists(request.paperId)
 
-        val isExternalIdChange = paths.contains(PaperField.EXTERNAL_IDS) && request.externalIds.isNotEmpty()
+        val isExternalIdChange = fields.contains(PaperField.EXTERNAL_IDS) && request.externalIds.isNotEmpty()
         if (isExternalIdChange) {
             val existingPapers = repo.getPapersByExternalIds(request.externalIds)
 
@@ -76,8 +76,8 @@ class PaperService(
             }
         }
 
-        val updatedPaper = repo.updatePaper(request, paths)
-        logger.info { "Paper ${request.paperId} updated: ${paths.joinToString()}" }
+        val updatedPaper = repo.updatePaper(request, fields)
+        logger.info { "Paper ${request.paperId} updated: ${fields.joinToString()}" }
         return updatedPaper.toPaperResponse()
     }
 

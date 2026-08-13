@@ -95,7 +95,7 @@ class UpdatePaperTest : PaperServiceTest() {
         }
 
     @Test
-    fun `When a paper is updated with an external ID but the path doesn't contain the external IDs, then existing papers are not checked`() =
+    fun `When a paper is updated with an external ID but the fields doesn't contain the external IDs, then existing papers are not checked`() =
         runTest {
             val request = getExampleRequest().copy(externalIds = emptyList())
             val examplePaper = DataBuilder.createExamplePaper(id = paperId)

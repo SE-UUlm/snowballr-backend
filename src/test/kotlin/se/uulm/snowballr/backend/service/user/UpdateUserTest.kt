@@ -112,15 +112,15 @@ class UpdateUserTest : UserServiceTest() {
         val otherUser = DataBuilder.createExampleUser()
 
         val request = getExampleRequest(otherUser)
-        val paths = setOf(UserField.FIRST_NAME, UserField.LAST_NAME, UserField.ROLE, UserField.STATUS)
+        val fields = setOf(UserField.FIRST_NAME, UserField.LAST_NAME, UserField.ROLE, UserField.STATUS)
 
         mockCurrentUser(currentUser)
         coEvery { userRepoMock.getUserById(otherUser.id) } returns Result.success(otherUser)
         coJustRun { userAccessCheckerMock.isAllowedToUpdateUser(currentUser, otherUser) }
         coJustRun { userAccessCheckerMock.isAllowedToUpdateUserRole(currentUser, otherUser.id) }
-        coEvery { userRepoMock.updateUser(request, paths) } returns otherUser
+        coEvery { userRepoMock.updateUser(request, fields) } returns otherUser
 
-        val updatedUser = service.updateUser(request, paths)
+        val updatedUser = service.updateUser(request, fields)
 
         assertEquals(otherUser.id, updatedUser.id)
         assertEquals(otherUser.firstName, updatedUser.firstName)

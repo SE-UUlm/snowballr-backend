@@ -69,10 +69,10 @@ interface IPaperTableRepo {
      * Updates an existent paper in the database with the provided new information.
      *
      * @param request The update request containing the new paper details.
-     * @param paths The fields that should be updated.
+     * @param fields The fields that should be updated.
      * @return The updated [Paper] object reflecting the changes from the [request].
      */
-    suspend fun updatePaper(request: UpdatePaperRequest, paths: Set<PaperField>): Paper
+    suspend fun updatePaper(request: UpdatePaperRequest, fields: Set<PaperField>): Paper
 
     /**
      * Retrieves a list of papers whose title partially or fully match the [query].
@@ -185,13 +185,13 @@ class PaperTableRepo(
         getPaperById(paperId).getOrThrow()
     }
 
-    override suspend fun updatePaper(request: UpdatePaperRequest, paths: Set<PaperField>): Paper = db.query {
-        if (paths.isEmpty()) {
+    override suspend fun updatePaper(request: UpdatePaperRequest, fields: Set<PaperField>): Paper = db.query {
+        if (fields.isEmpty()) {
             return@query getPaperById(request.paperId).getOrThrow()
         }
 
         PaperTable.update({ PaperTable.id eq request.paperId }) {
-            for (field in paths) {
+            for (field in fields) {
                 when (field) {
                     PaperField.TITLE -> it[title] = request.title
                     PaperField.ABSTRACT -> it[abstract] = request.abstract
@@ -207,7 +207,7 @@ class PaperTableRepo(
             it[modifiedAt] = OffsetDateTime.now()
         }
 
-        if (paths.contains(PaperField.EXTERNAL_IDS)) {
+        if (fields.contains(PaperField.EXTERNAL_IDS)) {
             PaperHasExternalIdTable.deleteWhere { PaperHasExternalIdTable.paperId eq request.paperId }
             insertExternalIds(request.paperId, request.externalIds)
         }

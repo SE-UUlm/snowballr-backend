@@ -190,67 +190,64 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable, PaperHasExternalId
         @ParameterizedTest(name = "Update the field {0}")
         @EnumSource(PaperField::class)
         @Suppress("LongMethod", "CyclomaticComplexMethod")
-        fun `When a paper is updated, then only the fields specified in the field mask are updated`(field: PaperField) =
-            runTest {
-                val paperId = insertPaperAndGetId()
-                val externalId = insertExternalId(paperId, ExternalIdType.DOI, "10.1234/5678")
-                val paper = repo.getPaperById(paperId).getOrThrow()
+        fun `When a paper is updated, then only the specified field is updated`(field: PaperField) = runTest {
+            val paperId = insertPaperAndGetId()
+            val externalId = insertExternalId(paperId, ExternalIdType.DOI, "10.1234/5678")
+            val request = UpdatePaperRequest(
+                paperId = paperId,
+                title = "Updated Title",
+                externalIds = listOf(ExternalId(ExternalIdType.MAG, "1234567890")),
+                abstract = "Updated Abstract",
+                year = 2000,
+                publisher = "Updated Publisher",
+                publicationName = "Updated PublicationName",
+                publicationType = "Updated PublicationType",
+                authors = listOf(Author("UpdatedFirstName", "UpdatedLastName")),
+            )
 
-                val updatedPaperDetails = paper.copy(
-                    title = "Updated Title",
-                    externalIds = listOf(ExternalId(ExternalIdType.MAG, "1234567890")),
-                    abstract = "Updated Abstract",
-                    year = paper.year - 10,
-                    publisher = "Updated Publisher",
-                    publicationName = "Updated PublicationName",
-                    publicationType = "Updated PublicationType",
-                    authors = listOf(Author("UpdatedFirstName", "UpdatedLastName")),
-                )
-                val request = UpdatePaperRequest.fromPaper(updatedPaperDetails)
+            val start = OffsetDateTime.now()
+            val updatedPaper = repo.updatePaper(request, setOf(field))
+            val end = OffsetDateTime.now()
 
-                val start = OffsetDateTime.now()
-                val updatedPaper = repo.updatePaper(request, setOf(field))
-                val end = OffsetDateTime.now()
+            val excluded = PaperField.entries.filter { field != it }
 
-                val excluded = PaperField.entries.filter { field != it }
-
-                // Included
-                when (field) {
-                    PaperField.TITLE -> assertEquals("Updated Title", updatedPaper.title)
-                    PaperField.ABSTRACT -> assertEquals("Updated Abstract", updatedPaper.abstract)
-                    PaperField.YEAR -> assertEquals(paper.year - 10, updatedPaper.year)
-                    PaperField.PUBLISHER -> assertEquals("Updated Publisher", updatedPaper.publisher)
-                    PaperField.PUBLICATION_NAME -> assertEquals("Updated PublicationName", updatedPaper.publicationName)
-                    PaperField.PUBLICATION_TYPE -> assertEquals("Updated PublicationType", updatedPaper.publicationType)
-                    PaperField.AUTHORS -> {
-                        assertEquals(1, updatedPaper.authors.size)
-                        assertEquals("UpdatedFirstName", updatedPaper.authors[0].firstName)
-                        assertEquals("UpdatedLastName", updatedPaper.authors[0].lastName)
-                    }
-
-                    PaperField.EXTERNAL_IDS ->
-                        assertEquals(listOf(ExternalId(ExternalIdType.MAG, "1234567890")), updatedPaper.externalIds)
+            // Included
+            when (field) {
+                PaperField.TITLE -> assertEquals("Updated Title", updatedPaper.title)
+                PaperField.ABSTRACT -> assertEquals("Updated Abstract", updatedPaper.abstract)
+                PaperField.YEAR -> assertEquals(2000, updatedPaper.year)
+                PaperField.PUBLISHER -> assertEquals("Updated Publisher", updatedPaper.publisher)
+                PaperField.PUBLICATION_NAME -> assertEquals("Updated PublicationName", updatedPaper.publicationName)
+                PaperField.PUBLICATION_TYPE -> assertEquals("Updated PublicationType", updatedPaper.publicationType)
+                PaperField.AUTHORS -> {
+                    assertEquals(1, updatedPaper.authors.size)
+                    assertEquals("UpdatedFirstName", updatedPaper.authors[0].firstName)
+                    assertEquals("UpdatedLastName", updatedPaper.authors[0].lastName)
                 }
 
-                // Excluded
-                for (path in excluded) {
-                    when (path) {
-                        PaperField.TITLE -> assertEquals("Title", updatedPaper.title)
-                        PaperField.ABSTRACT -> assertEquals("Abstract", updatedPaper.abstract)
-                        PaperField.YEAR -> assertEquals(2025, updatedPaper.year)
-                        PaperField.PUBLISHER -> assertEquals("Publisher", updatedPaper.publisher)
-                        PaperField.PUBLICATION_NAME -> assertEquals("PublicationName", updatedPaper.publicationName)
-                        PaperField.PUBLICATION_TYPE -> assertEquals("PublicationType", updatedPaper.publicationType)
-                        PaperField.AUTHORS -> assertEquals(0, updatedPaper.authors.size)
-                        PaperField.EXTERNAL_IDS -> assertEquals(listOf(externalId), updatedPaper.externalIds)
-                    }
-                }
-
-                assertThat(updatedPaper.modifiedAt).isBetweenWithDelta(start, end)
+                PaperField.EXTERNAL_IDS ->
+                    assertEquals(listOf(ExternalId(ExternalIdType.MAG, "1234567890")), updatedPaper.externalIds)
             }
 
+            // Excluded
+            for (excludedField in excluded) {
+                when (excludedField) {
+                    PaperField.TITLE -> assertEquals("Title", updatedPaper.title)
+                    PaperField.ABSTRACT -> assertEquals("Abstract", updatedPaper.abstract)
+                    PaperField.YEAR -> assertEquals(2025, updatedPaper.year)
+                    PaperField.PUBLISHER -> assertEquals("Publisher", updatedPaper.publisher)
+                    PaperField.PUBLICATION_NAME -> assertEquals("PublicationName", updatedPaper.publicationName)
+                    PaperField.PUBLICATION_TYPE -> assertEquals("PublicationType", updatedPaper.publicationType)
+                    PaperField.AUTHORS -> assertEquals(0, updatedPaper.authors.size)
+                    PaperField.EXTERNAL_IDS -> assertEquals(listOf(externalId), updatedPaper.externalIds)
+                }
+            }
+
+            assertThat(updatedPaper.modifiedAt).isBetweenWithDelta(start, end)
+        }
+
         @Test
-        fun `When a paper is updated with an empty field mask, then nothing is updated`() = runTest {
+        fun `When a paper is updated without any specified fields, then nothing is updated`() = runTest {
             val paperId = insertPaperAndGetId()
             val paper = repo.getPaperById(paperId).getOrThrow()
             val request = UpdatePaperRequest.fromPaper(paper)
