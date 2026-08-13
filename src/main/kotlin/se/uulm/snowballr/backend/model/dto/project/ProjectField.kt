@@ -1,4 +1,4 @@
-package se.uulm.snowballr.backend.model.incoming.project
+package se.uulm.snowballr.backend.model.dto.project
 
 enum class ProjectField(val grpcPath: String) {
     NAME("project.name"),

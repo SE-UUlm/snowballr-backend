@@ -12,11 +12,11 @@ import org.junit.jupiter.api.assertNotNull
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
+import se.uulm.snowballr.backend.model.dto.project.ProjectField
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.fetcher.FetcherInformationWithId
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
-import se.uulm.snowballr.backend.model.incoming.project.ProjectField
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import kotlin.test.assertContains
 

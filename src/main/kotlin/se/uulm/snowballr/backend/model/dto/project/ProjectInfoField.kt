@@ -1,4 +1,4 @@
-package se.uulm.snowballr.backend.model.incoming.project
+package se.uulm.snowballr.backend.model.dto.project
 
 enum class ProjectInfoField(val grpcPath: String) {
     PROJECT_PROGRESS("project_progress"),

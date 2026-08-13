@@ -11,7 +11,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.model.incoming.project.ProjectInfoField
+import se.uulm.snowballr.backend.model.dto.project.ProjectInfoField
 import java.time.OffsetDateTime
 
 class GetProjectInformationTest : ProjectServiceTest() {

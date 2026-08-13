@@ -18,10 +18,10 @@ import se.uulm.snowballr.backend.isBetweenWithDelta
 import se.uulm.snowballr.backend.model.dto.paper.Author
 import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
+import se.uulm.snowballr.backend.model.dto.paper.PaperField
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
 import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
-import se.uulm.snowballr.backend.model.incoming.paper.PaperField
 import se.uulm.snowballr.backend.model.incoming.paper.UpdatePaperRequest
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertExternalId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertPaperAndGetId

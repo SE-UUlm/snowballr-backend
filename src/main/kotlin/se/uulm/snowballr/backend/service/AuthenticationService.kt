@@ -7,6 +7,7 @@ import se.uulm.snowballr.backend.auth.setAuthCookies
 import se.uulm.snowballr.backend.context.RequestContext
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.dto.user.UserField
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.UnauthenticatedException
@@ -16,7 +17,6 @@ import se.uulm.snowballr.backend.model.exception.notfound.VerificationTokenNotFo
 import se.uulm.snowballr.backend.model.incoming.authentication.ChangePasswordRequest
 import se.uulm.snowballr.backend.model.incoming.authentication.LoginRequest
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
-import se.uulm.snowballr.backend.model.incoming.user.UserField
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.IVerificationTokenTableRepo
 import java.time.OffsetDateTime

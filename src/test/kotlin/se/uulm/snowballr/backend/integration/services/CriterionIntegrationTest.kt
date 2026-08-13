@@ -8,8 +8,8 @@ import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
+import se.uulm.snowballr.backend.model.dto.criterion.CriterionField
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
-import se.uulm.snowballr.backend.model.incoming.criterion.CriterionField
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.outgoing.project.ProjectResponse

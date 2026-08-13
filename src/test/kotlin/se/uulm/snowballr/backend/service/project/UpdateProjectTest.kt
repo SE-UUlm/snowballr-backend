@@ -14,11 +14,11 @@ import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.dto.project.Project
+import se.uulm.snowballr.backend.model.dto.project.ProjectField
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.fetcher.FetcherInformationWithId
 import se.uulm.snowballr.backend.model.fetcher.FetcherOptions
-import se.uulm.snowballr.backend.model.incoming.project.ProjectField
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import kotlin.test.assertContains
 

@@ -8,8 +8,8 @@ import org.junit.jupiter.api.assertNotNull
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
+import se.uulm.snowballr.backend.model.dto.paper.PaperField
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicatePaperException
-import se.uulm.snowballr.backend.model.incoming.paper.PaperField
 import se.uulm.snowballr.backend.model.incoming.paper.UpdatePaperRequest
 
 class PaperIntegrationTest : IntegrationTest() {

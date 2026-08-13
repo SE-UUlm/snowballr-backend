@@ -1,4 +1,4 @@
-package se.uulm.snowballr.backend.model.incoming.paper
+package se.uulm.snowballr.backend.model.dto.paper
 
 enum class PaperField(val grpcPath: String) {
     TITLE("paper.title"),

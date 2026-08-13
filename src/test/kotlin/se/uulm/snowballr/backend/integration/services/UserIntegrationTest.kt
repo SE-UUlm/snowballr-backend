@@ -12,6 +12,7 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
+import se.uulm.snowballr.backend.model.dto.user.UserField
 import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateUserException
@@ -19,7 +20,6 @@ import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadAl
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedUpdateException
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
-import se.uulm.snowballr.backend.model.incoming.user.UserField
 
 class UserIntegrationTest : IntegrationTest() {
     @Nested

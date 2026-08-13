@@ -10,9 +10,9 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.dto.user.User
+import se.uulm.snowballr.backend.model.dto.user.UserField
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateUserException
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
-import se.uulm.snowballr.backend.model.incoming.user.UserField
 
 class UpdateUserTest : UserServiceTest() {
     private fun getExampleRequest(user: User) = UpdateUserRequest(

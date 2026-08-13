@@ -8,7 +8,7 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion
-import se.uulm.snowballr.backend.model.incoming.criterion.CriterionField
+import se.uulm.snowballr.backend.model.dto.criterion.CriterionField
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 
 class UpdateCriterionTest : CriterionServiceTest() {

@@ -3,21 +3,21 @@
 package se.uulm.snowballr.backend.grpc
 
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
+import se.uulm.snowballr.backend.model.dto.criterion.CriterionField
+import se.uulm.snowballr.backend.model.dto.paper.PaperField
 import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPattern
 import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPatternEntry
+import se.uulm.snowballr.backend.model.dto.project.ProjectField
+import se.uulm.snowballr.backend.model.dto.project.ProjectInfoField
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
 import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
+import se.uulm.snowballr.backend.model.dto.user.UserField
 import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
-import se.uulm.snowballr.backend.model.incoming.criterion.CriterionField
-import se.uulm.snowballr.backend.model.incoming.paper.PaperField
-import se.uulm.snowballr.backend.model.incoming.project.ProjectField
-import se.uulm.snowballr.backend.model.incoming.project.ProjectInfoField
-import se.uulm.snowballr.backend.model.incoming.user.UserField
 import snowballr.CriterionOuterClass
 import snowballr.ProjectOuterClass
 import snowballr.ReviewOuterClass

@@ -27,8 +27,10 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.paper.Author
 import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
+import se.uulm.snowballr.backend.model.dto.project.ProjectField
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
+import se.uulm.snowballr.backend.model.dto.user.UserField
 import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.export.ExportFormat
@@ -39,14 +41,12 @@ import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
 import se.uulm.snowballr.backend.model.incoming.paper.UpdatePaperRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
-import se.uulm.snowballr.backend.model.incoming.project.ProjectField
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectSettingRequest
 import se.uulm.snowballr.backend.model.incoming.projectmember.UpdateProjectMemberRoleRequest
 import se.uulm.snowballr.backend.model.incoming.review.CreateReviewRequest
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
-import se.uulm.snowballr.backend.model.incoming.user.UserField
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.scheduler.SchedulerManager
 import se.uulm.snowballr.backend.service.IAuthenticationService

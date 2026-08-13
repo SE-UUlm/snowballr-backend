@@ -1,4 +1,4 @@
-package se.uulm.snowballr.backend.model.incoming.user
+package se.uulm.snowballr.backend.model.dto.user
 
 enum class UserField(val grpcPath: String) {
     EMAIL("user.email"),

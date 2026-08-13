@@ -10,9 +10,9 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
+import se.uulm.snowballr.backend.model.dto.paper.PaperField
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicatePaperException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
-import se.uulm.snowballr.backend.model.incoming.paper.PaperField
 import se.uulm.snowballr.backend.model.incoming.paper.UpdatePaperRequest
 import java.util.UUID
 

@@ -3,10 +3,10 @@ package se.uulm.snowballr.backend.service
 import io.github.oshai.kotlinlogging.KotlinLogging
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.dto.paper.Paper
+import se.uulm.snowballr.backend.model.dto.paper.PaperField
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicatePaperException
 import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
-import se.uulm.snowballr.backend.model.incoming.paper.PaperField
 import se.uulm.snowballr.backend.model.incoming.paper.UpdatePaperRequest
 import se.uulm.snowballr.backend.model.outgoing.paper.PaperResponse
 import se.uulm.snowballr.backend.repository.IPaperTableRepo

@@ -21,11 +21,11 @@ import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.paper.Paper
+import se.uulm.snowballr.backend.model.dto.paper.PaperField
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
 import se.uulm.snowballr.backend.model.fetcher.FetcherMetadata
 import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
-import se.uulm.snowballr.backend.model.incoming.paper.PaperField
 import se.uulm.snowballr.backend.model.incoming.paper.UpdatePaperRequest
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.association.PaperHasExternalIdTable
