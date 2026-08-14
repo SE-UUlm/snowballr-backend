@@ -8,4 +8,5 @@ object Routes {
     const val USERS_ROUTE = "$BASE_ROUTE/users"
     const val EXPORT_ROUTE = "$BASE_ROUTE/export"
     const val PROJECT_MEMBERS_ROUTE = "$PROJECTS_ROUTE/{projectId}/members"
+    const val INVITATIONS_ROUTE = "$BASE_ROUTE/invitations"
 }
