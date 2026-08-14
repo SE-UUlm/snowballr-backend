@@ -9,6 +9,7 @@ import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.service.IAuthenticationService
 import se.uulm.snowballr.backend.service.ICriterionService
 import se.uulm.snowballr.backend.service.IExportService
+import se.uulm.snowballr.backend.service.IFetcherService
 import se.uulm.snowballr.backend.service.IInvitationService
 import se.uulm.snowballr.backend.service.IPaperService
 import se.uulm.snowballr.backend.service.IProjectMemberService
@@ -64,4 +65,7 @@ class KoinBridge {
 
     @Bean
     fun paperService(): IPaperService = getKoin().get()
+
+    @Bean
+    fun fetcherService(): IFetcherService = getKoin().get()
 }
