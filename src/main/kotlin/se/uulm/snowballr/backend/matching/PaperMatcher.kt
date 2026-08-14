@@ -1,10 +1,10 @@
 package se.uulm.snowballr.backend.matching
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import se.uulm.snowballr.backend.model.dto.paper.Author
 import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
 import se.uulm.snowballr.backend.model.dto.paper.Paper
+import se.uulm.snowballr.backend.model.dto.paper.isNotBlank
 import se.uulm.snowballr.backend.model.dto.paper.toFetcherPaper
 import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
 import kotlin.math.abs
@@ -241,8 +241,6 @@ class PaperMatcher(override val config: PaperMatchingConfig) : IPaperMatcher {
 
         return result
     }
-
-    private fun Author.isNotBlank() = this.firstName.isNotBlank() || this.lastName.isNotBlank()
 
     private fun isSimilarityAboveThreshold(similarity: Double, threshold: Float) = threshold - similarity < DELTA
 }

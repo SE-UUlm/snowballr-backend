@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.fetcher.normalization
 
 import se.uulm.snowballr.backend.model.dto.paper.Author
+import se.uulm.snowballr.backend.model.dto.paper.isNotBlank
 import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
 import java.text.Normalizer
 
@@ -58,6 +59,4 @@ object PaperNormalizer {
         firstName = normalizeText(author.firstName),
         lastName = normalizeText(author.lastName),
     )
-
-    private fun Author.isNotBlank() = firstName.isNotBlank() || lastName.isNotBlank()
 }

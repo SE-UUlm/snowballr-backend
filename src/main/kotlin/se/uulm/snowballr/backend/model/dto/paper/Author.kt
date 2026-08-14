@@ -14,3 +14,5 @@ data class Author(
     @SerialName("last_name")
     val lastName: String,
 )
+
+fun Author.isNotBlank() = firstName.isNotBlank() || lastName.isNotBlank()
