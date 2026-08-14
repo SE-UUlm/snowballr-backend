@@ -47,10 +47,9 @@ class ProjectsController(private val projectService: IProjectService) {
     }
 
     @PutMapping("/{id}")
-    fun updateProject(@PathVariable id: UUID, @RequestBody request: UpdateProjectRequest): ProjectResponse =
-        onRequest {
-            projectService.updateProject(request.copy(projectId = id), FULL_UPDATE_PATHS)
-        }
+    fun updateProject(@PathVariable id: UUID, @RequestBody request: UpdateProjectRequest): ProjectResponse = onRequest {
+        projectService.updateProject(request.copy(projectId = id), FULL_UPDATE_PATHS)
+    }
 
     @DeleteMapping("/{id}")
     fun deleteProject(@PathVariable id: UUID) {

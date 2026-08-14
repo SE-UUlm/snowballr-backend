@@ -21,9 +21,9 @@ class ReadingListController(private val readingListService: IReadingListService)
     fun getReadingList(): List<PaperResponse> = onRequest { readingListService.getReadingList() }
 
     @RequestMapping(value = ["/{paperId}"], method = [RequestMethod.HEAD])
-    fun isPaperOnReadingList(@PathVariable paperId: UUID): ResponseEntity<Void> = onRequest {
-        val onList = readingListService.isPaperOnReadingList(paperId)
-        ResponseEntity.status(if (onList) HttpStatus.OK else HttpStatus.NOT_FOUND).build()
+    fun isPaperOnReadingList(@PathVariable paperId: UUID): ResponseEntity<Unit> = onRequest {
+        val isOnReadingList = readingListService.isPaperOnReadingList(paperId)
+        ResponseEntity.status(if (isOnReadingList) HttpStatus.OK else HttpStatus.NOT_FOUND).build()
     }
 
     @PutMapping("/{paperId}")
