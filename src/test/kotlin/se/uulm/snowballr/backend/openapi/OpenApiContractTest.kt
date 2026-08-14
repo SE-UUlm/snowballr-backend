@@ -24,7 +24,16 @@ import se.uulm.snowballr.backend.auth.ICookieManager
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.rest.SnowballRApplication
 import se.uulm.snowballr.backend.service.IAuthenticationService
+import se.uulm.snowballr.backend.service.ICriterionService
+import se.uulm.snowballr.backend.service.IExportService
+import se.uulm.snowballr.backend.service.IFetcherService
+import se.uulm.snowballr.backend.service.IInvitationService
+import se.uulm.snowballr.backend.service.IPaperService
+import se.uulm.snowballr.backend.service.IProjectMemberService
+import se.uulm.snowballr.backend.service.IProjectPaperService
 import se.uulm.snowballr.backend.service.IProjectService
+import se.uulm.snowballr.backend.service.IReadingListService
+import se.uulm.snowballr.backend.service.IReviewService
 import se.uulm.snowballr.backend.service.IUserService
 import java.io.File
 
@@ -110,6 +119,15 @@ class OpenApiContractTest(@Autowired private val mvc: MockMvc) {
                         single<ICookieManager> { mockk() }
                         single<EnvReader> { envReader }
                         single<IUserService> { mockk() }
+                        single<IInvitationService> { mockk() }
+                        single<IExportService> { mockk() }
+                        single<IProjectMemberService> { mockk() }
+                        single<IReadingListService> { mockk() }
+                        single<IProjectPaperService> { mockk() }
+                        single<IReviewService> { mockk() }
+                        single<ICriterionService> { mockk() }
+                        single<IPaperService> { mockk() }
+                        single<IFetcherService> { mockk() }
                     },
                 )
             }
