@@ -9,6 +9,7 @@ import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.service.IAuthenticationService
 import se.uulm.snowballr.backend.service.IExportService
 import se.uulm.snowballr.backend.service.IInvitationService
+import se.uulm.snowballr.backend.service.IProjectMemberService
 import se.uulm.snowballr.backend.service.IProjectService
 import se.uulm.snowballr.backend.service.IUserService
 
@@ -40,4 +41,7 @@ class KoinBridge {
 
     @Bean
     fun exportService(): IExportService = getKoin().get()
+
+    @Bean
+    fun projectMemberService(): IProjectMemberService = getKoin().get()
 }
