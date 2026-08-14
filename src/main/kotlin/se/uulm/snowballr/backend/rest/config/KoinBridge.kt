@@ -13,6 +13,7 @@ import se.uulm.snowballr.backend.service.IProjectMemberService
 import se.uulm.snowballr.backend.service.IProjectPaperService
 import se.uulm.snowballr.backend.service.IProjectService
 import se.uulm.snowballr.backend.service.IReadingListService
+import se.uulm.snowballr.backend.service.IReviewService
 import se.uulm.snowballr.backend.service.IUserService
 
 /**
@@ -52,4 +53,7 @@ class KoinBridge {
 
     @Bean
     fun projectPaperService(): IProjectPaperService = getKoin().get()
+
+    @Bean
+    fun reviewService(): IReviewService = getKoin().get()
 }
