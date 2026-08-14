@@ -134,7 +134,7 @@ class PaperValidatorTest {
             ExternalIdType.entries.map {
                 externalId {
                     type = it.name
-                    value = "${it.name}-value"
+                    value = VALID_EXTERNAL_ID_VALUES.getValue(it)
                 }
             },
         )
