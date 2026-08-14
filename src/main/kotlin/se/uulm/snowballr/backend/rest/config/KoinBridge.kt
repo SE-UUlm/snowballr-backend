@@ -10,6 +10,7 @@ import se.uulm.snowballr.backend.service.IAuthenticationService
 import se.uulm.snowballr.backend.service.ICriterionService
 import se.uulm.snowballr.backend.service.IExportService
 import se.uulm.snowballr.backend.service.IInvitationService
+import se.uulm.snowballr.backend.service.IPaperService
 import se.uulm.snowballr.backend.service.IProjectMemberService
 import se.uulm.snowballr.backend.service.IProjectPaperService
 import se.uulm.snowballr.backend.service.IProjectService
@@ -60,4 +61,7 @@ class KoinBridge {
 
     @Bean
     fun criterionService(): ICriterionService = getKoin().get()
+
+    @Bean
+    fun paperService(): IPaperService = getKoin().get()
 }

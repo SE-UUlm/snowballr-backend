@@ -13,4 +13,5 @@ object Routes {
     const val PROJECT_PAPERS_ROUTE = "$BASE_ROUTE/project-papers"
     const val REVIEWS_ROUTE = "$BASE_ROUTE/reviews"
     const val CRITERIA_ROUTE = "$BASE_ROUTE/criteria"
+    const val PAPERS_ROUTE = "$BASE_ROUTE/papers"
 }
