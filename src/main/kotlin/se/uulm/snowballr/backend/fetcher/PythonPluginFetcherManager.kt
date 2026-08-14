@@ -10,7 +10,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import se.uulm.snowballr.backend.env.EnvReader
-import se.uulm.snowballr.backend.fetcher.normalization.PaperNormalizer
 import se.uulm.snowballr.backend.model.exception.FetcherException
 import se.uulm.snowballr.backend.model.exception.UnauthorizedFetcherPathException
 import se.uulm.snowballr.backend.model.exception.notfound.FetcherNotFoundException
@@ -19,6 +18,7 @@ import se.uulm.snowballr.backend.model.fetcher.FetcherInformation
 import se.uulm.snowballr.backend.model.fetcher.FetcherInformationWithId
 import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
 import se.uulm.snowballr.backend.model.fetcher.ProcessResult
+import se.uulm.snowballr.backend.normalization.PaperNormalizer
 import java.io.IOException
 import java.io.InputStream
 import java.nio.file.Files
@@ -244,7 +244,7 @@ class PythonPluginFetcherManager(
     /**
      * Resolves the on-disk path and validates that it is safe to execute.
      *
-     * The script must be a direct child of the configured fetchers directory. Symlinks are allowed,
+     * The script must be a direct child of the configured fetchers' directory. Symlinks are allowed,
      * but the fully resolved target must still reside in that directory.
      *
      * @param fetcher Base name of the fetcher script (without `.py` extension)

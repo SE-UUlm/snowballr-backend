@@ -1,9 +1,10 @@
-package se.uulm.snowballr.backend.fetcher.normalization
+package se.uulm.snowballr.backend.normalization
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.DataBuilder
+import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
 
 class PaperNormalizerTest {
@@ -82,6 +83,18 @@ class PaperNormalizerTest {
 
             assertEquals(listOf(DataBuilder.createExampleAuthor(firstName = "Jane", lastName = "Do e")), result.authors)
         }
+
+        @Test
+        fun `When normalizeAuthors is called directly, then blank authors are dropped and the rest are normalized`() {
+            val authors = listOf(
+                DataBuilder.createExampleAuthor(firstName = "  Jane  ", lastName = "Doe"),
+                DataBuilder.createExampleAuthor(firstName = "", lastName = " "),
+            )
+
+            val result = PaperNormalizer.normalizeAuthors(authors)
+
+            assertEquals(listOf(DataBuilder.createExampleAuthor(firstName = "Jane", lastName = "Doe")), result)
+        }
     }
 
     @Nested
@@ -123,6 +136,18 @@ class PaperNormalizerTest {
             val result = PaperNormalizer.normalize(paper)
 
             assertEquals("10.1234/foo–bar", result.externalIds.single().value)
+        }
+
+        @Test
+        fun `When normalizeExternalIds is called directly, then blank values are dropped and the rest are trimmed`() {
+            val externalIds = listOf(
+                ExternalId(ExternalIdType.DOI, "  10.1234/5678  "),
+                ExternalId(ExternalIdType.ARXIV, "   "),
+            )
+
+            val result = PaperNormalizer.normalizeExternalIds(externalIds)
+
+            assertEquals(listOf(ExternalId(ExternalIdType.DOI, "10.1234/5678")), result)
         }
     }
 

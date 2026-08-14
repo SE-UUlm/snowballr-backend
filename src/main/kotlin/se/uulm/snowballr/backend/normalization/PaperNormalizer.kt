@@ -1,6 +1,7 @@
-package se.uulm.snowballr.backend.fetcher.normalization
+package se.uulm.snowballr.backend.normalization
 
 import se.uulm.snowballr.backend.model.dto.paper.Author
+import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.paper.isNotBlank
 import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
 import java.text.Normalizer
@@ -39,10 +40,8 @@ object PaperNormalizer {
         publisher = normalizeText(paper.publisher),
         publicationType = normalizeText(paper.publicationType),
         publicationName = normalizeText(paper.publicationName),
-        authors = paper.authors.map { normalizeAuthor(it) }.filter { it.isNotBlank() },
-        externalIds = paper.externalIds
-            .map { it.copy(value = it.value.trim()) }
-            .filter { it.value.isNotBlank() },
+        authors = normalizeAuthors(paper.authors),
+        externalIds = normalizeExternalIds(paper.externalIds),
     )
 
     /**
@@ -54,6 +53,22 @@ object PaperNormalizer {
         val withPlainPunctuation = composed.map { PUNCTUATION_REPLACEMENTS[it] ?: it }.joinToString("")
         return withPlainPunctuation.replace(WHITESPACE_REGEX, " ").trim()
     }
+
+    /**
+     * Normalizes each author's names (see [normalizeText]) and drops authors whose first and last name are both
+     * blank.
+     */
+    fun normalizeAuthors(authors: List<Author>): List<Author> =
+        authors.map { normalizeAuthor(it) }.filter { it.isNotBlank() }
+
+    /**
+     * Trims each external ID's value and drops entries whose value is blank. Unlike free-text fields, external ID
+     * values are only trimmed - not otherwise normalized - since they are identifiers rather than prose and must
+     * not be altered.
+     */
+    fun normalizeExternalIds(externalIds: List<ExternalId>): List<ExternalId> = externalIds
+        .map { it.copy(value = it.value.trim()) }
+        .filter { it.value.isNotBlank() }
 
     private fun normalizeAuthor(author: Author) = author.copy(
         firstName = normalizeText(author.firstName),
