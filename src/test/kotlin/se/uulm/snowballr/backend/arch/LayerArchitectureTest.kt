@@ -120,7 +120,7 @@ private class StructureRules {
             .whereLayer(MATCHING)
             .mayOnlyBeAccessedByLayers(FETCHER, MAIN)
             .whereLayer(NORMALIZATION)
-            .mayOnlyBeAccessedByLayers(FETCHER)
+            .mayOnlyBeAccessedByLayers(FETCHER, SERVICE)
             .check(classes)
     }
 
@@ -139,7 +139,7 @@ private class StructureRules {
             .whereLayer(GRPC)
             .mayOnlyAccessLayers(SERVICE, VALIDATION, SCHEDULER)
             .whereLayer(SERVICE)
-            .mayOnlyAccessLayers(REPO, ACCESS, FETCHER)
+            .mayOnlyAccessLayers(REPO, ACCESS, FETCHER, NORMALIZATION)
             .whereLayer(ACCESS)
             .mayOnlyAccessLayers(REPO)
             .whereLayer(REPO)

@@ -9,6 +9,7 @@ import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateP
 import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
 import se.uulm.snowballr.backend.model.incoming.paper.UpdatePaperRequest
 import se.uulm.snowballr.backend.model.outgoing.paper.PaperResponse
+import se.uulm.snowballr.backend.normalization.normalized
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import java.util.UUID
@@ -65,28 +66,33 @@ class PaperService(
         getReferencePapers(paperId, citationRepo::getForwardReferencedPaperIdsOfPaperById)
 
     override suspend fun updatePaper(request: UpdatePaperRequest, fields: Set<PaperField>): PaperResponse {
-        repo.ensurePaperExists(request.paperId)
+        val normalizedRequest = request.normalized()
+        repo.ensurePaperExists(normalizedRequest.paperId)
 
-        val isExternalIdChange = fields.contains(PaperField.EXTERNAL_IDS) && request.externalIds.isNotEmpty()
+        val isExternalIdChange = fields.contains(PaperField.EXTERNAL_IDS) && normalizedRequest.externalIds.isNotEmpty()
         if (isExternalIdChange) {
-            val existingPapers = repo.getPapersByExternalIds(request.externalIds)
+            val existingPapers = repo.getPapersByExternalIds(normalizedRequest.externalIds)
 
-            if (existingPapers.any { it.id != request.paperId }) {
-                throw DuplicatePaperException(request.externalIds)
+            if (existingPapers.any { it.id != normalizedRequest.paperId }) {
+                throw DuplicatePaperException(normalizedRequest.externalIds)
             }
         }
 
-        val updatedPaper = repo.updatePaper(request, fields)
-        logger.info { "Paper ${request.paperId} updated: ${fields.joinToString()}" }
+        val updatedPaper = repo.updatePaper(normalizedRequest, fields)
+        logger.info { "Paper ${normalizedRequest.paperId} updated: ${fields.joinToString()}" }
         return updatedPaper.toPaperResponse()
     }
 
     override suspend fun createPaper(request: CreatePaperRequest): PaperResponse {
-        if (request.externalIds.isNotEmpty() && repo.doesPaperExistByExternalIds(request.externalIds)) {
-            throw DuplicatePaperException(request.externalIds)
+        val normalizedRequest = request.normalized()
+
+        val hasExistingExternalIds = normalizedRequest.externalIds.isNotEmpty() &&
+            repo.doesPaperExistByExternalIds(normalizedRequest.externalIds)
+        if (hasExistingExternalIds) {
+            throw DuplicatePaperException(normalizedRequest.externalIds)
         }
 
-        val paper = repo.createPaper(request)
+        val paper = repo.createPaper(normalizedRequest)
         logger.info { "Paper ${paper.id} created ('${paper.title}')" }
         return paper.toPaperResponse()
     }

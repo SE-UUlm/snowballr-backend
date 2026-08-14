@@ -50,4 +50,19 @@ class CreatePaperTest : PaperServiceTest() {
             service.createPaper(request)
             coVerify(exactly = 0) { paperRepoMock.doesPaperExistByExternalIds(request.externalIds) }
         }
+
+    @Test
+    fun `When a paper is created with messily formatted data, then the normalized data is persisted`() = runTest {
+        val paperId = UUID.randomUUID()
+        val paper = DataBuilder.createExamplePaper(title = "  Messy   Title  ", externalIds = emptyList())
+        val request = CreatePaperRequest.fromPaper(paper)
+        val normalizedRequest = request.copy(title = "Messy Title")
+
+        coEvery { paperRepoMock.createPaper(normalizedRequest) } returns DataBuilder.createExamplePaper(id = paperId)
+        coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paperId) } returns emptyList()
+
+        service.createPaper(request)
+
+        coVerify(exactly = 1) { paperRepoMock.createPaper(normalizedRequest) }
+    }
 }
