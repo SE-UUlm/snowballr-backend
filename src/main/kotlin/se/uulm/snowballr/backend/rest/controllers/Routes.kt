@@ -10,4 +10,5 @@ object Routes {
     const val PROJECT_MEMBERS_ROUTE = "$PROJECTS_ROUTE/{projectId}/members"
     const val INVITATIONS_ROUTE = "$BASE_ROUTE/invitations"
     const val READING_LIST_ROUTE = "$USERS_ROUTE/me/reading-list"
+    const val PROJECT_PAPERS_ROUTE = "$BASE_ROUTE/project-papers"
 }
