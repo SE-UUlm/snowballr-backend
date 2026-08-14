@@ -58,9 +58,6 @@ object ExternalIdValidator {
      * standardized-enough format to validate meaningfully ([ExternalIdType.ACL]'s Anthology ID scheme and
      * [ExternalIdType.DBLP]'s key scheme have both changed shape too many times over the years), in which case
      * only the generic blank/max-length checks apply.
-     *
-     * This is a `when` over all [ExternalIdType] entries without an `else` branch so that adding a new type
-     * without deciding on its format fails compilation.
      */
     private fun formatRegexFor(type: ExternalIdType): Regex? = when (type) {
         ExternalIdType.DOI -> DOI_REGEX
