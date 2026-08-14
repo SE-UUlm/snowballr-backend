@@ -315,6 +315,21 @@ tasks.register<Exec>("buildTsClient") {
     doFirst {
         copyToPackage("LICENSE")
         copyToPackage("CHANGELOG.md")
+
+        // Restrict the published package contents to the compiled output and docs (source code is omitted).
+        ProcessBuilder(
+            "npm", "pkg", "set",
+            "description=API client for the SnowballR Web Application",
+            "author=SnowballR",
+            "files[0]=dist",
+            "files[1]=README.md",
+            "files[2]=LICENSE",
+            "files[3]=CHANGELOG.md",
+        )
+            .directory(tsClientDir.get().asFile)
+            .inheritIO()
+            .start()
+            .waitFor()
     }
 }
 
