@@ -10,6 +10,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import se.uulm.snowballr.backend.env.EnvReader
+import se.uulm.snowballr.backend.fetcher.normalization.PaperNormalizer
 import se.uulm.snowballr.backend.model.exception.FetcherException
 import se.uulm.snowballr.backend.model.exception.UnauthorizedFetcherPathException
 import se.uulm.snowballr.backend.model.exception.notfound.FetcherNotFoundException
@@ -90,11 +91,12 @@ class PythonPluginFetcherManager(
         options: Map<String, String>,
     ): Set<FetcherPaper> {
         val action = FetcherAction.QUERY
-        return executeFetcher(
+        val papers: Set<FetcherPaper> = executeFetcher(
             fetcher,
             action,
             action.payload(searchQuery = searchQuery, options = options),
         )
+        return papers.normalized()
     }
 
     override suspend fun fetchForwardReferences(
@@ -103,11 +105,12 @@ class PythonPluginFetcherManager(
         options: Map<String, String>,
     ): Set<FetcherPaper> {
         val action = FetcherAction.FORWARDS
-        return executeFetcher(
+        val papers: Set<FetcherPaper> = executeFetcher(
             fetcher,
             action,
             action.payload(paper = paper, options = options),
         )
+        return papers.normalized()
     }
 
     override suspend fun fetchBackwardReferences(
@@ -116,12 +119,19 @@ class PythonPluginFetcherManager(
         options: Map<String, String>,
     ): Set<FetcherPaper> {
         val action = FetcherAction.BACKWARDS
-        return executeFetcher(
+        val papers: Set<FetcherPaper> = executeFetcher(
             fetcher,
             action,
             action.payload(paper = paper, options = options),
         )
+        return papers.normalized()
     }
+
+    /**
+     * Normalizes every paper in this set via [PaperNormalizer], so that all data received from a plugin is
+     * normalized right away, regardless of which method is used to fetch it.
+     */
+    private fun Set<FetcherPaper>.normalized(): Set<FetcherPaper> = map { PaperNormalizer.normalize(it) }.toSet()
 
     /**
      * Executes the Python script of a given fetcher with the given command
@@ -219,7 +229,7 @@ class PythonPluginFetcherManager(
     private fun parseProcessResult(fetcher: String, processResult: ProcessResult): String {
         val (stdout, stderr, returnCode) = processResult
         if (returnCode == 0) {
-            if (!stderr.isBlank()) logger.info { "Fetcher '$fetcher' encountered a problem: $stderr" }
+            if (stderr.isNotBlank()) logger.info { "Fetcher '$fetcher' encountered a problem: $stderr" }
             val output = stdout.lineSequence().firstOrNull()?.trim().orEmpty()
             if (output.isBlank()) {
                 throw FetcherException("Fetcher '$fetcher' returned no JSON output.")

@@ -5,6 +5,10 @@ import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
 
 /**
  * Delegate requests to multiple fetchers using their names.
+ *
+ * Implementations are expected to normalize (see [se.uulm.snowballr.backend.fetcher.normalization.PaperNormalizer])
+ * every [FetcherPaper] they return, so that callers can rely on consistent formatting regardless of which fetcher
+ * produced the data.
  */
 interface IFetcherManager {
     /**

@@ -191,6 +191,58 @@ class PythonPluginFetcherManagerTest {
     }
 
     @Test
+    @Suppress("StringShouldBeRawString")
+    fun `When a fetcher returns a messily formatted paper, then it is normalized before being returned`() = runTest {
+        writeFetcher(
+            "messy_paper_fetcher",
+            """
+            import json
+            import sys
+
+            paper = [{
+                "title": "  Messy   Title  ",
+                "external_ids": [
+                    {"type": "DOI", "value": "  10.1234/messy  "},
+                    {"type": "ARXIV", "value": "   "}
+                ],
+                "abstract": "Multi\n\nline   abstract",
+                "year": 2024,
+                "publisher": "  Messy Publisher  ",
+                "publication_type": "journal",
+                "publication_name": "  Messy Publication  ",
+                "authors": [
+                    {"first_name": "  Jane  ", "last_name": "Doe"},
+                    {"first_name": "", "last_name": " "}
+                ],
+                "fetcher_metadata": {"id": "meta-1"}
+            }]
+
+            if sys.argv[1] == "query":
+                print(json.dumps(paper))
+            else:
+                print("unsupported", file=sys.stderr)
+                sys.exit(1)
+            """.trimIndent(),
+        )
+
+        val expectedNormalizedPaper = FetcherPaper(
+            title = "Messy Title",
+            externalIds = listOf(ExternalId(ExternalIdType.DOI, "10.1234/messy")),
+            abstract = "Multi line abstract",
+            year = 2024,
+            publisher = "Messy Publisher",
+            publicationType = "journal",
+            publicationName = "Messy Publication",
+            authors = listOf(Author("Jane", "Doe")),
+            fetcherMetadata = mapOf("id" to "meta-1"),
+        )
+
+        val queryResult = fetcherManager.searchPapers("messy_paper_fetcher", "query", emptyMap())
+
+        assertEquals(setOf(expectedNormalizedPaper), queryResult)
+    }
+
+    @Test
     fun `When querying papers, then payload is sent via stdin and not as CLI args`() = runTest {
         writeFetcher(
             "stdin_payload_fetcher",
