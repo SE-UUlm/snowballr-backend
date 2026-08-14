@@ -7,6 +7,7 @@ import se.uulm.snowballr.backend.auth.IAuthenticationManager
 import se.uulm.snowballr.backend.auth.ICookieManager
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.service.IAuthenticationService
+import se.uulm.snowballr.backend.service.ICriterionService
 import se.uulm.snowballr.backend.service.IExportService
 import se.uulm.snowballr.backend.service.IInvitationService
 import se.uulm.snowballr.backend.service.IProjectMemberService
@@ -56,4 +57,7 @@ class KoinBridge {
 
     @Bean
     fun reviewService(): IReviewService = getKoin().get()
+
+    @Bean
+    fun criterionService(): ICriterionService = getKoin().get()
 }
