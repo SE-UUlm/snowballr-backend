@@ -28,7 +28,9 @@ class UsersController(
 ) {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    fun register(@RequestBody request: RegisterRequest) = onRequest { userService.register(request) }
+    fun register(@RequestBody request: RegisterRequest) {
+        onRequest { userService.register(request) }
+    }
 
     @GetMapping
     fun getUsers(@RequestParam(required = false) email: String?): List<User> = onRequest {
