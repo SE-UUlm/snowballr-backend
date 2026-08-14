@@ -20,11 +20,22 @@ object ExternalIdValidator {
     private val DOI_REGEX = Regex("""^10\.\d{4,9}/\S+$""")
 
     /**
-     * Matches an [ArXiv](https://arxiv.org/) identifier in either the current `YYMM.NNNNN` scheme introduced in
-     * 2007 (e.g. `2101.00001`, optionally with a `vN` version suffix) or the legacy `archive/YYMMNNN` scheme used
-     * before that (e.g. `hep-th/9901001`).
+     * Matches the current [ArXiv](https://arxiv.org/) `YYMM.NNNNN` scheme introduced in 2007, e.g. `2101.00001`,
+     * optionally with a `vN` version suffix, e.g. `2101.00001v2`.
      */
-    private val ARXIV_REGEX = Regex("""^\d{4}\.\d{4,5}(v\d+)?$|^[a-z-]+(\.[A-Z]{2})?/\d{7}(v\d+)?$""")
+    private val ARXIV_NEW_STYLE_REGEX = Regex("""^\d{4}\.\d{4,5}(v\d+)?$""")
+
+    /**
+     * Matches the legacy [ArXiv](https://arxiv.org/) `archive.subject-class/YYMMNNN` scheme used before the
+     * `YYMM.NNNNN` scheme was introduced in 2007, e.g. `hep-th/9901001`.
+     */
+    private val ARXIV_OLD_STYLE_REGEX = Regex("""^[a-z-]+(\.[A-Z]{2})?/\d{7}(v\d+)?$""")
+
+    /**
+     * Matches an [ArXiv](https://arxiv.org/) identifier in either the [ARXIV_NEW_STYLE_REGEX] or the
+     * [ARXIV_OLD_STYLE_REGEX] scheme.
+     */
+    private val ARXIV_REGEX = Regex("${ARXIV_NEW_STYLE_REGEX.pattern}|${ARXIV_OLD_STYLE_REGEX.pattern}")
 
     /**
      * Matches a numeric ID as used by both
