@@ -93,7 +93,7 @@ Full rules in wiki/Logging.md. The points most easily got wrong:
   noteworthy events, including security-relevant rejections such as failed logins. INFO for state changes. DEBUG for
   per-request diagnostics. TRACE is the only level not enabled in production.
 - **Layer ownership:** services log business events; repositories log only batch/maintenance row counts; interceptors
-  log the request lifecycle. Never log the same event at two layers, and never log-and-throw.
+  log the request lifecycle. Never log the same event at two layers.
 - **Never log** passwords, JWTs, verification/invitation tokens (they are bearer credentials), or raw request payloads.
   Validated email addresses are fine.
 - **Correlation:** requestId and userId are mirrored into the SLF4J MDC by RequestContext. A plain MDC.put does not

@@ -40,10 +40,10 @@ val loggingInterceptor =
         ): ServerCall.Listener<ReqT?>? {
             val requestId = RequestContext.generateRequestId()
             val startTime = System.currentTimeMillis()
-            val methodName = call?.run { methodDescriptor.fullMethodName } ?: "<unknown method>"
             val context = Context.current().withValue(REQUEST_ID_CONTEXT_KEY, requestId)
 
             return context.call {
+                val methodName = call?.run { methodDescriptor.fullMethodName } ?: "<unknown method>"
                 RequestContext.withRequestIdMdc(requestId) { logger.debug { "Received call to $methodName" } }
                 val statusCall = call?.let { StatusCapturingCall(it) }
                 val listener = next?.startCall(statusCall, headers) ?: return@call null
