@@ -5,5 +5,6 @@
 - [Architecture](https://github.com/SE-UUlm/snowballr-backend/wiki/Architecture)
 - [Fetcher](https://github.com/SE-UUlm/snowballr-backend/wiki/Fetcher)
 - [Contributing](https://github.com/SE-UUlm/snowballr-backend/wiki/Contributing)
+- [Logging](https://github.com/SE-UUlm/snowballr-backend/wiki/Logging)
 - [Testing](https://github.com/SE-UUlm/snowballr-backend/wiki/Testing)
 - [Tools](https://github.com/SE-UUlm/snowballr-backend/wiki/Tools)

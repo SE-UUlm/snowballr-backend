@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.service
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import se.uulm.snowballr.backend.access.ICriterionAccessChecker
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
@@ -9,6 +10,8 @@ import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import java.util.UUID
+
+private val logger = KotlinLogging.logger {}
 
 interface ICriterionService {
     /**
@@ -68,7 +71,12 @@ class CriterionService(
                 accessChecker.isAllowedToCreateProjectCriterion(currentUser, request.projectId)
             }
 
-            repo.createCriterion(request, currentUser.id)
+            val criterion = repo.createCriterion(request, currentUser.id)
+            logger.info {
+                val owner = request.projectId?.let { "project $it" } ?: "the user's defaults"
+                "Criterion ${criterion.id} ('${criterion.tag}') created for $owner"
+            }
+            criterion
         }
 
     override suspend fun updateCriterion(request: UpdateCriterionRequest, paths: List<String>): Criterion =
@@ -77,7 +85,9 @@ class CriterionService(
 
             accessChecker.isAllowedToUpdateCriterion(currentUser, criterion)
 
-            repo.updateCriterion(request, paths)
+            val updatedCriterion = repo.updateCriterion(request, paths)
+            logger.info { "Criterion ${request.criterionId} updated: ${paths.joinToString()}" }
+            updatedCriterion
         }
 
     override suspend fun getAllCriteriaForProject(projectId: UUID): List<Criterion.ProjectCriterion> =

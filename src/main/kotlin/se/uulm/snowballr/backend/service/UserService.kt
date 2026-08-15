@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.service
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.viascom.nanoid.NanoId
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.access.IUserAccessChecker
@@ -21,6 +22,8 @@ import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.IVerificationTokenTableRepo
 import java.util.UUID
+
+private val logger = KotlinLogging.logger {}
 
 interface IUserService {
     /**
@@ -145,6 +148,7 @@ class UserService(
             daysToHumanReadable(expirationTimeInDays),
         )
         emailManager.sendVerificationEmail(user.email, data)
+        logger.info { "User ${user.id} registered (${user.email})" }
     }
 
     override suspend fun updateUser(request: UpdateUserRequest, paths: List<String>): User =
@@ -163,7 +167,9 @@ class UserService(
                 throw DuplicateUserException(request.email)
             }
 
-            userRepo.updateUser(request, paths)
+            val updatedUser = userRepo.updateUser(request, paths)
+            logger.info { "User ${targetUser.id} updated: ${paths.joinToString()}" }
+            updatedUser
         }
 
     override suspend fun softDeleteUser(userId: UUID) = withUser(userRepo) { currentUser ->
@@ -185,6 +191,7 @@ class UserService(
         }
 
         userRepo.softDeleteUser(targetUser.id)
+        logger.info { "User ${targetUser.id} soft-deleted" }
     }
 
     override suspend fun getCurrentUser(): User = withUser(userRepo) { it }

@@ -233,7 +233,7 @@ class EnvReader(
         AppProfile.DEVELOPMENT -> ProfileDefaults(
             port = DEFAULT_PORT,
             databaseHost = DEFAULT_DATABASE_HOST,
-            logLevel = "DEBUG",
+            logLevel = DEFAULT_LOG_LEVEL,
             sensitiveInformationRetentionDays = DEFAULT_SENSITIVE_INFORMATION_RETENTION_DAYS,
             authBypassEnabled = false,
             frontendBaseUrl = "http://localhost:5173",
@@ -244,7 +244,7 @@ class EnvReader(
         AppProfile.PRODUCTION -> ProfileDefaults(
             port = null,
             databaseHost = null,
-            logLevel = "INFO",
+            logLevel = DEFAULT_LOG_LEVEL,
             sensitiveInformationRetentionDays = DEFAULT_SENSITIVE_INFORMATION_RETENTION_DAYS,
             authBypassEnabled = false,
             frontendBaseUrl = null,

@@ -93,9 +93,20 @@ private class ExceptionCall<ReqT, RespT>(
             is UnauthorizedFetcherPathException -> Status.INTERNAL
         }.withDescription(exception.message).withCause(exception.cause)
 
-        logger.debug {
+        val logMessage = {
             "gRPC call failed due to ${exception::class.qualifiedName ?: "<unknown class>"} with status: " +
                 "${status.code}. Message: ${status.description ?: "<no message>"}"
+        }
+
+        when (exception) {
+            is InternalException, is UnauthorizedFetcherPathException -> logger.error(exception, logMessage)
+            is AlreadyExistsException,
+            is FailedPreconditionException,
+            is InvalidArgumentException,
+            is NotFoundException,
+            is UnauthenticatedException,
+            is UnauthorizedException,
+            -> logger.debug(logMessage)
         }
         logger.trace { exception.stackTraceToString() }
         return status

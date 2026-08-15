@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.service
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.viascom.nanoid.NanoId
 import se.uulm.snowballr.backend.access.IInvitationAccessChecker
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
@@ -19,6 +20,8 @@ import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import java.time.OffsetDateTime
 import java.util.UUID
+
+private val logger = KotlinLogging.logger {}
 
 interface IInvitationService {
     /**
@@ -136,6 +139,7 @@ class InvitationService(
             daysToHumanReadable(expirationTimeInDays),
         )
         emailManager.sendAcceptProjectInvitationEmail(userEmail, data)
+        logger.info { "User '$userEmail' invited to project $projectId" }
     }
 
     override suspend fun acceptProjectInvitation(token: String) {
@@ -143,6 +147,9 @@ class InvitationService(
 
         // Check if the token has expired
         if (OffsetDateTime.now().isAfter(invitationToken.expiresAt)) {
+            logger.debug {
+                "Invitation token expired for '${invitationToken.email}' to project ${invitationToken.projectId}"
+            }
             invitationTokenRepo.deleteInvitationToken(invitationToken.token)
             throw InvitationTokenNotFoundException()
         }
@@ -165,6 +172,7 @@ class InvitationService(
 
         // Remove the invitation token after successful acceptance
         invitationTokenRepo.deleteInvitationToken(invitationToken.token)
+        logger.info { "User ${user.id} accepted invitation to project ${invitationToken.projectId}" }
     }
 
     override suspend fun getPendingInvitationsForProject(projectId: UUID): List<InvitationResponse> =

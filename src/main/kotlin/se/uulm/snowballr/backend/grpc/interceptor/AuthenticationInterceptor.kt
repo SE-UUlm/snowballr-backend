@@ -116,7 +116,7 @@ val authenticationInterceptor: ServerInterceptor =
         ): ServerCall.Listener<ReqT?>? {
             val serviceName = call?.run { methodDescriptor.serviceName }
             val methodName = call?.run { methodDescriptor.fullMethodName }
-            logger.info { "Authenticating call to ${methodName ?: "<unknown method>"}" }
+            logger.debug { "Authenticating call to ${methodName ?: "<unknown method>"}" }
 
             if (methodName == null || serviceName == null) {
                 call?.close(Status.UNAUTHENTICATED.withDescription("Method or service name is null"), Metadata())
@@ -129,7 +129,10 @@ val authenticationInterceptor: ServerInterceptor =
             }
 
             // The request context is mutated during authentication and handed to the coroutine via REQUEST_CONTEXT_KEY.
-            val requestContext = RequestContext()
+            // Reuse the request ID assigned by the loggingInterceptor so its logs and the service logs correlate.
+            val requestContext = REQUEST_ID_CONTEXT_KEY.get()
+                ?.let { RequestContext(requestId = it) }
+                ?: RequestContext()
             val forwardingCall = AuthForwardingCall(call, cookieManager, requestContext)
             val grpcContext = Context.current().withValue(REQUEST_CONTEXT_KEY, requestContext)
 

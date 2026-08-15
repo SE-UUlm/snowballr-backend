@@ -23,6 +23,7 @@ existing docs over restating them here. If you must summarize, keep it short and
 - wiki/Configuration.md — environment variables, profiles, JWT key generation, auth bypass
 - wiki/Architecture.md — request flow and layer responsibilities
 - wiki/Contributing.md — project layout and implementation patterns by layer
+- wiki/Logging.md — log level rules, what must never be logged, layer responsibilities, correlation IDs
 - wiki/Testing.md — unit/integration testing conventions and reports
 - wiki/Fetcher.md — fetcher plugin system, security warning, contract
 - wiki/Tools.md — dev tools, including fetcher CLI reference
@@ -58,6 +59,8 @@ existing docs over restating them here. If you must summarize, keep it short and
 | Architecture                    | wiki/Architecture.md                                                     | Request flow and layer responsibilities.         |
 | Project layout / layer patterns | wiki/Contributing.md                                                     | Source of truth.                                 |
 | Fetcher orchestration progress  | wiki/Contributing.md#fetcher-orchestration-progress                      | Implementation checklist.                        |
+| Logging conventions             | wiki/Logging.md                                                          | Levels, layer ownership, MDC correlation.        |
+| Logging setup                   | src/main/resources/logback.xml, context/RequestContext.kt                | Pattern and MDC mirroring.                       |
 | Testing conventions             | wiki/Testing.md                                                          | Unit/integration tests, reports.                 |
 | Fetcher contract                | wiki/Fetcher.md                                                          | Security warning and invocation protocol.        |
 | Fetcher CLI                     | tools/fetcher-cli/cli.py, wiki/Tools.md                                  | Direct plugin invocation for dev/testing.        |
@@ -78,6 +81,23 @@ existing docs over restating them here. If you must summarize, keep it short and
   (wiki/Contributing.md).
 - **Fetcher orchestrator:** In-process queue for fetcher jobs. It is started in Main.kt and can only be started once
   (see FetcherOrchestrator.kt and related tests).
+
+## Logging
+
+Full rules in wiki/Logging.md. The points most easily got wrong:
+
+- **PRODUCTION runs at DEBUG.** Everything except TRACE is visible in production, so the level does not decide whether
+  a line is seen but how it is treated: act on it (WARN/ERROR), record a state change (INFO), or diagnose one request
+  (DEBUG). Levels must stay separable, since filtering to INFO and above is how the audit trail is read.
+- **Levels:** ERROR only when an operator must act (broken invariant, unhandled exception). WARN for expected but
+  noteworthy events, including security-relevant rejections such as failed logins. INFO for state changes. DEBUG for
+  per-request diagnostics. TRACE is the only level not enabled in production.
+- **Layer ownership:** services log business events; repositories log only batch/maintenance row counts; interceptors
+  log the request lifecycle. Never log the same event at two layers.
+- **Never log** passwords, JWTs, verification/invitation tokens (they are bearer credentials), or raw request payloads.
+  Validated email addresses are fine.
+- **Correlation:** requestId and userId are mirrored into the SLF4J MDC by RequestContext. A plain MDC.put does not
+  survive dispatcher hops in coroutine code — use a ThreadContextElement.
 
 ## Fetcher plugins
 
@@ -159,6 +179,8 @@ existing docs over restating them here. If you must summarize, keep it short and
 - **Checks (Kotlin):** Detekt is the linter; keep code consistent with detekt.yml.
 - **Checks (Python):** ruff for formatting and linting; ty for type-checking. Config in pyproject.toml.
 - **Tests:** Follow wiki/Testing.md conventions (when-then naming, nested classes).
+- **Logging:** Follow wiki/Logging.md; always use the lambda form (`logger.info { ... }`) so the message is only built
+  when the level is enabled.
 
 Example test naming:
 

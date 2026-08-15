@@ -56,7 +56,7 @@ The `PROFILE` variable determines the default behavior of the application.
 |----------------------------------------|--------------|-------------------------|-------------------------|
 | `PORT`                                 | -            | 8080                    | 8080                    |
 | `DATABASE_HOST`                        | -            | `localhost`             | `localhost`             |
-| `LOG_LEVEL`                            | `INFO`       | `DEBUG`                 | `TRACE`                 |
+| `LOG_LEVEL`                            | `DEBUG`      | `DEBUG`                 | `TRACE`                 |
 | `SENSITIVE_INFORMATION_RETENTION_DAYS` | `30`         | `30`                    | `30`                    |
 | `AUTH_BYPASS_ENABLED`                  | `false`      | `false`                 | `true`                  |
 | `FRONTEND_BASE_URL`                    | -            | `http://localhost:5173` | `http://localhost:5173` |

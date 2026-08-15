@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.service
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.dto.paper.Paper
 import se.uulm.snowballr.backend.model.exception.NotFoundException
@@ -10,6 +11,8 @@ import se.uulm.snowballr.backend.model.outgoing.paper.PaperResponse
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import java.util.UUID
+
+private val logger = KotlinLogging.logger {}
 
 interface IPaperService {
     /**
@@ -71,7 +74,9 @@ class PaperService(
             }
         }
 
-        return repo.updatePaper(request, paths).toPaperResponse()
+        val updatedPaper = repo.updatePaper(request, paths)
+        logger.info { "Paper ${request.paperId} updated: ${paths.joinToString()}" }
+        return updatedPaper.toPaperResponse()
     }
 
     override suspend fun createPaper(request: CreatePaperRequest): PaperResponse {
@@ -79,7 +84,9 @@ class PaperService(
             throw DuplicatePaperException(request.externalIds)
         }
 
-        return repo.createPaper(request).toPaperResponse()
+        val paper = repo.createPaper(request)
+        logger.info { "Paper ${paper.id} created ('${paper.title}')" }
+        return paper.toPaperResponse()
     }
 
     /**
