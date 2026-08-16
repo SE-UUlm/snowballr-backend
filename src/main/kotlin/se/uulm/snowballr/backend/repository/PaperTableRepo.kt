@@ -21,6 +21,7 @@ import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.paper.Paper
+import se.uulm.snowballr.backend.model.dto.paper.PaperField
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
 import se.uulm.snowballr.backend.model.fetcher.FetcherMetadata
@@ -65,9 +66,13 @@ interface IPaperTableRepo {
     suspend fun createPaper(request: CreatePaperRequest): Paper
 
     /**
-     * Updates an existing paper in the database with the provided new values.
+     * Updates an existent paper in the database with the provided new information.
+     *
+     * @param request The update request containing the new paper details.
+     * @param fields The fields that should be updated.
+     * @return The updated [Paper] object reflecting the changes from the [request].
      */
-    suspend fun updatePaper(request: UpdatePaperRequest, paths: List<String>): Paper
+    suspend fun updatePaper(request: UpdatePaperRequest, fields: Set<PaperField>): Paper
 
     /**
      * Retrieves a list of papers whose title partially or fully match the [query].
@@ -180,28 +185,29 @@ class PaperTableRepo(
         getPaperById(paperId).getOrThrow()
     }
 
-    override suspend fun updatePaper(request: UpdatePaperRequest, paths: List<String>): Paper = db.query {
-        if (paths.isEmpty()) {
+    override suspend fun updatePaper(request: UpdatePaperRequest, fields: Set<PaperField>): Paper = db.query {
+        if (fields.isEmpty()) {
             return@query getPaperById(request.paperId).getOrThrow()
         }
 
         PaperTable.update({ PaperTable.id eq request.paperId }) {
-            for (field in paths) {
+            for (field in fields) {
                 when (field) {
-                    "paper.title" -> it[title] = request.title
-                    "paper.abstrakt" -> it[abstract] = request.abstract
-                    "paper.year" -> it[year] = request.year
-                    "paper.publisher" -> it[publisher] = request.publisher
-                    "paper.publication_name" -> it[publicationName] = request.publicationName
-                    "paper.publication_type" -> it[publicationType] = request.publicationType
-                    "paper.authors" -> it[authors] = request.authors
+                    PaperField.TITLE -> it[title] = request.title
+                    PaperField.ABSTRACT -> it[abstract] = request.abstract
+                    PaperField.YEAR -> it[year] = request.year
+                    PaperField.PUBLISHER -> it[publisher] = request.publisher
+                    PaperField.PUBLICATION_NAME -> it[publicationName] = request.publicationName
+                    PaperField.PUBLICATION_TYPE -> it[publicationType] = request.publicationType
+                    PaperField.AUTHORS -> it[authors] = request.authors
+                    PaperField.EXTERNAL_IDS -> { /* External IDs are handled below */ }
                 }
             }
 
             it[modifiedAt] = OffsetDateTime.now()
         }
 
-        if (paths.contains("paper.external_ids")) {
+        if (fields.contains(PaperField.EXTERNAL_IDS)) {
             PaperHasExternalIdTable.deleteWhere { PaperHasExternalIdTable.paperId eq request.paperId }
             insertExternalIds(request.paperId, request.externalIds)
         }

@@ -84,6 +84,7 @@ class ProjectValidatorTest {
         private val validFieldMask: FieldMask = FieldMaskUtil
             .fromStringList(
                 listOf(
+                    "project.id",
                     "project.name",
                     "project.status",
                     "project.settings.similarity_threshold",

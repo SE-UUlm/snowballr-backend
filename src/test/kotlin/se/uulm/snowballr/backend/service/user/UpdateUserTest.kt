@@ -10,6 +10,7 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.dto.user.User
+import se.uulm.snowballr.backend.model.dto.user.UserField
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateUserException
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
 
@@ -33,7 +34,7 @@ class UpdateUserTest : UserServiceTest() {
         mockCurrentUser(currentUser)
         coEvery { userRepoMock.getUserById(otherUser.id) } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { service.updateUser(request, emptyList()) }
+        assertThrows<TestSpecificException> { service.updateUser(request, emptySet()) }
     }
 
     @Test
@@ -49,7 +50,7 @@ class UpdateUserTest : UserServiceTest() {
             userAccessCheckerMock.isAllowedToUpdateUser(currentUser, otherUser)
         } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { service.updateUser(request, emptyList()) }
+        assertThrows<TestSpecificException> { service.updateUser(request, emptySet()) }
     }
 
     @Test
@@ -67,7 +68,7 @@ class UpdateUserTest : UserServiceTest() {
                 userAccessCheckerMock.isAllowedToUpdateUserRole(currentUser, otherUser.id)
             } throws TestSpecificException()
 
-            assertThrows<TestSpecificException> { service.updateUser(request, listOf("user.role")) }
+            assertThrows<TestSpecificException> { service.updateUser(request, setOf(UserField.ROLE)) }
         }
 
     @Test
@@ -83,7 +84,7 @@ class UpdateUserTest : UserServiceTest() {
             coJustRun { userAccessCheckerMock.isAllowedToUpdateUser(currentUser, otherUser) }
             coEvery { userRepoMock.doesUserExistByEmail(otherUser.email) } returns true
 
-            assertThrows<DuplicateUserException> { service.updateUser(request, listOf("user.email")) }
+            assertThrows<DuplicateUserException> { service.updateUser(request, setOf(UserField.EMAIL)) }
         }
 
     @Test
@@ -97,9 +98,9 @@ class UpdateUserTest : UserServiceTest() {
         coEvery { userRepoMock.getUserById(otherUser.id) } returns Result.success(otherUser)
         coJustRun { userAccessCheckerMock.isAllowedToUpdateUser(currentUser, otherUser) }
         coEvery { userRepoMock.doesUserExistByEmail(otherUser.email) } returns false
-        coEvery { userRepoMock.updateUser(request, listOf("user.email")) } returns otherUser
+        coEvery { userRepoMock.updateUser(request, setOf(UserField.EMAIL)) } returns otherUser
 
-        val updatedUser = service.updateUser(request, listOf("user.email"))
+        val updatedUser = service.updateUser(request, setOf(UserField.EMAIL))
 
         assertEquals(otherUser.id, updatedUser.id)
         assertEquals(otherUser.email, updatedUser.email)
@@ -111,15 +112,15 @@ class UpdateUserTest : UserServiceTest() {
         val otherUser = DataBuilder.createExampleUser()
 
         val request = getExampleRequest(otherUser)
-        val paths = listOf("user.first_name", "user.last_name", "user.role", "user.status")
+        val fields = setOf(UserField.FIRST_NAME, UserField.LAST_NAME, UserField.ROLE, UserField.STATUS)
 
         mockCurrentUser(currentUser)
         coEvery { userRepoMock.getUserById(otherUser.id) } returns Result.success(otherUser)
         coJustRun { userAccessCheckerMock.isAllowedToUpdateUser(currentUser, otherUser) }
         coJustRun { userAccessCheckerMock.isAllowedToUpdateUserRole(currentUser, otherUser.id) }
-        coEvery { userRepoMock.updateUser(request, paths) } returns otherUser
+        coEvery { userRepoMock.updateUser(request, fields) } returns otherUser
 
-        val updatedUser = service.updateUser(request, paths)
+        val updatedUser = service.updateUser(request, fields)
 
         assertEquals(otherUser.id, updatedUser.id)
         assertEquals(otherUser.firstName, updatedUser.firstName)
@@ -140,7 +141,7 @@ class UpdateUserTest : UserServiceTest() {
             userAccessCheckerMock.isAllowedToUpdateUserRole(currentUser, currentUser.id)
         } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { service.updateUser(request, listOf("user.role")) }
+        assertThrows<TestSpecificException> { service.updateUser(request, setOf(UserField.ROLE)) }
 
         coVerify(exactly = 0) { userRepoMock.updateUser(any(), any()) }
     }
@@ -156,7 +157,7 @@ class UpdateUserTest : UserServiceTest() {
             coJustRun { userAccessCheckerMock.isAllowedToUpdateUser(currentUser, currentUser) }
             coEvery { userRepoMock.doesUserExistByEmail(currentUser.email) } returns true
 
-            assertThrows<DuplicateUserException> { service.updateUser(request, listOf("user.email")) }
+            assertThrows<DuplicateUserException> { service.updateUser(request, setOf(UserField.EMAIL)) }
 
             coVerify(exactly = 0) { userRepoMock.updateUser(any(), any()) }
         }

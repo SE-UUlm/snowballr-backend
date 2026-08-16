@@ -1,16 +1,27 @@
+@file:Suppress("TooManyFunctions")
+
 package se.uulm.snowballr.backend.grpc
 
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
+import se.uulm.snowballr.backend.model.dto.criterion.CriterionField
+import se.uulm.snowballr.backend.model.dto.paper.PaperField
 import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPattern
 import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPatternEntry
+import se.uulm.snowballr.backend.model.dto.project.ProjectField
+import se.uulm.snowballr.backend.model.dto.project.ProjectInfoField
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
 import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
+import se.uulm.snowballr.backend.model.dto.user.UserField
 import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
+import se.uulm.snowballr.backend.validation.CriterionValidator
+import se.uulm.snowballr.backend.validation.PaperValidator
+import se.uulm.snowballr.backend.validation.ProjectValidator
+import se.uulm.snowballr.backend.validation.UserValidator
 import snowballr.CriterionOuterClass
 import snowballr.ProjectOuterClass
 import snowballr.ReviewOuterClass
@@ -114,3 +125,19 @@ fun userStatusFromGrpc(status: UserOuterClass.UserStatus): UserStatus = when (st
         @Suppress("UseCheckOrError")
         throw IllegalStateException(INVALID_CONVERSION_MESSAGE)
 }
+
+fun paperFieldFromGrpc(fieldMaskPath: String) =
+    PaperField.entries.associateBy { PaperValidator.getGrpcPathsForPaperField(it) }.getValue(fieldMaskPath)
+
+fun projectFieldFromGrpc(fieldMaskPath: String) =
+    ProjectField.entries.associateBy { ProjectValidator.getGrpcPathsForProjectField(it) }.getValue(fieldMaskPath)
+
+fun criterionFieldFromGrpc(fieldMaskPath: String) =
+    CriterionField.entries.associateBy { CriterionValidator.getGrpcPathsForCriterionField(it) }.getValue(fieldMaskPath)
+
+fun userFieldFromGrpc(fieldMaskPath: String) =
+    UserField.entries.associateBy { UserValidator.getGrpcPathsForUserField(it) }.getValue(fieldMaskPath)
+
+fun projectInfoFieldFromGrpc(fieldMaskPath: String) =
+    ProjectInfoField.entries.associateBy { ProjectValidator.getGrpcPathsForProjectInfoField(it) }
+        .getValue(fieldMaskPath)

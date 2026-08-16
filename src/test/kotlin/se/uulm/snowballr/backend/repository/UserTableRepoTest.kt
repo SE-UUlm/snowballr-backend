@@ -13,10 +13,10 @@ import org.junit.jupiter.api.assertNotNull
 import org.junit.jupiter.api.assertNull
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.Arguments
-import org.junit.jupiter.params.provider.MethodSource
+import org.junit.jupiter.params.provider.EnumSource
 import se.uulm.snowballr.backend.isBetweenWithDelta
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
+import se.uulm.snowballr.backend.model.dto.user.UserField
 import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.exception.NotFoundException
@@ -38,17 +38,6 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
     private val criterionTableRepo = CriterionTableRepo(db)
 
     private val defaultThresholdDate = OffsetDateTime.now().minusDays(30)
-
-    companion object {
-        @JvmStatic
-        fun validFieldMasks(): List<Arguments> = listOf(
-            Arguments.of(listOf("user.email")),
-            Arguments.of(listOf("user.first_name", "user.last_name")),
-            Arguments.of(listOf("user.role")),
-            Arguments.of(listOf("user.status")),
-            Arguments.of(listOf("user.status", "user.role")),
-        )
-    }
 
     @Nested
     inner class GetUserById {
@@ -224,15 +213,12 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
 
     @Nested
     inner class UpdateUser {
-        @ParameterizedTest(name = "Update the fields {0}")
-        @MethodSource("se.uulm.snowballr.backend.repository.UserTableRepoTest#validFieldMasks")
-        fun `When a user is updated, then only the fields specified in the field mask are updated and the updated user is returned`(
-            fieldMask: List<String>,
-        ) = runTest {
+        @ParameterizedTest(name = "Update the field {0}")
+        @EnumSource(UserField::class)
+        fun `When a user is updated, then only the specified field is updated`(field: UserField) = runTest {
             val userId = insertUserAndGetId(email = "test.user@example.com")
-            val originalUser = repo.getUserById(userId).getOrThrow()
             val request = UpdateUserRequest(
-                userId = originalUser.id,
+                userId = userId,
                 firstName = "John",
                 lastName = "Doe",
                 email = "updated.user@example.com",
@@ -240,33 +226,33 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
                 status = UserStatus.DELETED,
             )
 
-            val updatedUser = repo.updateUser(request, fieldMask)
+            val start = OffsetDateTime.now()
+            val updatedUser = repo.updateUser(request, setOf(field))
+            val end = OffsetDateTime.now()
 
-            if ("user.email" in fieldMask) {
-                assertEquals("updated.user@example.com", updatedUser.email)
-            } else {
-                assertEquals("test.user@example.com", updatedUser.email)
+            val excluded = UserField.entries.filter { field != it }
+
+            // Included
+            when (field) {
+                UserField.EMAIL -> assertEquals("updated.user@example.com", updatedUser.email)
+                UserField.FIRST_NAME -> assertEquals("John", updatedUser.firstName)
+                UserField.LAST_NAME -> assertEquals("Doe", updatedUser.lastName)
+                UserField.ROLE -> assertEquals(UserRole.ADMIN, updatedUser.role)
+                UserField.STATUS -> assertEquals(UserStatus.DELETED, updatedUser.status)
             }
-            if ("user.first_name" in fieldMask) {
-                assertEquals("John", updatedUser.firstName)
-            } else {
-                assertEquals("Test", updatedUser.firstName)
+
+            // Excluded
+            for (excludedField in excluded) {
+                when (excludedField) {
+                    UserField.EMAIL -> assertEquals("test.user@example.com", updatedUser.email)
+                    UserField.FIRST_NAME -> assertEquals("Test", updatedUser.firstName)
+                    UserField.LAST_NAME -> assertEquals("User", updatedUser.lastName)
+                    UserField.ROLE -> assertEquals(UserRole.DEFAULT, updatedUser.role)
+                    UserField.STATUS -> assertEquals(UserStatus.ACTIVE, updatedUser.status)
+                }
             }
-            if ("user.last_name" in fieldMask) {
-                assertEquals("Doe", updatedUser.lastName)
-            } else {
-                assertEquals("User", updatedUser.lastName)
-            }
-            if ("user.role" in fieldMask) {
-                assertEquals(UserRole.ADMIN, updatedUser.role)
-            } else {
-                assertEquals(UserRole.DEFAULT, updatedUser.role)
-            }
-            if ("user.status" in fieldMask) {
-                assertEquals(UserStatus.DELETED, updatedUser.status)
-            } else {
-                assertEquals(UserStatus.ACTIVE, updatedUser.status)
-            }
+
+            assertThat(updatedUser.modifiedAt).isBetweenWithDelta(start, end)
         }
 
         @Test
@@ -286,8 +272,20 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
             )
 
             assertThrows<SQLException> {
-                repo.updateUser(updateRequest, listOf("user.email"))
+                repo.updateUser(updateRequest, setOf(UserField.EMAIL))
             }
+        }
+
+        @Test
+        fun `When a user is updated without any specified fields, then nothing is updated`() = runTest {
+            val userId = insertUserAndGetId()
+            val user = repo.getUserById(userId).getOrThrow()
+            val request = UpdateUserRequest.fromUser(user)
+
+            val updatedUser = repo.updateUser(request, emptySet())
+
+            assertEquals(user, updatedUser)
+            assertNull(updatedUser.modifiedAt)
         }
     }
 

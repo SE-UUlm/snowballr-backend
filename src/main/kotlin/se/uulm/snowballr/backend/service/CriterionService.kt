@@ -5,6 +5,7 @@ import se.uulm.snowballr.backend.access.ICriterionAccessChecker
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion
+import se.uulm.snowballr.backend.model.dto.criterion.CriterionField
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
@@ -27,7 +28,7 @@ interface ICriterionService {
     /**
      * Service implementation of [SnowballRService.updateCriterion].
      */
-    suspend fun updateCriterion(request: UpdateCriterionRequest, paths: List<String>): Criterion
+    suspend fun updateCriterion(request: UpdateCriterionRequest, fields: Set<CriterionField>): Criterion
 
     /**
      * Service implementation of [SnowballRService.getAllCriteriaForProject].
@@ -79,14 +80,14 @@ class CriterionService(
             criterion
         }
 
-    override suspend fun updateCriterion(request: UpdateCriterionRequest, paths: List<String>): Criterion =
+    override suspend fun updateCriterion(request: UpdateCriterionRequest, fields: Set<CriterionField>): Criterion =
         withUser(userRepo) { currentUser ->
             val criterion = repo.getCriterionById(request.criterionId).getOrThrow()
 
             accessChecker.isAllowedToUpdateCriterion(currentUser, criterion)
 
-            val updatedCriterion = repo.updateCriterion(request, paths)
-            logger.info { "Criterion ${request.criterionId} updated: ${paths.joinToString()}" }
+            val updatedCriterion = repo.updateCriterion(request, fields)
+            logger.info { "Criterion ${request.criterionId} updated: ${fields.joinToString()}" }
             updatedCriterion
         }
 

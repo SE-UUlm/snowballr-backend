@@ -12,13 +12,13 @@ import org.junit.jupiter.api.assertNotNull
 import org.junit.jupiter.api.assertNull
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.Arguments
-import org.junit.jupiter.params.provider.MethodSource
+import org.junit.jupiter.params.provider.EnumSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.isBetweenWithDelta
 import se.uulm.snowballr.backend.model.dto.paper.Author
 import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
+import se.uulm.snowballr.backend.model.dto.paper.PaperField
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
 import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
@@ -35,18 +35,6 @@ import java.util.UUID
 
 class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable, PaperHasExternalIdTable), false) {
     private val repo = PaperTableRepo(db)
-
-    companion object {
-        @JvmStatic
-        fun validFieldMasks(): List<Arguments> = listOf(
-            Arguments.of(listOf("paper.external_ids")),
-            Arguments.of(listOf("paper.title", "paper.abstrakt")),
-            Arguments.of(listOf("paper.year")),
-            Arguments.of(listOf("paper.publisher")),
-            Arguments.of(listOf("paper.publication_name", "paper.publication_type")),
-            Arguments.of(listOf("paper.authors")),
-        )
-    }
 
     @Nested
     inner class GetPaperById {
@@ -199,89 +187,75 @@ class PaperTableRepoTest : RepositoryTest(arrayOf(PaperTable, PaperHasExternalId
 
     @Nested
     inner class UpdatePaper {
-        @ParameterizedTest(name = "Update the fields {0}")
-        @MethodSource("se.uulm.snowballr.backend.repository.PaperTableRepoTest#validFieldMasks")
-        @Suppress("LongMethod")
-        fun `When a paper is updated, then only the fields specified in the field mask are updated and the updated paper is returned`(
-            fieldMask: List<String>,
-        ) = runTest {
+        @ParameterizedTest(name = "Update the field {0}")
+        @EnumSource(PaperField::class)
+        @Suppress("LongMethod", "CyclomaticComplexMethod")
+        fun `When a paper is updated, then only the specified field is updated`(field: PaperField) = runTest {
             val paperId = insertPaperAndGetId()
             val externalId = insertExternalId(paperId, ExternalIdType.DOI, "10.1234/5678")
-            val paper = repo.getPaperById(paperId).getOrThrow()
-
-            val updatedPaperDetails = paper.copy(
+            val request = UpdatePaperRequest(
+                paperId = paperId,
                 title = "Updated Title",
                 externalIds = listOf(ExternalId(ExternalIdType.MAG, "1234567890")),
                 abstract = "Updated Abstract",
-                year = paper.year - 10,
+                year = 2000,
                 publisher = "Updated Publisher",
                 publicationName = "Updated PublicationName",
                 publicationType = "Updated PublicationType",
                 authors = listOf(Author("UpdatedFirstName", "UpdatedLastName")),
             )
-            val request = UpdatePaperRequest.fromPaper(updatedPaperDetails)
 
             val start = OffsetDateTime.now()
-            val updatedPaper = repo.updatePaper(request, fieldMask)
+            val updatedPaper = repo.updatePaper(request, setOf(field))
             val end = OffsetDateTime.now()
 
-            if ("paper.external_ids" in fieldMask) {
-                val updatedExternalId = ExternalId(ExternalIdType.MAG, "1234567890")
-                assertThat(updatedPaper.externalIds).isEqualTo(listOf(updatedExternalId))
-            } else {
-                assertThat(updatedPaper.externalIds).isEqualTo(listOf(externalId))
+            val excluded = PaperField.entries.filter { field != it }
+
+            // Included
+            when (field) {
+                PaperField.TITLE -> assertEquals("Updated Title", updatedPaper.title)
+                PaperField.ABSTRACT -> assertEquals("Updated Abstract", updatedPaper.abstract)
+                PaperField.YEAR -> assertEquals(2000, updatedPaper.year)
+                PaperField.PUBLISHER -> assertEquals("Updated Publisher", updatedPaper.publisher)
+                PaperField.PUBLICATION_NAME -> assertEquals("Updated PublicationName", updatedPaper.publicationName)
+                PaperField.PUBLICATION_TYPE -> assertEquals("Updated PublicationType", updatedPaper.publicationType)
+                PaperField.AUTHORS -> {
+                    assertEquals(1, updatedPaper.authors.size)
+                    assertEquals("UpdatedFirstName", updatedPaper.authors[0].firstName)
+                    assertEquals("UpdatedLastName", updatedPaper.authors[0].lastName)
+                }
+
+                PaperField.EXTERNAL_IDS ->
+                    assertEquals(listOf(ExternalId(ExternalIdType.MAG, "1234567890")), updatedPaper.externalIds)
             }
-            if ("paper.title" in fieldMask) {
-                assertThat(updatedPaper.title).isEqualTo("Updated Title")
-            } else {
-                assertThat(updatedPaper.title).isEqualTo("Title")
-            }
-            if ("paper.abstrakt" in fieldMask) {
-                assertThat(updatedPaper.abstract).isEqualTo("Updated Abstract")
-            } else {
-                assertThat(updatedPaper.abstract).isEqualTo("Abstract")
-            }
-            if ("paper.year" in fieldMask) {
-                assertThat(updatedPaper.year).isEqualTo(paper.year - 10)
-            } else {
-                assertThat(updatedPaper.year).isEqualTo(2025)
-            }
-            if ("paper.publisher" in fieldMask) {
-                assertThat(updatedPaper.publisher).isEqualTo("Updated Publisher")
-            } else {
-                assertThat(updatedPaper.publisher).isEqualTo("Publisher")
-            }
-            if ("paper.publication_name" in fieldMask) {
-                assertThat(updatedPaper.publicationName).isEqualTo("Updated PublicationName")
-            } else {
-                assertThat(updatedPaper.publicationName).isEqualTo("PublicationName")
-            }
-            if ("paper.publication_type" in fieldMask) {
-                assertThat(updatedPaper.publicationType).isEqualTo("Updated PublicationType")
-            } else {
-                assertThat(updatedPaper.publicationType).isEqualTo("PublicationType")
-            }
-            if ("paper.authors" in fieldMask) {
-                assertThat(updatedPaper.authors).hasSize(1)
-                assertThat(updatedPaper.authors[0].firstName).isEqualTo("UpdatedFirstName")
-                assertThat(updatedPaper.authors[0].lastName).isEqualTo("UpdatedLastName")
-            } else {
-                assertThat(updatedPaper.authors).isEmpty()
+
+            // Excluded
+            for (excludedField in excluded) {
+                when (excludedField) {
+                    PaperField.TITLE -> assertEquals("Title", updatedPaper.title)
+                    PaperField.ABSTRACT -> assertEquals("Abstract", updatedPaper.abstract)
+                    PaperField.YEAR -> assertEquals(2025, updatedPaper.year)
+                    PaperField.PUBLISHER -> assertEquals("Publisher", updatedPaper.publisher)
+                    PaperField.PUBLICATION_NAME -> assertEquals("PublicationName", updatedPaper.publicationName)
+                    PaperField.PUBLICATION_TYPE -> assertEquals("PublicationType", updatedPaper.publicationType)
+                    PaperField.AUTHORS -> assertEquals(0, updatedPaper.authors.size)
+                    PaperField.EXTERNAL_IDS -> assertEquals(listOf(externalId), updatedPaper.externalIds)
+                }
             }
 
             assertThat(updatedPaper.modifiedAt).isBetweenWithDelta(start, end)
         }
 
         @Test
-        fun `When a paper is updated with an empty field mask, then nothing is updated`() = runTest {
+        fun `When a paper is updated without any specified fields, then nothing is updated`() = runTest {
             val paperId = insertPaperAndGetId()
             val paper = repo.getPaperById(paperId).getOrThrow()
             val request = UpdatePaperRequest.fromPaper(paper)
 
-            val updatedPaper = repo.updatePaper(request, emptyList())
+            val updatedPaper = repo.updatePaper(request, emptySet())
 
-            assertThat(updatedPaper).isEqualTo(paper)
-            assertThat(updatedPaper.modifiedAt).isNull()
+            assertEquals(paper, updatedPaper)
+            assertNull(updatedPaper.modifiedAt)
         }
     }
 

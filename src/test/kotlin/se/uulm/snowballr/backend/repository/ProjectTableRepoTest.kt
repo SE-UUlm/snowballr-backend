@@ -16,11 +16,11 @@ import org.junit.jupiter.api.assertNotNull
 import org.junit.jupiter.api.assertNull
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.Arguments
-import org.junit.jupiter.params.provider.MethodSource
+import org.junit.jupiter.params.provider.EnumSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.isBetweenWithDelta
 import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPattern
+import se.uulm.snowballr.backend.model.dto.project.ProjectField
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
@@ -68,19 +68,6 @@ class ProjectTableRepoTest :
     private val criterionRepo = CriterionTableRepo(db)
 
     private val defaultThresholdDate = OffsetDateTime.now().minusDays(30)
-
-    companion object {
-        @JvmStatic
-        fun validFieldMasks(): List<Arguments> = listOf(
-            Arguments.of(listOf("project.name")),
-            Arguments.of(listOf("project.status")),
-            Arguments.of(listOf("project.settings.similarity_threshold")),
-            Arguments.of(listOf("project.settings.snowballing_type")),
-            Arguments.of(listOf("project.settings.review_maybe_allowed")),
-            Arguments.of(listOf("project.settings.fetchers")),
-            Arguments.of(listOf("project.settings.decision_matrix.number_of_reviewers")),
-        )
-    }
 
     @Nested
     inner class GetProjectById {
@@ -206,18 +193,15 @@ class ProjectTableRepoTest :
 
     @Nested
     inner class UpdateProject {
-        @ParameterizedTest(name = "Update the fields {0}")
-        @MethodSource("se.uulm.snowballr.backend.repository.ProjectTableRepoTest#validFieldMasks")
-        @Suppress("LongMethod")
-        fun `When a project is updated, then only the fields specified in the field mask are updated and the updated project is returned`(
-            fieldMask: List<String>,
-        ) = runTest {
+        @ParameterizedTest(name = "Update the field {0}")
+        @EnumSource(ProjectField::class)
+        @Suppress("LongMethod", "CyclomaticComplexMethod")
+        fun `When a project is updated, then only the specified field is updated`(field: ProjectField) = runTest {
             val originalStatus = ProjectStatus.ACTIVE
             val projectId = insertProjectAndGetId(name = "Test Project", originalStatus, createdBy = testUserId)
-            val originalProject = repo.getProjectById(projectId).getOrThrow()
-
+            val pattern = DecisionMatrixPattern(decision = PaperDecision.ACCEPTED, entries = emptyList())
             val request = UpdateProjectRequest(
-                projectId = originalProject.id,
+                projectId = projectId,
                 name = "Updated Project",
                 status = ProjectStatus.ARCHIVED,
                 settings = UpdateProjectSettingRequest(
@@ -231,56 +215,62 @@ class ProjectTableRepoTest :
                     ),
                     decisionMatrix = ReviewDecisionMatrix(
                         numberOfReviewers = 2,
-                        patterns = emptyList(),
+                        patterns = listOf(pattern),
                     ),
                 ),
             )
 
-            val updatedProject = repo.updateProject(request, fieldMask.toSet())
+            val start = OffsetDateTime.now()
+            val updatedProject = repo.updateProject(request, setOf(field))
+            val end = OffsetDateTime.now()
 
-            if ("project.name" in fieldMask) {
-                assertEquals("Updated Project", updatedProject.name)
-            } else {
-                assertEquals("Test Project", updatedProject.name)
-            }
-            if ("project.status" in fieldMask) {
-                assertEquals(ProjectStatus.ARCHIVED, updatedProject.status)
-            } else {
-                assertEquals(originalStatus, updatedProject.status)
-            }
-            if ("project.settings.similarity_threshold" in fieldMask) {
-                assertEquals(1F, updatedProject.similarityThreshold)
-            } else {
-                assertEquals(0F, updatedProject.similarityThreshold)
-            }
-            if ("project.settings.snowballing_type" in fieldMask) {
-                assertEquals(SnowballingType.FORWARD, updatedProject.snowballingType)
-            } else {
-                assertEquals(SnowballingType.BOTH, updatedProject.snowballingType)
-            }
-            if ("project.settings.review_maybe_allowed" in fieldMask) {
-                assertFalse(updatedProject.reviewMaybeAllowed)
-            } else {
-                assertTrue(updatedProject.reviewMaybeAllowed)
-            }
             val fetchers = updatedProject.fetchers
             val fetcher = fetchers["test fetcher"]
-            if ("project.settings.fetchers" in fieldMask) {
-                assertEquals(1, fetchers.size)
-                assertNotNull(fetcher)
-                val fetcherOption1 = fetcher["Opt1"]
-                assertEquals("Val1", fetcherOption1)
-                val fetcherOption2 = fetcher["Opt2"]
-                assertNull(fetcherOption2)
-            } else {
-                assertEquals(0, fetchers.size)
-                assertNull(fetcher)
+            val excluded = ProjectField.entries.filter { field != it }
+
+            // Included
+            when (field) {
+                ProjectField.NAME -> assertEquals("Updated Project", updatedProject.name)
+                ProjectField.STATUS -> assertEquals(ProjectStatus.ARCHIVED, updatedProject.status)
+                ProjectField.SIMILARITY_THRESHOLD -> assertEquals(1F, updatedProject.similarityThreshold)
+                ProjectField.SNOWBALLING_TYPE -> assertEquals(SnowballingType.FORWARD, updatedProject.snowballingType)
+                ProjectField.REVIEW_MAYBE_ALLOWED -> assertFalse(updatedProject.reviewMaybeAllowed)
+                ProjectField.FETCHERS -> {
+                    assertEquals(1, fetchers.size)
+                    assertNotNull(fetcher)
+                    val fetcherOption1 = fetcher["Opt1"]
+                    assertEquals("Val1", fetcherOption1)
+                    val fetcherOption2 = fetcher["Opt2"]
+                    assertNull(fetcherOption2)
+                }
+                ProjectField.NUMBER_OF_REVIEWERS ->
+                    assertEquals(2, updatedProject.reviewDecisionMatrix.numberOfReviewers)
+                ProjectField.DECISION_MATRIX_PATTERNS -> {
+                    assertEquals(1, updatedProject.reviewDecisionMatrix.patterns.size)
+                    assertThat(updatedProject.reviewDecisionMatrix.patterns).containsOnly(pattern)
+                }
             }
-            if ("project.settings.decision_matrix.number_of_reviewers" in fieldMask) {
-                assertEquals(2, updatedProject.reviewDecisionMatrix.numberOfReviewers)
-            } else {
-                assertEquals(1, updatedProject.reviewDecisionMatrix.numberOfReviewers)
+
+            // Excluded
+            for (excludedField in excluded) {
+                when (excludedField) {
+                    ProjectField.NAME -> assertEquals("Test Project", updatedProject.name)
+                    ProjectField.STATUS -> assertEquals(originalStatus, updatedProject.status)
+                    ProjectField.SIMILARITY_THRESHOLD -> assertEquals(0F, updatedProject.similarityThreshold)
+                    ProjectField.SNOWBALLING_TYPE -> assertEquals(SnowballingType.BOTH, updatedProject.snowballingType)
+                    ProjectField.REVIEW_MAYBE_ALLOWED -> assertTrue(updatedProject.reviewMaybeAllowed)
+                    ProjectField.FETCHERS -> {
+                        assertEquals(0, fetchers.size)
+                        assertNull(fetcher)
+                    }
+                    ProjectField.NUMBER_OF_REVIEWERS ->
+                        assertEquals(1, updatedProject.reviewDecisionMatrix.numberOfReviewers)
+                    ProjectField.DECISION_MATRIX_PATTERNS ->
+                        assertEquals(0, updatedProject.reviewDecisionMatrix.patterns.size)
+                }
             }
+
+            assertThat(updatedProject.modifiedAt).isBetweenWithDelta(start, end)
         }
 
         @Test
@@ -314,7 +304,7 @@ class ProjectTableRepoTest :
                 ),
             )
 
-            val updatedProject = repo.updateProject(request, setOf("project.settings.decision_matrix.patterns"))
+            val updatedProject = repo.updateProject(request, setOf(ProjectField.DECISION_MATRIX_PATTERNS))
 
             assertEquals(3, updatedProject.reviewDecisionMatrix.numberOfReviewers)
             assertEquals(1, updatedProject.reviewDecisionMatrix.patterns.size)
@@ -341,9 +331,21 @@ class ProjectTableRepoTest :
                 )
 
                 assertThrows<NoSuchElementException> {
-                    repo.updateProject(request, setOf("project.settings.decision_matrix.number_of_reviewers"))
+                    repo.updateProject(request, setOf(ProjectField.NUMBER_OF_REVIEWERS))
                 }
             }
+
+        @Test
+        fun `When a project is updated without any specified fields, then nothing is updated`() = runTest {
+            val projectId = insertProjectAndGetId(createdBy = testUserId)
+            val project = repo.getProjectById(projectId).getOrThrow()
+            val request = UpdateProjectRequest.fromProject(project)
+
+            val updatedProject = repo.updateProject(request, emptySet())
+
+            assertEquals(project, updatedProject)
+            assertNull(updatedProject.modifiedAt)
+        }
     }
 
     @Nested

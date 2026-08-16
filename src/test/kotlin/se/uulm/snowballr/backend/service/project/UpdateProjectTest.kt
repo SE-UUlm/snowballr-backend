@@ -14,6 +14,7 @@ import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.dto.project.Project
+import se.uulm.snowballr.backend.model.dto.project.ProjectField
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.fetcher.FetcherInformationWithId
@@ -84,7 +85,7 @@ class UpdateProjectTest : ProjectServiceTest() {
             coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
-            assertThrows<IllegalArgumentException> { service.updateProject(request, setOf("project.status")) }
+            assertThrows<IllegalArgumentException> { service.updateProject(request, setOf(ProjectField.STATUS)) }
         }
 
     @Test
@@ -99,7 +100,7 @@ class UpdateProjectTest : ProjectServiceTest() {
         coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
-        assertThrows<FailedPreconditionException> { service.updateProject(request, setOf("project.name")) }
+        assertThrows<FailedPreconditionException> { service.updateProject(request, setOf(ProjectField.NAME)) }
     }
 
     @Test
@@ -116,7 +117,7 @@ class UpdateProjectTest : ProjectServiceTest() {
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
             assertThrows<FailedPreconditionException> {
-                service.updateProject(request, setOf("project.name", "project.status"))
+                service.updateProject(request, setOf(ProjectField.NAME, ProjectField.STATUS))
             }
         }
 
@@ -136,9 +137,9 @@ class UpdateProjectTest : ProjectServiceTest() {
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectRepoMock.isProjectLocked(project.id) } returns
             (updatedProject.status == ProjectStatus.ACTIVE_LOCKED)
-        coEvery { projectRepoMock.updateProject(request, setOf("project.status")) } returns updatedProject
+        coEvery { projectRepoMock.updateProject(request, setOf(ProjectField.STATUS)) } returns updatedProject
 
-        val result = service.updateProject(request, setOf("project.status"))
+        val result = service.updateProject(request, setOf(ProjectField.STATUS))
 
         assertProjectEquality(updatedProject, result)
     }
@@ -155,9 +156,9 @@ class UpdateProjectTest : ProjectServiceTest() {
             mockCurrentUser(user)
             coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-            coEvery { projectRepoMock.updateProject(request, setOf("project.status")) } returns updatedProject
+            coEvery { projectRepoMock.updateProject(request, setOf(ProjectField.STATUS)) } returns updatedProject
 
-            val result = service.updateProject(request, setOf("project.status"))
+            val result = service.updateProject(request, setOf(ProjectField.STATUS))
 
             assertProjectEquality(updatedProject, result)
         }
@@ -175,7 +176,7 @@ class UpdateProjectTest : ProjectServiceTest() {
             coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
-            assertThrows<FailedPreconditionException> { service.updateProject(request, setOf("project.status")) }
+            assertThrows<FailedPreconditionException> { service.updateProject(request, setOf(ProjectField.STATUS)) }
         }
 
     @Test
@@ -192,7 +193,7 @@ class UpdateProjectTest : ProjectServiceTest() {
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
             assertThrows<FailedPreconditionException> {
-                service.updateProject(request, setOf("project.settings.review_maybe_allowed"))
+                service.updateProject(request, setOf(ProjectField.REVIEW_MAYBE_ALLOWED))
             }
         }
 
@@ -209,9 +210,9 @@ class UpdateProjectTest : ProjectServiceTest() {
             coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coEvery { projectRepoMock.isProjectLocked(project.id) } returns true
-            coEvery { projectRepoMock.updateProject(request, setOf("project.name")) } returns updatedProject
+            coEvery { projectRepoMock.updateProject(request, setOf(ProjectField.NAME)) } returns updatedProject
 
-            val result = service.updateProject(request, setOf("project.name"))
+            val result = service.updateProject(request, setOf(ProjectField.NAME))
 
             assertProjectEquality(updatedProject, result)
         }
@@ -228,9 +229,9 @@ class UpdateProjectTest : ProjectServiceTest() {
         coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coEvery { projectRepoMock.isProjectLocked(project.id) } returns false
-        coEvery { projectRepoMock.updateProject(request, setOf("project.name")) } returns updatedProject
+        coEvery { projectRepoMock.updateProject(request, setOf(ProjectField.NAME)) } returns updatedProject
 
-        val result = service.updateProject(request, setOf("project.name"))
+        val result = service.updateProject(request, setOf(ProjectField.NAME))
 
         assertProjectEquality(updatedProject, result)
     }
@@ -250,7 +251,7 @@ class UpdateProjectTest : ProjectServiceTest() {
         coJustRun { projectAccessCheckerMock.isProjectOrServerAdmin(user, project.id, AccessType.UPDATE) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
 
-        assertThrows<IllegalStateException> { service.updateProject(request, setOf("project.name")) }
+        assertThrows<IllegalStateException> { service.updateProject(request, setOf(ProjectField.NAME)) }
     }
 
     @Test
@@ -285,10 +286,10 @@ class UpdateProjectTest : ProjectServiceTest() {
         coEvery { fetcherManagerMock.getAvailableFetchers() } returns availableFetchers
         val finalRequest = slot<UpdateProjectRequest>()
         coEvery {
-            projectRepoMock.updateProject(capture(finalRequest), setOf("project.settings.fetchers"))
+            projectRepoMock.updateProject(capture(finalRequest), setOf(ProjectField.FETCHERS))
         } returns updatedProject
 
-        service.updateProject(request, setOf("project.settings.fetchers"))
+        service.updateProject(request, setOf(ProjectField.FETCHERS))
 
         val sanitizedRequest = finalRequest.captured
 
@@ -331,7 +332,7 @@ class UpdateProjectTest : ProjectServiceTest() {
             coEvery { fetcherManagerMock.getAvailableFetchers() } returns availableFetchers
 
             assertThrows<FailedPreconditionException> {
-                service.updateProject(request, setOf("project.settings.fetchers"))
+                service.updateProject(request, setOf(ProjectField.FETCHERS))
             }
         }
 
@@ -366,7 +367,7 @@ class UpdateProjectTest : ProjectServiceTest() {
             coEvery { fetcherManagerMock.getAvailableFetchers() } returns availableFetchers
 
             assertThrows<FailedPreconditionException> {
-                service.updateProject(request, setOf("project.settings.fetchers"))
+                service.updateProject(request, setOf(ProjectField.FETCHERS))
             }
         }
 }

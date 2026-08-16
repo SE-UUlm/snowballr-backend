@@ -27,8 +27,10 @@ import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.paper.Author
 import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
+import se.uulm.snowballr.backend.model.dto.project.ProjectField
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
+import se.uulm.snowballr.backend.model.dto.user.UserField
 import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.export.ExportFormat
@@ -284,17 +286,18 @@ class SnowballRServer(
             userService.getUserByEmail(request.email).toGrpc()
 
         override suspend fun updateUser(request: UserOuterClass.User.Update): UserOuterClass.User {
-            val paths = FieldMaskUtil.normalize(request.mask).pathsList
+            val paths = FieldMaskUtil.normalize(request.mask).pathsList.filterNot { it == "user.id" }
+            val fields = paths.map { userFieldFromGrpc(it) }.toSet()
 
             val hasUnspecifiedRole = request.user.role == UserOuterClass.UserRole.USER_ROLE_UNSPECIFIED
-            val role = if (!paths.contains("user.role") && hasUnspecifiedRole) {
+            val role = if (!fields.contains(UserField.ROLE) && hasUnspecifiedRole) {
                 UserRole.DEFAULT
             } else {
                 userRoleFromGrpc(request.user.role)
             }
 
             val hasUnspecifiedStatus = request.user.status == UserOuterClass.UserStatus.USER_STATUS_UNSPECIFIED
-            val status = if (!paths.contains("user.status") && hasUnspecifiedStatus) {
+            val status = if (!fields.contains(UserField.STATUS) && hasUnspecifiedStatus) {
                 UserStatus.ACTIVE
             } else {
                 userStatusFromGrpc(request.user.status)
@@ -309,7 +312,7 @@ class SnowballRServer(
                     role = role,
                     status = status,
                 ),
-                paths,
+                fields,
             ).toGrpc()
         }
 
@@ -412,11 +415,12 @@ class SnowballRServer(
             projectService.getProjectById(parseProjectId(request)).toGrpc()
 
         override suspend fun updateProject(request: ProjectOuterClass.Project.Update): ProjectOuterClass.Project {
-            val paths = FieldMaskUtil.normalize(request.mask).pathsList.toSet()
+            val paths = FieldMaskUtil.normalize(request.mask).pathsList.filterNot { it == "project.id" }
+            val fields = paths.map { projectFieldFromGrpc(it) }.toSet()
 
             val hasUnspecifiedStatus =
                 request.project.status == ProjectOuterClass.ProjectStatus.PROJECT_STATUS_UNSPECIFIED
-            val status = if (!paths.contains("project.status") && hasUnspecifiedStatus) {
+            val status = if (!fields.contains(ProjectField.STATUS) && hasUnspecifiedStatus) {
                 ProjectStatus.ACTIVE
             } else {
                 projectStatusFromGrpc(request.project.status)
@@ -425,7 +429,7 @@ class SnowballRServer(
             val hasUnspecifiedSnowballingType = request.project.settings.snowballingType ==
                 ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_UNSPECIFIED
             val snowballingType =
-                if (!paths.contains("project.settings.snowballing_type") && hasUnspecifiedSnowballingType) {
+                if (!fields.contains(ProjectField.SNOWBALLING_TYPE) && hasUnspecifiedSnowballingType) {
                     SnowballingType.BOTH
                 } else {
                     snowballingTypeFromGrpc(request.project.settings.snowballingType)
@@ -444,7 +448,7 @@ class SnowballRServer(
                         decisionMatrix = reviewDecisionMatrixFromGrpc(request.project.settings.decisionMatrix),
                     ),
                 ),
-                paths,
+                fields,
             ).toGrpc()
         }
 
@@ -467,7 +471,7 @@ class SnowballRServer(
             request: ProjectOuterClass.Project.Information.Get,
         ): ProjectOuterClass.Project.Information = projectService.getProjectInformation(
             projectId = parseUUID(request.projectId, EntityType.PROJECT),
-            paths = FieldMaskUtil.normalize(request.mask).pathsList,
+            fields = FieldMaskUtil.normalize(request.mask).pathsList.map { projectInfoFieldFromGrpc(it) }.toSet(),
         ).toGrpc()
 
         override suspend fun getDecisionStatisticsForStage(
@@ -515,16 +519,21 @@ class SnowballRServer(
 
         override suspend fun updateCriterion(
             request: CriterionOuterClass.Criterion.Update,
-        ): CriterionOuterClass.Criterion = criterionService.updateCriterion(
-            UpdateCriterionRequest(
-                criterionId = parseUUID(request.criterion.id, EntityType.CRITERION),
-                tag = request.criterion.tag,
-                name = request.criterion.name,
-                description = request.criterion.description,
-                category = criterionCategoryFromGrpc(request.criterion.category),
-            ),
-            FieldMaskUtil.normalize(request.mask).pathsList,
-        ).toGrpc()
+        ): CriterionOuterClass.Criterion {
+            val paths = FieldMaskUtil.normalize(request.mask).pathsList.filterNot { it == "criterion.id" }
+            val fields = paths.map { criterionFieldFromGrpc(it) }.toSet()
+
+            return criterionService.updateCriterion(
+                UpdateCriterionRequest(
+                    criterionId = parseUUID(request.criterion.id, EntityType.CRITERION),
+                    tag = request.criterion.tag,
+                    name = request.criterion.name,
+                    description = request.criterion.description,
+                    category = criterionCategoryFromGrpc(request.criterion.category),
+                ),
+                fields,
+            ).toGrpc()
+        }
 
         override suspend fun deleteCriterion(request: Base.Id): Base.Nothing = super.deleteCriterion(request)
 
@@ -610,8 +619,11 @@ class SnowballRServer(
                 ),
             ).toGrpc()
 
-        override suspend fun updatePaper(request: PaperOuterClass.Paper.Update): PaperOuterClass.Paper =
-            paperService.updatePaper(
+        override suspend fun updatePaper(request: PaperOuterClass.Paper.Update): PaperOuterClass.Paper {
+            val paths = FieldMaskUtil.normalize(request.mask).pathsList.filterNot { it == "paper.id" }
+            val fields = paths.map { paperFieldFromGrpc(it) }.toSet()
+
+            return paperService.updatePaper(
                 UpdatePaperRequest(
                     paperId = parseUUID(request.paper.id, EntityType.PAPER),
                     title = request.paper.title,
@@ -625,8 +637,9 @@ class SnowballRServer(
                     publicationType = request.paper.publicationType,
                     authors = request.paper.authorsList.map { Author(it.firstName, it.lastName) },
                 ),
-                FieldMaskUtil.normalize(request.mask).pathsList,
+                fields,
             ).toGrpc()
+        }
 
         override suspend fun getForwardReferencedPapers(request: Base.Id): PaperOuterClass.Paper.List =
             paperService.getForwardReferencedPapers(parsePaperId(request)).toGrpc()

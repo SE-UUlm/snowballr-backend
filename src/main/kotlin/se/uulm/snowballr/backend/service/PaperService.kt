@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.service
 import io.github.oshai.kotlinlogging.KotlinLogging
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.dto.paper.Paper
+import se.uulm.snowballr.backend.model.dto.paper.PaperField
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicatePaperException
 import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
@@ -33,7 +34,7 @@ interface IPaperService {
     /**
      * Service implementation of [SnowballRService.updatePaper].
      */
-    suspend fun updatePaper(request: UpdatePaperRequest, paths: List<String>): PaperResponse
+    suspend fun updatePaper(request: UpdatePaperRequest, fields: Set<PaperField>): PaperResponse
 
     /**
      * Service implementation of [SnowballRService.createPaper].
@@ -63,10 +64,11 @@ class PaperService(
     override suspend fun getForwardReferencedPapers(paperId: UUID): List<PaperResponse> =
         getReferencePapers(paperId, citationRepo::getForwardReferencedPaperIdsOfPaperById)
 
-    override suspend fun updatePaper(request: UpdatePaperRequest, paths: List<String>): PaperResponse {
+    override suspend fun updatePaper(request: UpdatePaperRequest, fields: Set<PaperField>): PaperResponse {
         repo.ensurePaperExists(request.paperId)
 
-        if (paths.contains("paper.external_ids") && request.externalIds.isNotEmpty()) {
+        val isExternalIdChange = fields.contains(PaperField.EXTERNAL_IDS) && request.externalIds.isNotEmpty()
+        if (isExternalIdChange) {
             val existingPapers = repo.getPapersByExternalIds(request.externalIds)
 
             if (existingPapers.any { it.id != request.paperId }) {
@@ -74,8 +76,8 @@ class PaperService(
             }
         }
 
-        val updatedPaper = repo.updatePaper(request, paths)
-        logger.info { "Paper ${request.paperId} updated: ${paths.joinToString()}" }
+        val updatedPaper = repo.updatePaper(request, fields)
+        logger.info { "Paper ${request.paperId} updated: ${fields.joinToString()}" }
         return updatedPaper.toPaperResponse()
     }
 

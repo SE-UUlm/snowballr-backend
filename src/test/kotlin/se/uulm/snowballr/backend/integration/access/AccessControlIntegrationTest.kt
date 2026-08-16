@@ -7,6 +7,8 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
+import se.uulm.snowballr.backend.model.dto.criterion.CriterionField
+import se.uulm.snowballr.backend.model.dto.project.ProjectField
 import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
@@ -44,7 +46,7 @@ class AccessControlIntegrationTest : IntegrationTest() {
             val request = UpdateProjectRequest.fromProjectResponse(project)
 
             actAsUser(member.id) {
-                assertThrows<UnauthorizedException> { projectService.updateProject(request, setOf("project.name")) }
+                assertThrows<UnauthorizedException> { projectService.updateProject(request, setOf(ProjectField.NAME)) }
             }
         }
 
@@ -101,7 +103,7 @@ class AccessControlIntegrationTest : IntegrationTest() {
 
             actAsUser(member.id) {
                 assertThrows<UnauthorizedException> {
-                    criterionService.updateCriterion(request, listOf("criterion.name"))
+                    criterionService.updateCriterion(request, setOf(CriterionField.NAME))
                 }
             }
         }

@@ -10,6 +10,7 @@ import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion
+import se.uulm.snowballr.backend.model.dto.criterion.CriterionField
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
@@ -55,11 +56,11 @@ interface ICriterionTableRepo {
     /**
      * Updates an existent criterion in the database with the provided new information.
      *
-     * @param request The update request containing the new criterion details, such as the new name.
-     * @param paths The field mask paths that should be updated.
+     * @param request The update request containing the new criterion details.
+     * @param fields The fields that should be updated.
      * @return The updated [Criterion] object reflecting the changes from the [request].
      */
-    suspend fun updateCriterion(request: UpdateCriterionRequest, paths: List<String>): Criterion
+    suspend fun updateCriterion(request: UpdateCriterionRequest, fields: Set<CriterionField>): Criterion
 
     /**
      * Deletes a list of criteria from the database based on their IDs.
@@ -124,18 +125,23 @@ class CriterionTableRepo(
         }
     }
 
-    override suspend fun updateCriterion(request: UpdateCriterionRequest, paths: List<String>): Criterion = db.query {
-        CriterionTable.updateByIdAndGet(request.criterionId, ResultRow::toCriterion) {
-            for (field in paths) {
-                when (field) {
-                    "criterion.tag" -> it[tag] = request.tag
-                    "criterion.name" -> it[name] = request.name
-                    "criterion.description" -> it[description] = request.description
-                    "criterion.category" -> it[category] = request.category
+    override suspend fun updateCriterion(request: UpdateCriterionRequest, fields: Set<CriterionField>): Criterion =
+        db.query {
+            if (fields.isEmpty()) {
+                return@query getCriterionById(request.criterionId).getOrThrow()
+            }
+
+            CriterionTable.updateByIdAndGet(request.criterionId, ResultRow::toCriterion) {
+                for (field in fields) {
+                    when (field) {
+                        CriterionField.TAG -> it[tag] = request.tag
+                        CriterionField.NAME -> it[name] = request.name
+                        CriterionField.DESCRIPTION -> it[description] = request.description
+                        CriterionField.CATEGORY -> it[category] = request.category
+                    }
                 }
             }
         }
-    }
 
     override suspend fun deleteCriteriaByIds(ids: List<UUID>) {
         val deletedIds = db.query {

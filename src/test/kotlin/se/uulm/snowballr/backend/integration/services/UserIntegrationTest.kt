@@ -12,6 +12,7 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
+import se.uulm.snowballr.backend.model.dto.user.UserField
 import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateUserException
@@ -107,7 +108,7 @@ class UserIntegrationTest : IntegrationTest() {
                 status = currentUser.status,
             )
 
-            val updatedUser = userService.updateUser(request, listOf("user.first_name"))
+            val updatedUser = userService.updateUser(request, setOf(UserField.FIRST_NAME))
 
             assertEquals(newFirstName, updatedUser.firstName)
         }
@@ -126,7 +127,7 @@ class UserIntegrationTest : IntegrationTest() {
                 status = otherUser.status,
             )
 
-            val updatedUser = userService.updateUser(request, listOf("user.first_name"))
+            val updatedUser = userService.updateUser(request, setOf(UserField.FIRST_NAME))
 
             assertEquals(newFirstName, updatedUser.firstName)
         }
@@ -146,7 +147,9 @@ class UserIntegrationTest : IntegrationTest() {
                 )
 
                 actAsUser(nonAdminUser.id) {
-                    assertThrows<UnauthorizedUpdateException> { userService.updateUser(request, listOf("user.role")) }
+                    assertThrows<UnauthorizedUpdateException> {
+                        userService.updateUser(request, setOf(UserField.ROLE))
+                    }
                 }
             }
 
@@ -165,7 +168,7 @@ class UserIntegrationTest : IntegrationTest() {
                     status = existingUser.status,
                 )
 
-                assertThrows<DuplicateUserException> { userService.updateUser(request, listOf("user.email")) }
+                assertThrows<DuplicateUserException> { userService.updateUser(request, setOf(UserField.EMAIL)) }
             }
     }
 

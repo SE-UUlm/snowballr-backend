@@ -7,6 +7,7 @@ import se.uulm.snowballr.backend.auth.setAuthCookies
 import se.uulm.snowballr.backend.context.RequestContext
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.dto.user.UserField
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.UnauthenticatedException
@@ -84,7 +85,7 @@ class AuthenticationService(
             role = updatedUser.role,
             status = updatedUser.status,
         )
-        repo.updateUser(userUpdate, listOf("user.status"))
+        repo.updateUser(userUpdate, setOf(UserField.STATUS))
 
         // Remove the verification token after successful verification
         verificationTokenRepo.deleteVerificationToken(token)

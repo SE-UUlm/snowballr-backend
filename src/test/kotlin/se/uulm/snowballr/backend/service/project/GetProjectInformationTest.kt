@@ -8,9 +8,10 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.ValueSource
+import org.junit.jupiter.params.provider.EnumSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
+import se.uulm.snowballr.backend.model.dto.project.ProjectInfoField
 import java.time.OffsetDateTime
 
 class GetProjectInformationTest : ProjectServiceTest() {
@@ -23,7 +24,7 @@ class GetProjectInformationTest : ProjectServiceTest() {
             mockCurrentUser(user)
             coEvery { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) } throws TestSpecificException()
 
-            assertThrows<TestSpecificException> { service.getProjectInformation(project.id, emptyList()) }
+            assertThrows<TestSpecificException> { service.getProjectInformation(project.id, emptySet()) }
         }
 
     @Test
@@ -35,11 +36,11 @@ class GetProjectInformationTest : ProjectServiceTest() {
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
         coEvery { projectRepoMock.getProjectById(project.id) } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { service.getProjectInformation(project.id, emptyList()) }
+        assertThrows<TestSpecificException> { service.getProjectInformation(project.id, emptySet()) }
     }
 
     @Test
-    fun `When no field mask is given, then all fields are correctly returned`() = runTest {
+    fun `When no fields are specified, then all info fields are correctly returned`() = runTest {
         val user = DataBuilder.createExampleUser()
         val createdAt = OffsetDateTime.now()
         val stageStartedAt = OffsetDateTime.now()
@@ -53,7 +54,7 @@ class GetProjectInformationTest : ProjectServiceTest() {
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
         coEvery { projectPaperRepoMock.getProjectProgress(project.id) } returns 0.5f
 
-        val response = service.getProjectInformation(project.id, emptyList())
+        val response = service.getProjectInformation(project.id, emptySet())
 
         assertEquals(0.5f, response.progress)
         assertEquals(createdAt, response.creationDate)
@@ -61,8 +62,8 @@ class GetProjectInformationTest : ProjectServiceTest() {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = ["project_progress", "creation_date", "last_stage_started"])
-    fun `When a field mask is given with a path, then the specified fields are correctly returned`(path: String) =
+    @EnumSource(ProjectInfoField::class)
+    fun `When project info is requested, then only the specified field is filled with data`(field: ProjectInfoField) =
         runTest {
             val user = DataBuilder.createExampleUser()
             val createdAt = OffsetDateTime.now()
@@ -75,51 +76,55 @@ class GetProjectInformationTest : ProjectServiceTest() {
             mockCurrentUser(user)
             coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
             coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
-            if (path == "project_progress") {
+            if (field == ProjectInfoField.PROJECT_PROGRESS) {
                 coEvery { projectPaperRepoMock.getProjectProgress(project.id) } returns 0.5f
             }
 
-            val response = service.getProjectInformation(project.id, listOf(path))
+            val response = service.getProjectInformation(project.id, setOf(field))
 
-            if (path == "project_progress") {
-                assertEquals(0.5f, response.progress)
-            } else {
-                coVerify(exactly = 0) { projectPaperRepoMock.getProjectProgress(any()) }
-                assertEquals(0f, response.progress)
+            val excluded = ProjectInfoField.entries.filter { field != it }
+
+            // Included
+            when (field) {
+                ProjectInfoField.PROJECT_PROGRESS -> assertEquals(0.5f, response.progress)
+                ProjectInfoField.CREATION_DATE -> assertEquals(createdAt, response.creationDate)
+                ProjectInfoField.LAST_STAGE_STARTED -> assertEquals(stageStartedAt, response.lastStageStarted)
             }
 
-            if (path == "creation_date") {
-                assertEquals(createdAt, response.creationDate)
-            } else {
-                assertEquals(OffsetDateTime.MIN, response.creationDate)
-            }
+            // Excluded
+            for (excludedField in excluded) {
+                when (excludedField) {
+                    ProjectInfoField.PROJECT_PROGRESS -> {
+                        coVerify(exactly = 0) { projectPaperRepoMock.getProjectProgress(any()) }
+                        assertEquals(0f, response.progress)
+                    }
 
-            if (path == "last_stage_started") {
-                assertEquals(stageStartedAt, response.lastStageStarted)
-            } else {
-                assertEquals(OffsetDateTime.MIN, response.lastStageStarted)
+                    ProjectInfoField.CREATION_DATE -> assertEquals(OffsetDateTime.MIN, response.creationDate)
+                    ProjectInfoField.LAST_STAGE_STARTED -> assertEquals(OffsetDateTime.MIN, response.lastStageStarted)
+                }
             }
         }
 
     @Test
-    fun `When a field mask is given without a path, then all fields are correctly returned`() = runTest {
-        val user = DataBuilder.createExampleUser()
-        val createdAt = OffsetDateTime.now()
-        val stageStartedAt = OffsetDateTime.now()
-        val project = DataBuilder.createExampleProject(
-            createdAt = createdAt,
-            currentStageStartedAt = stageStartedAt,
-        )
+    fun `When project info is requested without any specified fields, then all fields are filled with data`() =
+        runTest {
+            val user = DataBuilder.createExampleUser()
+            val createdAt = OffsetDateTime.now()
+            val stageStartedAt = OffsetDateTime.now()
+            val project = DataBuilder.createExampleProject(
+                createdAt = createdAt,
+                currentStageStartedAt = stageStartedAt,
+            )
 
-        mockCurrentUser(user)
-        coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
-        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
-        coEvery { projectPaperRepoMock.getProjectProgress(project.id) } returns 0.5f
+            mockCurrentUser(user)
+            coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
+            coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
+            coEvery { projectPaperRepoMock.getProjectProgress(project.id) } returns 0.5f
 
-        val response = service.getProjectInformation(project.id, emptyList())
+            val response = service.getProjectInformation(project.id, emptySet())
 
-        assertEquals(0.5f, response.progress)
-        assertEquals(createdAt, response.creationDate)
-        assertEquals(stageStartedAt, response.lastStageStarted)
-    }
+            assertEquals(0.5f, response.progress)
+            assertEquals(createdAt, response.creationDate)
+            assertEquals(stageStartedAt, response.lastStageStarted)
+        }
 }

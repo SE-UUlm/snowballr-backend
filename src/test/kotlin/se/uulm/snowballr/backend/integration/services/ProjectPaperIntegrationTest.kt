@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
+import se.uulm.snowballr.backend.model.dto.project.ProjectField
 import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateProjectPaperException
@@ -40,7 +41,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
 
         return projectService.updateProject(
             UpdateProjectRequest.fromProjectResponse(projectUpdate),
-            setOf("project.settings.decision_matrix.number_of_reviewers"),
+            setOf(ProjectField.NUMBER_OF_REVIEWERS),
         )
     }
 

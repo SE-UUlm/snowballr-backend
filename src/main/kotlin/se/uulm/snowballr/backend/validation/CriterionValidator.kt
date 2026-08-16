@@ -5,6 +5,7 @@ import arrow.core.EitherNel
 import arrow.core.raise.either
 import arrow.core.raise.zipOrAccumulate
 import se.uulm.snowballr.backend.model.ValidationIssue
+import se.uulm.snowballr.backend.model.dto.criterion.CriterionField
 import snowballr.CriterionOuterClass.Criterion
 
 /**
@@ -22,6 +23,7 @@ object CriterionValidator {
     private const val FIELD_PROJECT_ID = "project_id"
     private const val FIELD_ID = "id"
 
+    private const val MASK_ID = "criterion.id"
     private const val MASK_TAG = "criterion.tag"
     private const val MASK_NAME = "criterion.name"
     private const val MASK_DESCRIPTION = "criterion.description"
@@ -52,7 +54,8 @@ object CriterionValidator {
     fun validateUpdateRequest(request: Criterion.Update): EitherNel<ValidationIssue, Unit> = either {
         // Validate the field mask
         val fieldMaskResult = either {
-            ensureFieldMaskIsValid(request.mask, Criterion.Update.getDescriptor())
+            val allowedPaths = listOf(MASK_ID) + CriterionField.entries.map { getGrpcPathsForCriterionField(it) }
+            ensureFieldMaskIsValid(request.mask, allowedPaths)
         }
 
         if (fieldMaskResult is Either.Left) {
@@ -85,5 +88,12 @@ object CriterionValidator {
                 }
             },
         ) { _, _, _, _, _ -> }
+    }
+
+    fun getGrpcPathsForCriterionField(field: CriterionField) = when (field) {
+        CriterionField.TAG -> "criterion.tag"
+        CriterionField.NAME -> "criterion.name"
+        CriterionField.DESCRIPTION -> "criterion.description"
+        CriterionField.CATEGORY -> "criterion.category"
     }
 }

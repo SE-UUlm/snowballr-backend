@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.integration.IntegrationTest
+import se.uulm.snowballr.backend.model.dto.project.ProjectField
 import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
@@ -29,10 +30,7 @@ class ReviewIntegrationTest : IntegrationTest() {
         )
         val projectUpdate = UpdateProjectRequest.fromProjectResponse(modifiedProject)
 
-        project = projectService.updateProject(
-            projectUpdate,
-            setOf("project.settings.decision_matrix.number_of_reviewers"),
-        )
+        project = projectService.updateProject(projectUpdate, setOf(ProjectField.NUMBER_OF_REVIEWERS))
 
         return project to projectPaper
     }
@@ -129,7 +127,7 @@ class ReviewIntegrationTest : IntegrationTest() {
             val updateRequest = UpdateProjectRequest.fromProjectResponse(updatedProject)
 
             assertThrows<FailedPreconditionException> {
-                projectService.updateProject(updateRequest, setOf("project.settings.review_maybe_allowed"))
+                projectService.updateProject(updateRequest, setOf(ProjectField.REVIEW_MAYBE_ALLOWED))
             }
         }
     }

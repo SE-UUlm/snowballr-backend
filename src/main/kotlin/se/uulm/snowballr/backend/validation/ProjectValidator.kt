@@ -8,6 +8,8 @@ import arrow.core.raise.either
 import arrow.core.raise.zipOrAccumulate
 import com.google.protobuf.util.FieldMaskUtil
 import se.uulm.snowballr.backend.model.ValidationIssue
+import se.uulm.snowballr.backend.model.dto.project.ProjectField
+import se.uulm.snowballr.backend.model.dto.project.ProjectInfoField
 import snowballr.ProjectOuterClass.Project
 import snowballr.ProjectOuterClass.Project.Create
 import snowballr.ProjectOuterClass.ReviewDecisionMatrix
@@ -22,12 +24,12 @@ object ProjectValidator {
     const val NUMBER_OF_REVIEWERS_MIN_VALUE = 1
     const val NUMBER_OF_REVIEWERS_MAX_VALUE = 10
 
+    private const val FIELD_PROJECT_ID = "project.id"
     private const val FIELD_PROJECT_NAME = "project.name"
     private const val FIELD_PROJECT_STATUS = "project.status"
     private const val FIELD_SNOWBALLING_TYPE = "project.settings.snowballing_type"
     private const val FIELD_SIMILARITY_THRESHOLD = "project.settings.similarity_threshold"
     private const val FIELD_DECISION_MATRIX = "project.settings.decision_matrix"
-    private val UNALLOWED_UPDATE_MASK_FIELDS = listOf("project.current_stage", "project.max_stage")
 
     fun validateCreateRequest(request: Create): EitherNel<ValidationIssue, Unit> = either {
         ensureProjectNameValidity(request.name)
@@ -40,9 +42,11 @@ object ProjectValidator {
     }
 
     fun validateGetInformationRequest(request: Project.Information.Get): EitherNel<ValidationIssue, Unit> = either {
+        val allowedFields = ProjectInfoField.entries.map { getGrpcPathsForProjectInfoField(it) }
+
         // Validate the field mask
         val fieldMaskResult = either {
-            ensureFieldMaskIsValid(request.mask, Project.Information.getDescriptor(), allowEmpty = true)
+            ensureFieldMaskIsValid(request.mask, allowedFields, allowEmpty = true)
         }
 
         // If field mask validation fails, return early
@@ -59,6 +63,23 @@ object ProjectValidator {
         ensureIdValidity("project_id", request.projectId)
         ensureStageValidity(request.stage)
     }.toEitherNel()
+
+    fun getGrpcPathsForProjectField(field: ProjectField) = when (field) {
+        ProjectField.NAME -> "project.name"
+        ProjectField.STATUS -> "project.status"
+        ProjectField.SIMILARITY_THRESHOLD -> "project.settings.similarity_threshold"
+        ProjectField.SNOWBALLING_TYPE -> "project.settings.snowballing_type"
+        ProjectField.REVIEW_MAYBE_ALLOWED -> "project.settings.review_maybe_allowed"
+        ProjectField.FETCHERS -> "project.settings.fetchers"
+        ProjectField.NUMBER_OF_REVIEWERS -> "project.settings.decision_matrix.number_of_reviewers"
+        ProjectField.DECISION_MATRIX_PATTERNS -> "project.settings.decision_matrix.patterns"
+    }
+
+    fun getGrpcPathsForProjectInfoField(field: ProjectInfoField) = when (field) {
+        ProjectInfoField.PROJECT_PROGRESS -> "project_progress"
+        ProjectInfoField.CREATION_DATE -> "creation_date"
+        ProjectInfoField.LAST_STAGE_STARTED -> "last_stage_started"
+    }
 
     /**
      * Ensures that the provided project name is valid.
@@ -87,7 +108,8 @@ object ProjectValidator {
     }
 
     private fun validateUpdateFieldMask(request: Project.Update): EitherNel<ValidationIssue, Unit> = either {
-        ensureFieldMaskIsValid(request.mask, Project.Update.getDescriptor(), UNALLOWED_UPDATE_MASK_FIELDS)
+        val allowedPaths = listOf(FIELD_PROJECT_ID) + ProjectField.entries.map { getGrpcPathsForProjectField(it) }
+        ensureFieldMaskIsValid(request.mask, allowedPaths)
     }.toEitherNel()
 
     private fun Raise<Nel<ValidationIssue>>.validateUpdateProjectFields(project: Project, selectedFields: Set<String>) {
