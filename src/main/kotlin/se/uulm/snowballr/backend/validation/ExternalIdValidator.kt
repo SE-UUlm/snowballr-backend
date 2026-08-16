@@ -80,6 +80,14 @@ object ExternalIdValidator {
      */
     private val ACL_REGEX = Regex("${ACL_NEW_STYLE_REGEX.pattern}|${ACL_OLD_STYLE_REGEX.pattern}")
 
+    /**
+     * Matches a [dblp](https://dblp.org/) record key of the form `<prefix>/<conference-or-journal>/<id-suffix>`,
+     * e.g. `journals/tods/Bernstein83`.
+     *
+     * [Scheme](https://dblp.org/xml/docu/dblpxml.pdf).
+     */
+    private val DBLP_REGEX = Regex("""^[a-z]+/[A-Za-z0-9]+/[A-Za-z0-9]+$""")
+
     fun validateExternalId(externalId: ExternalId): EitherNel<ValidationIssue, Unit> = either {
         zipOrAccumulate(
             { ensureValidEnumValue<ExternalIdType>(externalId.type, "External ID Type") },
@@ -89,23 +97,21 @@ object ExternalIdValidator {
     }
 
     /**
-     * The expected value format for the given [ExternalIdType], or `null` if the type does not have a
-     * standardized-enough format to validate meaningfully ([ExternalIdType.DBLP]'s key scheme has changed shape
-     * too many times over the years), in which case only the generic blank/max-length checks apply.
+     * The expected value format for the given [ExternalIdType].
      */
-    private fun formatRegexFor(type: ExternalIdType): Regex? = when (type) {
+    private fun formatRegexFor(type: ExternalIdType): Regex = when (type) {
         ExternalIdType.DOI -> DOI_REGEX
         ExternalIdType.ARXIV -> ARXIV_REGEX
         ExternalIdType.MAG, ExternalIdType.PUB_MED, ExternalIdType.MEDLINE -> DIGITS_ONLY_REGEX
         ExternalIdType.PUB_MED_CENTRAL -> PUB_MED_CENTRAL_REGEX
         ExternalIdType.SEMANTIC_SCHOLAR -> SEMANTIC_SCHOLAR_REGEX
         ExternalIdType.ACL -> ACL_REGEX
-        ExternalIdType.DBLP -> null
+        ExternalIdType.DBLP -> DBLP_REGEX
     }
 
     /**
-     * Ensures that the given external ID [value] matches the format expected for its [type], if such a format is
-     * defined by [formatRegexFor].
+     * Ensures that the given external ID [value] matches the format expected for its [type], as defined by
+     * [formatRegexFor].
      *
      * Unknown or unspecified types are ignored here since they are already covered by the enum validity check.
      *
@@ -113,8 +119,7 @@ object ExternalIdValidator {
      * @param value The external ID value to check for format validity.
      */
     private fun Raise<ValidationIssue>.ensureExternalIdFormatValidity(type: String, value: String) {
-        val regex = runCatching { enumValueOf<ExternalIdType>(type) }.getOrNull()?.let { formatRegexFor(it) }
-            ?: return
-        ensure(regex.matches(value)) { InvalidExternalIdFormat(type, value) }
+        val parsedType = runCatching { enumValueOf<ExternalIdType>(type) }.getOrNull() ?: return
+        ensure(formatRegexFor(parsedType).matches(value)) { InvalidExternalIdFormat(type, value) }
     }
 }

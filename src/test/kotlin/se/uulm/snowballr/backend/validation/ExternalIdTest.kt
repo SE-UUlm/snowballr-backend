@@ -28,6 +28,7 @@ class ExternalIdTest {
             ExternalIdType.PUB_MED_CENTRAL to "1234567",
             ExternalIdType.SEMANTIC_SCHOLAR to "not-a-hash",
             ExternalIdType.ACL to "not-an-acl-id",
+            ExternalIdType.DBLP to "not-a-dblp-key",
         )
 
         @JvmStatic
@@ -121,18 +122,6 @@ class ExternalIdTest {
         val result = validateExternalId(externalId)
 
         assertInvalidResult<InvalidExternalIdFormat>(result)
-    }
-
-    @Test
-    fun `When a DBLP external ID has a non-blank value of valid length, then no issues are returned regardless of format`() {
-        val externalId = externalId {
-            type = ExternalIdType.DBLP.name
-            value = "this is not a real dblp key but should still be accepted"
-        }
-
-        val result = validateExternalId(externalId)
-
-        EitherAssert.assertThat(result).isRight()
     }
 
     @Test
