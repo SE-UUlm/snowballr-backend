@@ -266,13 +266,14 @@ class PaperTableRepo(
     override suspend fun mergeFetcherMetadata(id: UUID, metadata: FetcherMetadata): Unit = db.query {
         if (metadata.isEmpty()) return@query
 
-        val paperTable = "\"${PaperTable.tableName}\""
-        val metadataColumn = PaperTable.fetcherMetadata.name
+        val paperTable = identity(PaperTable)
+        val metadataColumn = identity(PaperTable.fetcherMetadata)
+        val idColumn = fullIdentity(PaperTable.id)
 
         // Use hstore concatenation operator to merge metadata key-value pairs.
         // The operator is right-biased, i.e., an existing value wins on conflict
         exec(
-            stmt = "UPDATE $paperTable SET $metadataColumn = ?::hstore || $metadataColumn WHERE $paperTable.id = ?",
+            stmt = "UPDATE $paperTable SET $metadataColumn = ?::hstore || $metadataColumn WHERE $idColumn = ?",
             args = listOf(HStoreColumnType() to metadata, UUIDColumnType() to id),
             explicitStatementType = StatementType.UPDATE,
         )
