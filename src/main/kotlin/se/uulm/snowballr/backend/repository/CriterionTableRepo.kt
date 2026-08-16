@@ -127,6 +127,10 @@ class CriterionTableRepo(
 
     override suspend fun updateCriterion(request: UpdateCriterionRequest, fields: Set<CriterionField>): Criterion =
         db.query {
+            if (fields.isEmpty()) {
+                return@query getCriterionById(request.criterionId).getOrThrow()
+            }
+
             CriterionTable.updateByIdAndGet(request.criterionId, ResultRow::toCriterion) {
                 for (field in fields) {
                     when (field) {

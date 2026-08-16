@@ -293,6 +293,18 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
                 }
             }
         }
+
+        @Test
+        fun `When a criterion is updated without any specified fields, then nothing is updated`() = runTest {
+            val projectId = insertProjectAndGetId(createdBy = testUserId)
+            val criterionId = insertCriterionAndGetId(projectId = projectId, createdBy = testUserId)
+            val criterion = repo.getCriterionById(criterionId).getOrThrow()
+            val request = UpdateCriterionRequest.fromCriterion(criterion)
+
+            val updatedCriterion = repo.updateCriterion(request, emptySet())
+
+            assertEquals(criterion, updatedCriterion)
+        }
     }
 
     @Nested
