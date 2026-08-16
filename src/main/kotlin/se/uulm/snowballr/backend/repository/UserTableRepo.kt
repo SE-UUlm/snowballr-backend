@@ -247,10 +247,11 @@ class UserTableRepo(
 
     override suspend fun getUsersMatchingSearchQuery(searchQuery: String, excludedUsers: Set<String>): List<User> =
         db.query {
+            val searchParam = stringParam(searchQuery)
             val bestSimilarity = greatest(
-                similarity(UserTable.firstName, stringParam(searchQuery)),
-                similarity(UserTable.lastName, stringParam(searchQuery)),
-                similarity(UserTable.email, stringParam(searchQuery)),
+                similarity(UserTable.firstName, searchParam),
+                similarity(UserTable.lastName, searchParam),
+                similarity(UserTable.email, searchParam),
             )
 
             UserTable
