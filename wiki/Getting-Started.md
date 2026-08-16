@@ -45,8 +45,7 @@ the backend with the desired profile.
 - **\<no-arguments\>**: Starts the backend, its proxy and the database.
 - **`db-only`**: Only starts the database (for local development)
 - **`registry`**: Starts the published backend image with the specified tag, its proxy and the database (use the
-  BACKEND_TAG
-  env variable).
+  `BACKEND_TAG` env variable).
 - **`proxy-only`**: Only starts the proxy (for local development)
 - **`backend-only`**: Only starts the backend service (for local development)
 
@@ -69,8 +68,7 @@ To build the project from source, run the following commands:
 
    The built JAR file can be found in the `build/libs` directory, named `snowballr-backend-<version>.jar`.
 
-3. Setup Python dependencies for the plugin system using
-   [uv](https://docs.astral.sh/uv/):
+3. Setup Python dependencies for the plugin system using [uv](https://docs.astral.sh/uv/):
 
     ```bash
     uv venv .venv
@@ -83,10 +81,11 @@ To build the project from source, run the following commands:
     java -jar build/libs/snowballr-backend-<version>.jar
     ```
 
-    Remember to provide the environment variables either via a `.env` file or by writing them in front of the command.
+   Remember to provide the environment variables either via a `.env` file or by writing them in front of the command.
 
 > [!IMPORTANT]
-> Always ensure that the server is running in a python environment providing the required dependencies specified in the `requirements.txt`.
+> Always ensure that the server is running in a python environment providing the required dependencies specified in the
+`requirements.txt`.
 
 ### Running in an IDE
 
@@ -97,8 +96,13 @@ can run Gradle commands directly from the project root directory. For example, t
 ./gradlew run
 ```
 
-This command automatically prepares `.venv` and synchronizes `requirements.txt`
-with `uv` before startup.
+This command automatically prepares `.venv` and synchronizes `requirements.txt` with `uv` before startup.
 
 If you're using IntelliJ IDEA, you can use the provided run configuration "Run Backend", which does the same as
 executing `./gradlew run`.
+
+#### Trouble Shooting
+
+- If running the project or its tests works in the command line, but not via the IDE, it might be caused by the IDE not
+  having the same `PATH` env variable as configured in your shell. To solve this, you can either start the IDE using the
+  command line or set the `UV_EXECUTABLE` env variable pointing to the path of the `uv` executable.
