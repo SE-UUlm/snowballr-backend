@@ -1,6 +1,8 @@
 package se.uulm.snowballr.backend.validation
 
+import arrow.core.Either
 import `in`.rcard.assertj.arrowcore.EitherAssert
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
@@ -109,6 +111,7 @@ class ExternalIdTest {
         val result = validateExternalId(externalId)
 
         assertInvalidResult<TooLongField>(result)
+        assertThat((result as Either.Left).value).hasSize(1)
     }
 
     @ParameterizedTest
@@ -117,6 +120,7 @@ class ExternalIdTest {
         val result = validateExternalId(externalId)
 
         assertInvalidResult<BlankField>(result)
+        assertThat((result as Either.Left).value).hasSize(1)
     }
 
     @ParameterizedTest(name = "{1}")

@@ -30,16 +30,11 @@ object ExternalIdValidator {
     /**
      * Matches the legacy [ArXiv](https://arxiv.org/) `archive.subject-class/YYMMNNN` scheme used before the
      * `YYMM.NNNNN` scheme was introduced in 2007, e.g. `hep-th/9901001`.
-     */
-    private val ARXIV_OLD_STYLE_REGEX = Regex("""^[a-z-]+(\.[A-Z]{2})?/\d{7}(v\d+)?$""")
-
-    /**
-     * Matches an [ArXiv](https://arxiv.org/) identifier in either the [ARXIV_NEW_STYLE_REGEX] or the
-     * [ARXIV_OLD_STYLE_REGEX] scheme.
      *
+     * An ArXiv identifier matches either this or the [ARXIV_NEW_STYLE_REGEX] scheme.
      * [Scheme](https://info.arxiv.org/help/arxiv_identifier.html).
      */
-    private val ARXIV_REGEX = Regex("${ARXIV_NEW_STYLE_REGEX.pattern}|${ARXIV_OLD_STYLE_REGEX.pattern}")
+    private val ARXIV_OLD_STYLE_REGEX = Regex("""^[a-z-]+(\.[A-Z]{2})?/\d{7}(v\d+)?$""")
 
     /**
      * Matches a numeric ID as used by both
@@ -69,16 +64,11 @@ object ExternalIdValidator {
     /**
      * Matches the legacy [ACL Anthology](https://aclanthology.org/) ID scheme used before 2020,
      * `<collection letter><2 digit year>-<paper number>`, e.g. `P19-1007`.
-     */
-    private val ACL_OLD_STYLE_REGEX = Regex("""^[A-Z]\d{2}-\d{3,4}$""")
-
-    /**
-     * Matches an [ACL Anthology](https://aclanthology.org/) identifier in either the [ACL_NEW_STYLE_REGEX] or the
-     * [ACL_OLD_STYLE_REGEX] scheme.
      *
+     * An ACL Anthology identifier matches either this or the [ACL_NEW_STYLE_REGEX] scheme.
      * [Scheme](https://aclanthology.org/info/ids/).
      */
-    private val ACL_REGEX = Regex("${ACL_NEW_STYLE_REGEX.pattern}|${ACL_OLD_STYLE_REGEX.pattern}")
+    private val ACL_OLD_STYLE_REGEX = Regex("""^[A-Z]\d{2}-\d{3,4}$""")
 
     /**
      * Matches a [dblp](https://dblp.org/) record key of the form `<prefix>/<conference-or-journal>/<id-suffix>`,
@@ -91,27 +81,29 @@ object ExternalIdValidator {
     fun validateExternalId(externalId: ExternalId): EitherNel<ValidationIssue, Unit> = either {
         zipOrAccumulate(
             { ensureValidEnumValue<ExternalIdType>(externalId.type, "External ID Type") },
-            { ensureTextFieldValidity("value", externalId.value, EXTERNAL_ID_MAX_LENGTH) },
-            { ensureExternalIdFormatValidity(externalId.type, externalId.value) },
-        ) { _, _, _ -> }
+            {
+                ensureTextFieldValidity("value", externalId.value, EXTERNAL_ID_MAX_LENGTH)
+                ensureExternalIdFormatValidity(externalId.type, externalId.value)
+            },
+        ) { _, _ -> }
     }
 
     /**
-     * The expected value format for the given [ExternalIdType].
+     * Whether the given [value] matches the format expected for the given [type].
      */
-    private fun formatRegexFor(type: ExternalIdType): Regex = when (type) {
-        ExternalIdType.DOI -> DOI_REGEX
-        ExternalIdType.ARXIV -> ARXIV_REGEX
-        ExternalIdType.MAG, ExternalIdType.PUB_MED, ExternalIdType.MEDLINE -> DIGITS_ONLY_REGEX
-        ExternalIdType.PUB_MED_CENTRAL -> PUB_MED_CENTRAL_REGEX
-        ExternalIdType.SEMANTIC_SCHOLAR -> SEMANTIC_SCHOLAR_REGEX
-        ExternalIdType.ACL -> ACL_REGEX
-        ExternalIdType.DBLP -> DBLP_REGEX
+    private fun matchesExpectedFormat(type: ExternalIdType, value: String): Boolean = when (type) {
+        ExternalIdType.DOI -> DOI_REGEX.matches(value)
+        ExternalIdType.ARXIV -> ARXIV_NEW_STYLE_REGEX.matches(value) || ARXIV_OLD_STYLE_REGEX.matches(value)
+        ExternalIdType.MAG, ExternalIdType.PUB_MED, ExternalIdType.MEDLINE -> DIGITS_ONLY_REGEX.matches(value)
+        ExternalIdType.PUB_MED_CENTRAL -> PUB_MED_CENTRAL_REGEX.matches(value)
+        ExternalIdType.SEMANTIC_SCHOLAR -> SEMANTIC_SCHOLAR_REGEX.matches(value)
+        ExternalIdType.ACL -> ACL_NEW_STYLE_REGEX.matches(value) || ACL_OLD_STYLE_REGEX.matches(value)
+        ExternalIdType.DBLP -> DBLP_REGEX.matches(value)
     }
 
     /**
      * Ensures that the given external ID [value] matches the format expected for its [type], as defined by
-     * [formatRegexFor].
+     * [matchesExpectedFormat].
      *
      * Unknown or unspecified types are ignored here since they are already covered by the enum validity check.
      *
@@ -120,6 +112,6 @@ object ExternalIdValidator {
      */
     private fun Raise<ValidationIssue>.ensureExternalIdFormatValidity(type: String, value: String) {
         val parsedType = runCatching { enumValueOf<ExternalIdType>(type) }.getOrNull() ?: return
-        ensure(formatRegexFor(parsedType).matches(value)) { InvalidExternalIdFormat(type, value) }
+        ensure(matchesExpectedFormat(parsedType, value)) { InvalidExternalIdFormat(type, value) }
     }
 }
