@@ -14,12 +14,12 @@ object ExternalIdValidator {
     const val EXTERNAL_ID_MAX_LENGTH = 100
 
     /**
-     * Matches a [DOI](https://www.doi.org/) of the form `10.<4 digit registrant code>/<suffix>`, e.g.
-     * `10.1000/xyz123`.
+     * Matches a [DOI](https://www.doi.org/) of the form `10.<registrant code of 4 or more digits>/<suffix>`, e.g.
+     * `10.1000/xyz123` or `10.48550/arXiv.2202.01037`.
      *
      * [Scheme](https://www.doi.org/the-identifier/what-is-a-doi/).
      */
-    private val DOI_REGEX = Regex("""^10\.\d{4}/\S+$""")
+    private val DOI_REGEX = Regex("""^10\.\d{4,}/\S+$""")
 
     /**
      * Matches the current [ArXiv](https://arxiv.org/) `YYMM.NNNNN` scheme introduced in 2007, e.g. `2101.00001`,
@@ -82,11 +82,11 @@ object ExternalIdValidator {
 
     /**
      * Matches a [dblp](https://dblp.org/) record key of the form `<prefix>/<conference-or-journal>/<id-suffix>`,
-     * e.g. `journals/tods/Bernstein83`.
+     * e.g. `journals/tods/Bernstein83` or `journals/corr/abs-2103-05387`.
      *
      * [Scheme](https://dblp.org/xml/docu/dblpxml.pdf).
      */
-    private val DBLP_REGEX = Regex("""^[a-z]+/[A-Za-z0-9]+/[A-Za-z0-9]+$""")
+    private val DBLP_REGEX = Regex("""^[a-z]+/[A-Za-z0-9]+/[A-Za-z0-9_-]+$""")
 
     fun validateExternalId(externalId: ExternalId): EitherNel<ValidationIssue, Unit> = either {
         zipOrAccumulate(

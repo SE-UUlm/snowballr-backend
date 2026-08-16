@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.validation
 import `in`.rcard.assertj.arrowcore.EitherAssert
 import org.junit.Test
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.model.BlankField
 import se.uulm.snowballr.backend.model.InvalidEnumValue
@@ -31,25 +32,43 @@ class ExternalIdTest {
             ExternalIdType.DBLP to "not-a-dblp-key",
         )
 
-        @JvmStatic
-        fun validExternalIds() = ExternalIdType.entries.map {
-            externalId {
-                type = it.name
-                value = VALID_EXTERNAL_ID_VALUES.getValue(it)
+        /**
+         * Extra valid values per [ExternalIdType] beyond the single representative example in
+         * [VALID_EXTERNAL_ID_VALUES], covering alternate schemes (old/new style, version suffixes) and values that
+         * sit at the boundary of what the format regex allows.
+         */
+        private val EXTRA_VALID_VALUES: List<Pair<ExternalIdType, String>> = listOf(
+            ExternalIdType.DOI to "10.48550/arXiv.2202.01037", // registrant code longer than 4 digits
+            ExternalIdType.ARXIV to "2101.00001v2", // new-style with version suffix
+            ExternalIdType.ARXIV to "hep-th/9901001", // legacy old-style
+            ExternalIdType.ACL to "2021.acl-long.1", // new-style (2020 onward)
+            ExternalIdType.DBLP to "journals/corr/abs-2103-05387", // hyphenated id-suffix, e.g. CoRR/arXiv keys
+        )
+
+        /**
+         * Extra malformed values per [ExternalIdType] beyond [INVALID_FORMAT_VALUES], covering values that are
+         * close to, but do not quite match, the expected format.
+         */
+        private val EXTRA_INVALID_FORMAT_VALUES: List<Pair<ExternalIdType, String>> = listOf(
+            ExternalIdType.DOI to "10.100/xyz123", // registrant code shorter than 4 digits
+            ExternalIdType.DOI to "10.1000xyz123", // missing separating slash
+            ExternalIdType.ARXIV to "210.00001", // year-month segment shorter than 4 digits
+            ExternalIdType.ACL to "P19-12345", // paper number longer than 4 digits
+            ExternalIdType.DBLP to "journals/tods", // missing id-suffix segment
+        )
+
+        private fun argumentsFor(type: ExternalIdType, value: String): Arguments {
+            val id = externalId {
+                this.type = type.name
+                this.value = value
             }
+            return Arguments.of(id, "$type '$value'")
         }
 
         @JvmStatic
-        fun validArxivIdOldStyle() = externalId {
-            type = ExternalIdType.ARXIV.name
-            value = "hep-th/9901001"
-        }
-
-        @JvmStatic
-        fun validAclIdNewStyle() = externalId {
-            type = ExternalIdType.ACL.name
-            value = "2021.acl-long.1"
-        }
+        fun validExternalIds(): List<Arguments> =
+            (ExternalIdType.entries.map { it to VALID_EXTERNAL_ID_VALUES.getValue(it) } + EXTRA_VALID_VALUES)
+                .map { (type, value) -> argumentsFor(type, value) }
 
         @JvmStatic
         fun invalidExternalIdsTooLongValue() = ExternalIdType.entries.map {
@@ -68,32 +87,18 @@ class ExternalIdTest {
         }
 
         @JvmStatic
-        fun invalidExternalIdsFormatValue() = INVALID_FORMAT_VALUES.map { (type, value) ->
-            externalId {
-                this.type = type.name
-                this.value = value
-            }
-        }
+        fun invalidExternalIdsFormatValue(): List<Arguments> =
+            (INVALID_FORMAT_VALUES.toList() + EXTRA_INVALID_FORMAT_VALUES)
+                .map { (type, value) -> argumentsFor(type, value) }
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{1}")
     @MethodSource("se.uulm.snowballr.backend.validation.ExternalIdTest#validExternalIds")
-    fun `When an external ID is valid, then no issues are returned`(externalId: ExternalId) {
+    fun `When an external ID is valid, then no issues are returned`(
+        externalId: ExternalId,
+        @Suppress("unused") testName: String,
+    ) {
         val result = validateExternalId(externalId)
-
-        EitherAssert.assertThat(result).isRight()
-    }
-
-    @Test
-    fun `When an ArXiv ID uses the old-style format, then no issues are returned`() {
-        val result = validateExternalId(validArxivIdOldStyle())
-
-        EitherAssert.assertThat(result).isRight()
-    }
-
-    @Test
-    fun `When an ACL ID uses the new-style format, then no issues are returned`() {
-        val result = validateExternalId(validAclIdNewStyle())
 
         EitherAssert.assertThat(result).isRight()
     }
@@ -114,10 +119,11 @@ class ExternalIdTest {
         assertInvalidResult<BlankField>(result)
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{1}")
     @MethodSource("se.uulm.snowballr.backend.validation.ExternalIdTest#invalidExternalIdsFormatValue")
     fun `When an external ID does not match the format of its type, then a 'InvalidExternalIdFormat' issue is returned`(
         externalId: ExternalId,
+        @Suppress("unused") testName: String,
     ) {
         val result = validateExternalId(externalId)
 
