@@ -4,7 +4,6 @@ import arrow.core.Either
 import arrow.core.EitherNel
 import arrow.core.raise.either
 import arrow.core.raise.zipOrAccumulate
-import se.uulm.snowballr.backend.grpc.getGrpcPathsForUserField
 import se.uulm.snowballr.backend.model.ValidationIssue
 import se.uulm.snowballr.backend.model.dto.user.UserField
 import snowballr.UserOuterClass.User
@@ -56,5 +55,13 @@ object UserValidator {
                 }
             },
         ) { _, _, _, _, _ -> }
+    }
+
+    fun getGrpcPathsForUserField(field: UserField) = when (field) {
+        UserField.EMAIL -> "user.email"
+        UserField.FIRST_NAME -> "user.first_name"
+        UserField.LAST_NAME -> "user.last_name"
+        UserField.ROLE -> "user.role"
+        UserField.STATUS -> "user.status"
     }
 }

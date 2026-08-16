@@ -10,7 +10,6 @@ import arrow.core.raise.either
 import arrow.core.raise.ensure
 import arrow.core.raise.zipOrAccumulate
 import com.google.protobuf.util.FieldMaskUtil
-import se.uulm.snowballr.backend.grpc.getGrpcPathsForPaperField
 import se.uulm.snowballr.backend.model.CompositeIssue
 import se.uulm.snowballr.backend.model.MultipleOccurrences
 import se.uulm.snowballr.backend.model.TooLongList
@@ -53,6 +52,17 @@ object PaperValidator {
         validatePaperProps(paper, selectedFields)
         validateAuthors(paper, selectedFields)
         validateExternalIds(paper, selectedFields)
+    }
+
+    fun getGrpcPathsForPaperField(field: PaperField) = when (field) {
+        PaperField.TITLE -> "paper.title"
+        PaperField.ABSTRACT -> "paper.abstrakt"
+        PaperField.YEAR -> "paper.year"
+        PaperField.PUBLISHER -> "paper.publisher"
+        PaperField.PUBLICATION_NAME -> "paper.publication_name"
+        PaperField.PUBLICATION_TYPE -> "paper.publication_type"
+        PaperField.AUTHORS -> "paper.authors"
+        PaperField.EXTERNAL_IDS -> "paper.external_ids"
     }
 
     private fun validateUpdateFieldMask(request: Paper.Update): EitherNel<ValidationIssue, Unit> = either {

@@ -7,8 +7,6 @@ import arrow.core.raise.Raise
 import arrow.core.raise.either
 import arrow.core.raise.zipOrAccumulate
 import com.google.protobuf.util.FieldMaskUtil
-import se.uulm.snowballr.backend.grpc.getGrpcPathsForProjectField
-import se.uulm.snowballr.backend.grpc.getGrpcPathsForProjectInfoField
 import se.uulm.snowballr.backend.model.ValidationIssue
 import se.uulm.snowballr.backend.model.dto.project.ProjectField
 import se.uulm.snowballr.backend.model.dto.project.ProjectInfoField
@@ -65,6 +63,23 @@ object ProjectValidator {
         ensureIdValidity("project_id", request.projectId)
         ensureStageValidity(request.stage)
     }.toEitherNel()
+
+    fun getGrpcPathsForProjectField(field: ProjectField) = when (field) {
+        ProjectField.NAME -> "project.name"
+        ProjectField.STATUS -> "project.status"
+        ProjectField.SIMILARITY_THRESHOLD -> "project.settings.similarity_threshold"
+        ProjectField.SNOWBALLING_TYPE -> "project.settings.snowballing_type"
+        ProjectField.REVIEW_MAYBE_ALLOWED -> "project.settings.review_maybe_allowed"
+        ProjectField.FETCHERS -> "project.settings.fetchers"
+        ProjectField.NUMBER_OF_REVIEWERS -> "project.settings.decision_matrix.number_of_reviewers"
+        ProjectField.DECISION_MATRIX_PATTERNS -> "project.settings.decision_matrix.patterns"
+    }
+
+    fun getGrpcPathsForProjectInfoField(field: ProjectInfoField) = when (field) {
+        ProjectInfoField.PROJECT_PROGRESS -> "project_progress"
+        ProjectInfoField.CREATION_DATE -> "creation_date"
+        ProjectInfoField.LAST_STAGE_STARTED -> "last_stage_started"
+    }
 
     /**
      * Ensures that the provided project name is valid.

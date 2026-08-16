@@ -18,6 +18,10 @@ import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.dto.user.UserField
 import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
+import se.uulm.snowballr.backend.validation.CriterionValidator
+import se.uulm.snowballr.backend.validation.PaperValidator
+import se.uulm.snowballr.backend.validation.ProjectValidator
+import se.uulm.snowballr.backend.validation.UserValidator
 import snowballr.CriterionOuterClass
 import snowballr.ProjectOuterClass
 import snowballr.ReviewOuterClass
@@ -122,60 +126,18 @@ fun userStatusFromGrpc(status: UserOuterClass.UserStatus): UserStatus = when (st
         throw IllegalStateException(INVALID_CONVERSION_MESSAGE)
 }
 
-fun getGrpcPathsForPaperField(field: PaperField) = when (field) {
-    PaperField.TITLE -> "paper.title"
-    PaperField.ABSTRACT -> "paper.abstrakt"
-    PaperField.YEAR -> "paper.year"
-    PaperField.PUBLISHER -> "paper.publisher"
-    PaperField.PUBLICATION_NAME -> "paper.publication_name"
-    PaperField.PUBLICATION_TYPE -> "paper.publication_type"
-    PaperField.AUTHORS -> "paper.authors"
-    PaperField.EXTERNAL_IDS -> "paper.external_ids"
-}
-
-fun getGrpcPathsForProjectField(field: ProjectField) = when (field) {
-    ProjectField.NAME -> "project.name"
-    ProjectField.STATUS -> "project.status"
-    ProjectField.SIMILARITY_THRESHOLD -> "project.settings.similarity_threshold"
-    ProjectField.SNOWBALLING_TYPE -> "project.settings.snowballing_type"
-    ProjectField.REVIEW_MAYBE_ALLOWED -> "project.settings.review_maybe_allowed"
-    ProjectField.FETCHERS -> "project.settings.fetchers"
-    ProjectField.NUMBER_OF_REVIEWERS -> "project.settings.decision_matrix.number_of_reviewers"
-    ProjectField.DECISION_MATRIX_PATTERNS -> "project.settings.decision_matrix.patterns"
-}
-
-fun getGrpcPathsForCriterionField(field: CriterionField) = when (field) {
-    CriterionField.TAG -> "criterion.tag"
-    CriterionField.NAME -> "criterion.name"
-    CriterionField.DESCRIPTION -> "criterion.description"
-    CriterionField.CATEGORY -> "criterion.category"
-}
-
-fun getGrpcPathsForUserField(field: UserField) = when (field) {
-    UserField.EMAIL -> "user.email"
-    UserField.FIRST_NAME -> "user.first_name"
-    UserField.LAST_NAME -> "user.last_name"
-    UserField.ROLE -> "user.role"
-    UserField.STATUS -> "user.status"
-}
-
-fun getGrpcPathsForProjectInfoField(field: ProjectInfoField) = when (field) {
-    ProjectInfoField.PROJECT_PROGRESS -> "project_progress"
-    ProjectInfoField.CREATION_DATE -> "creation_date"
-    ProjectInfoField.LAST_STAGE_STARTED -> "last_stage_started"
-}
-
 fun paperFieldFromGrpc(fieldMaskPath: String) =
-    PaperField.entries.associateBy { getGrpcPathsForPaperField(it) }.getValue(fieldMaskPath)
+    PaperField.entries.associateBy { PaperValidator.getGrpcPathsForPaperField(it) }.getValue(fieldMaskPath)
 
 fun projectFieldFromGrpc(fieldMaskPath: String) =
-    ProjectField.entries.associateBy { getGrpcPathsForProjectField(it) }.getValue(fieldMaskPath)
+    ProjectField.entries.associateBy { ProjectValidator.getGrpcPathsForProjectField(it) }.getValue(fieldMaskPath)
 
 fun criterionFieldFromGrpc(fieldMaskPath: String) =
-    CriterionField.entries.associateBy { getGrpcPathsForCriterionField(it) }.getValue(fieldMaskPath)
+    CriterionField.entries.associateBy { CriterionValidator.getGrpcPathsForCriterionField(it) }.getValue(fieldMaskPath)
 
 fun userFieldFromGrpc(fieldMaskPath: String) =
-    UserField.entries.associateBy { getGrpcPathsForUserField(it) }.getValue(fieldMaskPath)
+    UserField.entries.associateBy { UserValidator.getGrpcPathsForUserField(it) }.getValue(fieldMaskPath)
 
 fun projectInfoFieldFromGrpc(fieldMaskPath: String) =
-    ProjectInfoField.entries.associateBy { getGrpcPathsForProjectInfoField(it) }.getValue(fieldMaskPath)
+    ProjectInfoField.entries.associateBy { ProjectValidator.getGrpcPathsForProjectInfoField(it) }
+        .getValue(fieldMaskPath)

@@ -4,7 +4,6 @@ import arrow.core.Either
 import arrow.core.EitherNel
 import arrow.core.raise.either
 import arrow.core.raise.zipOrAccumulate
-import se.uulm.snowballr.backend.grpc.getGrpcPathsForCriterionField
 import se.uulm.snowballr.backend.model.ValidationIssue
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionField
 import snowballr.CriterionOuterClass.Criterion
@@ -89,5 +88,12 @@ object CriterionValidator {
                 }
             },
         ) { _, _, _, _, _ -> }
+    }
+
+    fun getGrpcPathsForCriterionField(field: CriterionField) = when (field) {
+        CriterionField.TAG -> "criterion.tag"
+        CriterionField.NAME -> "criterion.name"
+        CriterionField.DESCRIPTION -> "criterion.description"
+        CriterionField.CATEGORY -> "criterion.category"
     }
 }
