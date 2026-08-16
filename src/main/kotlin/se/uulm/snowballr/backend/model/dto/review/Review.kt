@@ -1,0 +1,31 @@
+package se.uulm.snowballr.backend.model.dto.review
+
+import se.uulm.snowballr.backend.table.ReviewTable
+import java.time.OffsetDateTime
+import java.util.UUID
+
+/**
+ * DTO of [ReviewTable].
+ */
+data class Review(
+    val id: UUID,
+    val projectPaperId: UUID,
+    val userId: UUID,
+    val decision: ReviewDecision,
+    val createdAt: OffsetDateTime,
+    val modifiedAt: OffsetDateTime?,
+) {
+    /**
+     * Checks whether the review accepts the paper.
+     *
+     * A review is considered to accept the paper if its decision is set to [ReviewDecision.ACCEPTED].
+     */
+    val doesAcceptPaper get() = this.decision == ReviewDecision.ACCEPTED
+
+    /**
+     * Checks whether the review declines the paper.
+     *
+     * A review is considered to decline the paper if its decision is set to [ReviewDecision.DECLINED].
+     */
+    val doesDeclinePaper get() = this.decision == ReviewDecision.DECLINED
+}

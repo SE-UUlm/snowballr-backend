@@ -1,60 +1,44 @@
 package se.uulm.snowballr.backend.service
 
+import io.github.oshai.kotlinlogging.KotlinLogging
+import se.uulm.snowballr.backend.access.ICriterionAccessChecker
+import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
-import se.uulm.snowballr.backend.model.AccessType
-import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
-import se.uulm.snowballr.backend.model.dto.Criterion
-import se.uulm.snowballr.backend.model.dto.toGrpcCriteria
-import se.uulm.snowballr.backend.model.dto.toGrpcCriterion
-import se.uulm.snowballr.backend.model.parseUUID
+import se.uulm.snowballr.backend.model.dto.criterion.Criterion
+import se.uulm.snowballr.backend.model.dto.criterion.CriterionField
+import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
+import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
-import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
-import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
-import se.uulm.snowballr.backend.service.accessrules.andAlso
-import se.uulm.snowballr.backend.service.accessrules.checkFor
-import se.uulm.snowballr.backend.service.accessrules.forTarget
-import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadProject
-import se.uulm.snowballr.backend.service.accessrules.isCreatorOfCriterion
-import se.uulm.snowballr.backend.service.accessrules.isProjectActive
-import se.uulm.snowballr.backend.service.accessrules.isProjectAdmin
-import se.uulm.snowballr.backend.service.accessrules.isProjectExistent
-import se.uulm.snowballr.backend.service.accessrules.isServerAdmin
-import se.uulm.snowballr.backend.service.accessrules.isUserAdminInProjectOfCriterion
-import se.uulm.snowballr.backend.service.accessrules.isUserInProjectOfCriterion
-import se.uulm.snowballr.backend.service.accessrules.orElse
-import se.uulm.snowballr.backend.service.accessrules.orElseThrow
-import snowballr.Base
-import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
+import java.util.UUID
+
+private val logger = KotlinLogging.logger {}
 
 interface ICriterionService {
     /**
      * Service implementation of [SnowballRService.getCriterionById].
      */
-    suspend fun getCriterionById(request: Base.Id): GrpcCriterion
+    suspend fun getCriterionById(criterionId: UUID): Criterion
 
     /**
      * Service implementation of [SnowballRService.createCriterion].
      */
-    suspend fun createCriterion(request: GrpcCriterion.Create): GrpcCriterion
+    suspend fun createCriterion(request: CreateCriterionRequest): Criterion
 
     /**
      * Service implementation of [SnowballRService.updateCriterion].
-     *
-     * @param request The update request containing the criterion details to be modified.
-     * @return The updated criterion after the changes have been applied.
      */
-    suspend fun updateCriterion(request: GrpcCriterion.Update): GrpcCriterion
+    suspend fun updateCriterion(request: UpdateCriterionRequest, fields: Set<CriterionField>): Criterion
 
     /**
      * Service implementation of [SnowballRService.getAllCriteriaForProject].
      */
-    suspend fun getAllCriteriaForProject(request: Base.Id): GrpcCriterion.List
+    suspend fun getAllCriteriaForProject(projectId: UUID): List<Criterion.ProjectCriterion>
 }
 
 /**
- * The [CriterionService] class handles operations related to projects by implementing the [ICriterionService] interface.
+ * The [CriterionService] class handles operations related to projects by implementing the [ICriterionService]
+ * interface.
  *
  * The `CriterionService` class provides functionality for managing criteria, including
  * creating, retrieving, and updating them. It also handles validation of access permissions,
@@ -65,95 +49,52 @@ interface ICriterionService {
  *
  * @param repo Interface for persistence and retrieval operations related to criteria.
  * @param userRepo Interface for operations related to user management.
- * @param projectRepo Interface for operations related to project retrieval.
- * @param projectMemberRepo Interface for operations related to project member management.
+ * @param accessChecker Interface for checking access permissions for criteria based on defined rules.
+ * @param projectAccessChecker Interface for checking access permissions for projects based on defined rules.
  */
 class CriterionService(
     private val repo: ICriterionTableRepo,
     private val userRepo: IUserTableRepo,
-    private val projectRepo: IProjectTableRepo,
-    private val projectMemberRepo: IProjectMemberTableRepo,
+    private val accessChecker: ICriterionAccessChecker,
+    private val projectAccessChecker: IProjectAccessChecker,
 ) : ICriterionService {
-    override suspend fun getCriterionById(request: Base.Id): GrpcCriterion = withUser(userRepo) { currentUser ->
-        val criterionId = parseUUID(request.id, EntityType.CRITERION)
+    override suspend fun getCriterionById(criterionId: UUID): Criterion = withUser(userRepo) { currentUser ->
         val criterion = repo.getCriterionById(criterionId).getOrThrow()
 
-        isCreatorOfCriterion()
-            .orElse(isUserInProjectOfCriterion(projectMemberRepo))
-            .orElse(isServerAdmin().forTarget())
-            .orElseThrow { user, target ->
-                UnauthorizedException.Single(
-                    EntityType.CRITERION,
-                    target.id.toString(),
-                    AccessType.READ,
-                    user.id.toString(),
-                )
-            }
-            .checkFor(currentUser, criterion)
+        accessChecker.isAllowedToReadCriterion(currentUser, criterion)
 
-        criterion.toGrpcCriterion()
+        criterion
     }
 
-    override suspend fun createCriterion(request: GrpcCriterion.Create): GrpcCriterion =
+    override suspend fun createCriterion(request: CreateCriterionRequest): Criterion =
         withUser(userRepo) { currentUser ->
-            if (request.projectId.isNotEmpty()) {
-                val projectId = parseUUID(request.projectId, EntityType.PROJECT)
-
-                isProjectAdmin(projectMemberRepo)
-                    .orElse(isServerAdmin().forTarget())
-                    .orElseThrow { user, target ->
-                        UnauthorizedException.Single(
-                            EntityType.CRITERION,
-                            target.toString(),
-                            AccessType.CREATE,
-                            user.id.toString(),
-                        )
-                    }
-                    .checkFor(currentUser, projectId)
-
-                val project = projectRepo.getProjectById(projectId).getOrThrow()
-
-                isProjectActive().checkFor(currentUser, project)
+            if (request.projectId != null) {
+                accessChecker.isAllowedToCreateProjectCriterion(currentUser, request.projectId)
             }
 
-            repo.createCriterion(request, currentUser.id).toGrpcCriterion()
-        }
-
-    override suspend fun updateCriterion(request: GrpcCriterion.Update): GrpcCriterion =
-        withUser(userRepo) { currentUser ->
-            val criterionId = parseUUID(request.criterion.id, EntityType.CRITERION)
-            val criterion = repo.getCriterionById(criterionId).getOrThrow()
-
-            if (criterion is Criterion.ProjectCriterion) {
-                val project = projectRepo.getProjectById(criterion.projectId).getOrThrow()
-
-                isProjectActive().checkFor(currentUser, project)
+            val criterion = repo.createCriterion(request, currentUser.id)
+            logger.info {
+                val owner = request.projectId?.let { "project $it" } ?: "the user's defaults"
+                "Criterion ${criterion.id} ('${criterion.tag}') created for $owner"
             }
-
-            isCreatorOfCriterion()
-                .orElse(isUserAdminInProjectOfCriterion(projectMemberRepo))
-                .orElse(isServerAdmin().forTarget())
-                .orElseThrow { user, target ->
-                    UnauthorizedException.Single(
-                        EntityType.CRITERION,
-                        target.id.toString(),
-                        AccessType.UPDATE,
-                        user.id.toString(),
-                    )
-                }
-                .checkFor(currentUser, criterion)
-
-            repo.updateCriterion(request).toGrpcCriterion()
+            criterion
         }
 
-    override suspend fun getAllCriteriaForProject(request: Base.Id): GrpcCriterion.List =
+    override suspend fun updateCriterion(request: UpdateCriterionRequest, fields: Set<CriterionField>): Criterion =
         withUser(userRepo) { currentUser ->
-            val projectId = parseUUID(request.id, EntityType.PROJECT)
+            val criterion = repo.getCriterionById(request.criterionId).getOrThrow()
 
-            isAllowedToReadProject(projectMemberRepo)
-                .andAlso(isProjectExistent(projectRepo))
-                .checkFor(currentUser, projectId)
+            accessChecker.isAllowedToUpdateCriterion(currentUser, criterion)
 
-            repo.getAllProjectCriteria(projectId).toGrpcCriteria()
+            val updatedCriterion = repo.updateCriterion(request, fields)
+            logger.info { "Criterion ${request.criterionId} updated: ${fields.joinToString()}" }
+            updatedCriterion
+        }
+
+    override suspend fun getAllCriteriaForProject(projectId: UUID): List<Criterion.ProjectCriterion> =
+        withUser(userRepo) { currentUser ->
+            projectAccessChecker.isAllowedToReadProject(currentUser, projectId)
+
+            repo.getAllProjectCriteria(projectId)
         }
 }

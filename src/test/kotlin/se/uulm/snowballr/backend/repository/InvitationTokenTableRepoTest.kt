@@ -1,14 +1,16 @@
 package se.uulm.snowballr.backend.repository
 
+import io.mockk.every
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
-import se.uulm.snowballr.backend.model.SnowballRException.InvitationTokenNotFoundException
+import se.uulm.snowballr.backend.isEqualToWithDelta
+import se.uulm.snowballr.backend.model.exception.notfound.InvitationTokenNotFoundException
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGetId
-import se.uulm.snowballr.backend.repository.RepositoryHelper.insertTestToken
+import se.uulm.snowballr.backend.repository.RepositoryHelper.insertTestInvitationToken
 import se.uulm.snowballr.backend.table.InvitationTokenTable
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.UserTable
@@ -18,7 +20,7 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTable, InvitationTokenTable), true) {
-    private val repo = InvitationTokenTableRepo(db)
+    private val repo = InvitationTokenTableRepo(db, envReaderMock)
 
     private val testEmail = "test.invite@example.com"
 
@@ -27,15 +29,18 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
         @Test
         fun `When a token is saved, then it can be retrieved by its value`() = runTest {
             val projectId = insertProjectAndGetId(createdBy = testUserId)
-
             val tokenValue = "a-unique-token-for-saving"
 
+            every { envReaderMock.env.lifetime.invitationTokenLifeTimeInDays } returns 7
+
+            val expectedExpirationDate = OffsetDateTime.now().plusDays(7)
             repo.saveInvitationToken(testEmail, projectId, tokenValue)
 
             val retrievedToken = assertResultSuccess(repo.getInvitationTokenByValue(tokenValue))
             assertEquals(testEmail, retrievedToken.email)
             assertEquals(projectId, retrievedToken.projectId)
             assertEquals(tokenValue, retrievedToken.token)
+            assertThat(retrievedToken.expiresAt).isEqualToWithDelta(expectedExpirationDate)
         }
     }
 
@@ -46,7 +51,7 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
             val projectId = insertProjectAndGetId(createdBy = testUserId)
 
             val tokenValue = "a-token-that-exists"
-            insertTestToken(testEmail, projectId, tokenValue)
+            insertTestInvitationToken(testEmail, projectId, tokenValue)
 
             val result = assertResultSuccess(repo.getInvitationTokenByValue(tokenValue))
             assertEquals(testEmail, result.email)
@@ -70,7 +75,7 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
             val projectId = insertProjectAndGetId(createdBy = testUserId)
 
             val tokenValue = "a-token-for-email-and-project"
-            insertTestToken(testEmail, projectId, tokenValue)
+            insertTestInvitationToken(testEmail, projectId, tokenValue)
 
             val result = assertResultSuccess(repo.getInvitationTokenByEmailAndProjectId(testEmail, projectId))
             assertEquals(tokenValue, result.token)
@@ -81,7 +86,7 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
             runTest {
                 val projectId = insertProjectAndGetId(createdBy = testUserId)
 
-                insertTestToken(testEmail, projectId)
+                insertTestInvitationToken(testEmail, projectId)
                 val anotherProjectId = UUID.randomUUID()
 
                 assertResultFailure<InvitationTokenNotFoundException>(
@@ -97,7 +102,7 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
             runTest {
                 val projectId = insertProjectAndGetId(createdBy = testUserId)
 
-                insertTestToken(testEmail, projectId)
+                insertTestInvitationToken(testEmail, projectId)
                 val anotherEmail = "another.email@example.com"
 
                 assertResultFailure<InvitationTokenNotFoundException>(
@@ -125,9 +130,9 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
         private fun getRandomTestEmail() = "${UUID.randomUUID().toString().substring(0, 5)}@example.com"
 
         private suspend fun insertActiveTestToken(projectId: UUID, token: String) =
-            insertTestToken(getRandomTestEmail(), projectId, token)
+            insertTestInvitationToken(getRandomTestEmail(), projectId, token)
 
-        private suspend fun insertInactiveTestToken(projectId: UUID) = insertTestToken(
+        private suspend fun insertInactiveTestToken(projectId: UUID) = insertTestInvitationToken(
             getRandomTestEmail(),
             projectId,
             "an-inactive-token",
@@ -144,6 +149,7 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
             insertInactiveTestToken(projectId)
 
             val activeInvitationTokenInProject = repo.getActiveInvitationTokensForProject(projectId)
+
             assertThat(activeInvitationTokenInProject).hasSize(1)
             assertEquals("an-active-token", activeInvitationTokenInProject.first().token)
         }
@@ -154,6 +160,7 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
             insertInactiveTestToken(projectId)
 
             val activeInvitationTokenInProject = repo.getActiveInvitationTokensForProject(projectId)
+
             assertThat(activeInvitationTokenInProject).isEmpty()
         }
 
@@ -163,6 +170,7 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
             insertActiveTestToken(projectId, "token-in-another-project")
 
             val activeInvitationTokenInProject = repo.getActiveInvitationTokensForProject(UUID.randomUUID())
+
             assertThat(activeInvitationTokenInProject).isEmpty()
         }
     }
@@ -174,7 +182,7 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
             val projectId = insertProjectAndGetId(createdBy = testUserId)
 
             val tokenValue = "a-token-to-be-deleted"
-            insertTestToken(testEmail, projectId, tokenValue)
+            insertTestInvitationToken(testEmail, projectId, tokenValue)
 
             assertResultSuccess(repo.getInvitationTokenByValue(tokenValue))
 
@@ -188,6 +196,79 @@ class InvitationTokenTableRepoTest : RepositoryTest(arrayOf(UserTable, ProjectTa
             assertDoesNotThrow {
                 repo.deleteInvitationToken("token-that-never-existed")
             }
+        }
+    }
+
+    @Nested
+    inner class DeleteExpiredInvitationTokens {
+        @Test
+        fun `When no expired tokens exist, then no tokens are deleted`() = runTest {
+            val projectId = insertProjectAndGetId(createdBy = testUserId)
+
+            insertTestInvitationToken(testEmail, projectId, "token-in-project")
+
+            repo.deleteExpiredInvitationTokens()
+
+            assertResultSuccess(repo.getInvitationTokenByEmailAndProjectId(testEmail, projectId))
+        }
+
+        @Test
+        fun `When expired tokens exist, then they are deleted`() = runTest {
+            val projectId = insertProjectAndGetId(createdBy = testUserId)
+
+            insertTestInvitationToken(
+                testEmail,
+                projectId,
+                "token-in-project",
+                OffsetDateTime.now().minusDays(1),
+            )
+
+            repo.deleteExpiredInvitationTokens()
+
+            assertResultFailure<InvitationTokenNotFoundException>(
+                repo.getInvitationTokenByEmailAndProjectId(testEmail, projectId),
+            )
+        }
+    }
+
+    @Nested
+    inner class DeleteInvitationTokensForProject {
+        @Test
+        fun `When tokens exist for a project, then they are deleted`() = runTest {
+            val projectId = insertProjectAndGetId(createdBy = testUserId)
+
+            insertTestInvitationToken(testEmail, projectId, "token-to-be-deleted")
+
+            repo.deleteInvitationTokensForProject(projectId)
+
+            assertResultFailure<InvitationTokenNotFoundException>(
+                repo.getInvitationTokenByEmailAndProjectId(testEmail, projectId),
+            )
+        }
+
+        @Test
+        fun `When no tokens exist for a project, then no exception is thrown`() = runTest {
+            val projectId = insertProjectAndGetId(createdBy = testUserId)
+
+            assertDoesNotThrow { repo.deleteInvitationTokensForProject(projectId) }
+        }
+
+        @Test
+        fun `When deleting token for one project, tokens for other projects are not affected`() = runTest {
+            val projectId1 = insertProjectAndGetId(createdBy = testUserId)
+            val projectId2 = insertProjectAndGetId(createdBy = testUserId)
+
+            insertTestInvitationToken(testEmail, projectId1, "token-in-project-1")
+            insertTestInvitationToken(testEmail, projectId2, "token-in-project-2")
+
+            repo.deleteInvitationTokensForProject(projectId1)
+
+            assertResultFailure<InvitationTokenNotFoundException>(
+                repo.getInvitationTokenByEmailAndProjectId(testEmail, projectId1),
+            )
+
+            // Token for project 2 should still exist
+            assertResultSuccess(repo.getInvitationTokenByEmailAndProjectId(testEmail, projectId2))
         }
     }
 }

@@ -2,13 +2,17 @@ package se.uulm.snowballr.backend.repository.association
 
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
-import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.v1.jdbc.insert
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertPaperAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryTest
+import se.uulm.snowballr.backend.repository.isUniqueConstraintViolation
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.association.CitationTable
+import java.sql.SQLException
 import java.util.UUID
 
 class CitationTableRepoTest : RepositoryTest(arrayOf(PaperTable, CitationTable), false) {
@@ -26,15 +30,20 @@ class CitationTableRepoTest : RepositoryTest(arrayOf(PaperTable, CitationTable),
         @Test
         fun `When a paper has no backward references, then none are returned`() = runTest {
             val paperId = insertPaperAndGetId()
-            assertThat(repo.getBackwardsReferencedPaperIdsOfPaperById(paperId)).isEmpty()
+
+            val backwardReferencedPaperIds = repo.getBackwardsReferencedPaperIdsOfPaperById(paperId)
+
+            assertThat(backwardReferencedPaperIds).isEmpty()
         }
 
         @Test
         fun `When a paper has one backward reference, then it is returned`() = runTest {
             val paperId = insertPaperAndGetId()
-            val paperId2 = insertPaperAndGetId(externalId = "ExternalId2")
+            val paperId2 = insertPaperAndGetId()
             addCitation(paperId, paperId2)
+
             val actualReferences = repo.getBackwardsReferencedPaperIdsOfPaperById(paperId)
+
             assertThat(actualReferences).hasSize(1)
             assertThat(actualReferences).containsExactly(paperId2)
         }
@@ -42,11 +51,13 @@ class CitationTableRepoTest : RepositoryTest(arrayOf(PaperTable, CitationTable),
         @Test
         fun `When a paper has two backward references, then they are returned`() = runTest {
             val paperId = insertPaperAndGetId()
-            val paperId2 = insertPaperAndGetId(externalId = "ExternalId2")
-            val paperId3 = insertPaperAndGetId(externalId = "ExternalId3")
+            val paperId2 = insertPaperAndGetId()
+            val paperId3 = insertPaperAndGetId()
             addCitation(paperId, paperId2)
             addCitation(paperId, paperId3)
+
             val actualReferences = repo.getBackwardsReferencedPaperIdsOfPaperById(paperId)
+
             assertThat(actualReferences).hasSize(2)
             assertThat(actualReferences).containsExactlyInAnyOrder(paperId2, paperId3)
         }
@@ -57,15 +68,20 @@ class CitationTableRepoTest : RepositoryTest(arrayOf(PaperTable, CitationTable),
         @Test
         fun `When a paper has no forward references, then none are returned`() = runTest {
             val paperId = insertPaperAndGetId()
-            assertThat(repo.getForwardReferencedPaperIdsOfPaperById(paperId)).isEmpty()
+
+            val forwardReferencedPaperIds = repo.getForwardReferencedPaperIdsOfPaperById(paperId)
+
+            assertThat(forwardReferencedPaperIds).isEmpty()
         }
 
         @Test
         fun `When a paper has one forward reference, then it is returned`() = runTest {
             val paperId = insertPaperAndGetId()
-            val citedPaperId = insertPaperAndGetId(externalId = "ExternalId2")
+            val citedPaperId = insertPaperAndGetId()
             addCitation(paperId, citedPaperId)
+
             val actualReferences = repo.getForwardReferencedPaperIdsOfPaperById(citedPaperId)
+
             assertThat(actualReferences).hasSize(1)
             assertThat(actualReferences).containsExactly(paperId)
         }
@@ -73,13 +89,65 @@ class CitationTableRepoTest : RepositoryTest(arrayOf(PaperTable, CitationTable),
         @Test
         fun `When a paper has two forward references, then they are returned`() = runTest {
             val paperId = insertPaperAndGetId()
-            val paperId2 = insertPaperAndGetId(externalId = "ExternalId2")
-            val citedPaperId = insertPaperAndGetId(externalId = "ExternalId3")
+            val paperId2 = insertPaperAndGetId()
+            val citedPaperId = insertPaperAndGetId()
             addCitation(paperId, citedPaperId)
             addCitation(paperId2, citedPaperId)
+
             val actualReferences = repo.getForwardReferencedPaperIdsOfPaperById(citedPaperId)
+
             assertThat(actualReferences).hasSize(2)
             assertThat(actualReferences).containsExactlyInAnyOrder(paperId, paperId2)
+        }
+    }
+
+    @Nested
+    inner class AddBackwardReferencedPaper {
+        @Test
+        fun `When adding a backward reference, then it appears in the backward references`() = runTest {
+            val paperId = insertPaperAndGetId()
+            val referencedPaperId = insertPaperAndGetId()
+
+            repo.addBackwardReferencedPaper(paperId, referencedPaperId)
+
+            val actualReferences = repo.getBackwardsReferencedPaperIdsOfPaperById(paperId)
+            assertThat(actualReferences).containsExactly(referencedPaperId)
+        }
+
+        @Test
+        fun `When adding the same backward reference twice, then an SQLException is thrown`() = runTest {
+            val paperId = insertPaperAndGetId()
+            val referencedPaperId = insertPaperAndGetId()
+
+            repo.addBackwardReferencedPaper(paperId, referencedPaperId)
+
+            val ex = assertThrows<SQLException> { repo.addBackwardReferencedPaper(paperId, referencedPaperId) }
+            assertTrue(ex.isUniqueConstraintViolation())
+        }
+    }
+
+    @Nested
+    inner class AddForwardReferencedPaper {
+        @Test
+        fun `When adding a forward reference, then it appears in the forward references`() = runTest {
+            val paperId = insertPaperAndGetId()
+            val citingPaperId = insertPaperAndGetId()
+
+            repo.addForwardReferencedPaper(paperId, citingPaperId)
+
+            val actualReferences = repo.getForwardReferencedPaperIdsOfPaperById(paperId)
+            assertThat(actualReferences).containsExactly(citingPaperId)
+        }
+
+        @Test
+        fun `When adding the same forward reference twice, then an SQLException is thrown`() = runTest {
+            val paperId = insertPaperAndGetId()
+            val citingPaperId = insertPaperAndGetId()
+
+            repo.addForwardReferencedPaper(paperId, citingPaperId)
+
+            val ex = assertThrows<SQLException> { repo.addForwardReferencedPaper(paperId, citingPaperId) }
+            assertTrue(ex.isUniqueConstraintViolation())
         }
     }
 }

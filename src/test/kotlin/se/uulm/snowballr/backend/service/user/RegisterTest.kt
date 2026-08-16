@@ -1,55 +1,53 @@
 package se.uulm.snowballr.backend.service.user
 
 import io.mockk.coEvery
+import io.mockk.coJustRun
 import io.mockk.every
 import io.mockk.slot
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.model.SnowballRException.DuplicateEntityException
-import se.uulm.snowballr.backend.model.dto.User
+import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.email.EmailData
-import se.uulm.snowballr.backend.service.MainServiceTest
-import snowballr.Authentication
+import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateUserException
+import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 
-class RegisterTest : MainServiceTest() {
-    private fun getExampleRequest(user: User) = Authentication.RegisterRequest.newBuilder()
-        .setEmail(user.email)
-        .setFirstName(user.firstName)
-        .setLastName(user.lastName)
-        .setPassword("VALIDPassword__1234")
-        .build()
+class RegisterTest : UserServiceTest() {
+    private fun getExampleRequest(user: User) = RegisterRequest(
+        firstName = user.firstName,
+        lastName = user.lastName,
+        email = user.email,
+        password = "VALIDPassword__1234",
+    )
 
     @Test
-    fun `When a user with the given email already exists, then a DuplicateEntityException is thrown`() = runTest {
+    fun `When a user with the given email already exists, then a DuplicateUserException is thrown`() = runTest {
         val existentEmail = "existent-email"
-        val request = Authentication.RegisterRequest.newBuilder()
-            .setEmail(existentEmail)
-            .build()
+        val request = getExampleRequest(DataBuilder.createExampleUser()).copy(email = existentEmail)
 
         coEvery { userRepoMock.doesUserExistByEmail(existentEmail) } returns true
 
-        assertThrows<DuplicateEntityException> { mainService.register(request) }
+        assertThrows<DuplicateUserException> { service.register(request) }
     }
 
     @Test
     fun `When sending the verification email fails, then a TestSpecificException is thrown`() = runTest {
         val user = DataBuilder.createExampleUser()
         val verificationLink = "verification-link"
-        val userData = EmailData.EmailVerification(user.firstName, verificationLink)
+        val userData = EmailData.EmailVerification(user.firstName, verificationLink, "tomorrow")
 
         coEvery { userRepoMock.doesUserExistByEmail(user.email) } returns false
         coEvery { userRepoMock.createUser(getExampleRequest(user), any()) } returns user
-        coEvery { verificationTokenRepoMock.saveVerificationToken(user.id, any()) } returns Unit
+        coJustRun { verificationTokenRepoMock.saveVerificationToken(user.id, any()) }
         every { emailManagerMock.createVerificationLink(any()) } returns verificationLink
+        every { envReaderMock.env.lifetime.verificationTokenLifeTimeInDays } returns 1
         coEvery { emailManagerMock.sendVerificationEmail(user.email, userData) } throws TestSpecificException()
 
-        assertThrows<TestSpecificException> { mainService.register(getExampleRequest(user)) }
+        assertThrows<TestSpecificException> { service.register(getExampleRequest(user)) }
     }
 
     @Test
@@ -63,16 +61,15 @@ class RegisterTest : MainServiceTest() {
 
             coEvery { userRepoMock.doesUserExistByEmail(user.email) } returns false
             coEvery { userRepoMock.createUser(getExampleRequest(user), any()) } returns user
-            coEvery { verificationTokenRepoMock.saveVerificationToken(user.id, capture(tokenSlot)) } returns Unit
-
+            coJustRun { verificationTokenRepoMock.saveVerificationToken(user.id, capture(tokenSlot)) }
             every { emailManagerMock.createVerificationLink(any()) } answers {
                 val token = firstArg<String>()
                 "$testFrontendURL/verifyemail?token=$token"
             }
+            every { envReaderMock.env.lifetime.verificationTokenLifeTimeInDays } returns 7
+            coJustRun { emailManagerMock.sendVerificationEmail(user.email, capture(emailDataSlot)) }
 
-            coEvery { emailManagerMock.sendVerificationEmail(user.email, capture(emailDataSlot)) } returns Unit
-
-            assertDoesNotThrow { mainService.register(getExampleRequest(user)) }
+            service.register(getExampleRequest(user))
 
             val capturedToken = tokenSlot.captured
             assertThat(capturedToken).isNotBlank()

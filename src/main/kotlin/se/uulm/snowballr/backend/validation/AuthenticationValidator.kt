@@ -43,6 +43,17 @@ object AuthenticationValidator {
         ensureFieldNonBlank("password", request.password)
     }.toEitherNel()
 
+    fun validateChangePasswordRequest(
+        request: Authentication.PasswordChangeRequest,
+    ): EitherNel<ValidationIssue, Unit> = either {
+        val result1 = either {
+            ensureFieldNonBlank("old_password", request.oldPassword)
+        }.toEitherNel()
+
+        val result2 = ensurePasswordValidity(request.newPassword)
+        return EitherNel.zipOrAccumulate(result1, result2) { _, _ -> }
+    }
+
     /**
      * Ensures that the provided password meets the required complexity criteria.
      *
@@ -53,7 +64,8 @@ object AuthenticationValidator {
      * - Minimum number of digits defined by [PASSWORD_MIN_NUMBER_DIGITS]
      * - Minimum number of special characters defined by [PASSWORD_MIN_NUMBER_SPECIAL_CHARS]
      *
-     * If any of these conditions are not met, an [se.uulm.snowballr.backend.model.InvalidPassword] validation issue is raised with the appropriate reason.
+     * If any of these conditions are not met, an [InvalidPassword] validation issue is raised with the appropriate
+     * reason.
      *
      * @param password The password to validate.
      * @return An [arrow.core.Either] containing either the validation issues or a success indication.

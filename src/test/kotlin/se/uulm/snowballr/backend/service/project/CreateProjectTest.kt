@@ -6,38 +6,32 @@ import io.mockk.slot
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import se.uulm.snowballr.backend.DataBuilder
-import se.uulm.snowballr.backend.model.dto.Project
-import se.uulm.snowballr.backend.model.dto.User
-import se.uulm.snowballr.backend.service.MainServiceTest
-import snowballr.ProjectOuterClass.MemberRole
-import snowballr.UserOuterClass.UserRole
+import se.uulm.snowballr.backend.model.dto.project.Project
+import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
+import se.uulm.snowballr.backend.model.dto.user.User
+import se.uulm.snowballr.backend.model.dto.user.UserRole
+import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
+import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import java.util.UUID
-import snowballr.CriterionOuterClass.Criterion as GrpcCriterion
-import snowballr.ProjectOuterClass.Project as GrpcProject
 
-class CreateProjectTest : MainServiceTest() {
-    private fun getExampleRequest() = GrpcProject.Create.getDefaultInstance()
+class CreateProjectTest : ProjectServiceTest() {
+    private fun getExampleRequest() = CreateProjectRequest(name = "Test Project")
 
     private fun mockProjectAdminCreation(project: Project, user: User) {
-        val projectMember = DataBuilder.createExampleProjectMember(project.id, user.id, MemberRole.MEMBER_ROLE_DEFAULT)
-        val projectAdmin = DataBuilder.createExampleProjectMember(project.id, user.id, MemberRole.MEMBER_ROLE_ADMIN)
+        val projectMember = DataBuilder.createExampleProjectMember(project.id, user.id, MemberRole.DEFAULT)
+        val projectAdmin = DataBuilder.createExampleProjectMember(project.id, user.id, MemberRole.ADMIN)
 
         coEvery { projectMemberRepoMock.addUserToProject(user.id, project.id) } returns projectMember
         coEvery {
-            projectMemberRepoMock.updateProjectMemberRole(
-                project.id,
-                user.id,
-                MemberRole.MEMBER_ROLE_ADMIN,
-            )
+            projectMemberRepoMock.updateProjectMemberRole(project.id, user.id, MemberRole.ADMIN)
         } returns projectAdmin
     }
 
     @Test
-    fun `When a project is correctly created, then no exception is thrown`() = runTest {
+    fun `When a project is correctly created, then the created project has the correct values`() = runTest {
         val project = DataBuilder.createExampleProject()
-        val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+        val user = DataBuilder.createExampleUser(role = UserRole.DEFAULT)
         val userSettings = DataBuilder.createExampleUserSettings()
 
         mockCurrentUser(user)
@@ -46,35 +40,33 @@ class CreateProjectTest : MainServiceTest() {
         coEvery { projectRepoMock.createProject(getExampleRequest(), user.id, userSettings) } returns project
         mockProjectAdminCreation(project, user)
 
-        assertDoesNotThrow { mainService.createProject(getExampleRequest()) }
+        val result = service.createProject(getExampleRequest())
+
+        assertProjectEquality(project, result)
 
         coVerify(exactly = 0) { criterionRepoMock.createCriterion(any(), user.id) }
         coVerify(exactly = 1) { projectMemberRepoMock.addUserToProject(user.id, project.id) }
         coVerify(exactly = 1) {
-            projectMemberRepoMock.updateProjectMemberRole(
-                project.id,
-                user.id,
-                MemberRole.MEMBER_ROLE_ADMIN,
-            )
+            projectMemberRepoMock.updateProjectMemberRole(project.id, user.id, MemberRole.ADMIN)
         }
     }
 
     @Test
-    fun `When a project is correctly created and the user has default criteria, then no exception is thrown`() =
+    fun `When a project is correctly created and the user has default criteria, then the created project has the correct values`() =
         runTest {
             val project = DataBuilder.createExampleProject()
-            val user = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
+            val user = DataBuilder.createExampleUser(role = UserRole.DEFAULT)
             val criterion = DataBuilder.createExampleProjectCriterion()
             val userSettings = DataBuilder.createExampleUserSettings(criteriaIds = listOf(criterion.id))
             val criteriaIdsSlot = slot<List<UUID>>()
 
-            val criterionCreateRequest = GrpcCriterion.Create.newBuilder()
-                .setProjectId(project.id.toString())
-                .setTag(criterion.tag)
-                .setName(criterion.name)
-                .setDescription(criterion.description)
-                .setCategory(criterion.category)
-                .build()
+            val criterionCreateRequest = CreateCriterionRequest(
+                tag = criterion.tag,
+                name = criterion.name,
+                description = criterion.description,
+                category = criterion.category,
+                projectId = project.id,
+            )
 
             mockCurrentUser(user)
             coEvery { userRepoMock.getUserSettings(user.id) } returns Result.success(userSettings)
@@ -83,7 +75,9 @@ class CreateProjectTest : MainServiceTest() {
             coEvery { criterionRepoMock.createCriterion(criterionCreateRequest, user.id) } returns criterion
             mockProjectAdminCreation(project, user)
 
-            assertDoesNotThrow { mainService.createProject(getExampleRequest()) }
+            val result = service.createProject(getExampleRequest())
+
+            assertProjectEquality(project, result)
             assertEquals(listOf(criterion.id), criteriaIdsSlot.captured)
         }
 }

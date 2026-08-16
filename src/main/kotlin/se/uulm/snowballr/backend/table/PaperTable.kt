@@ -1,12 +1,13 @@
 package se.uulm.snowballr.backend.table
 
 import kotlinx.serialization.json.Json
-import org.jetbrains.exposed.dao.id.UUIDTable
-import org.jetbrains.exposed.sql.ReferenceOption
-import org.jetbrains.exposed.sql.ResultRow
-import org.jetbrains.exposed.sql.json.json
-import se.uulm.snowballr.backend.model.dto.Author
-import se.uulm.snowballr.backend.model.dto.Paper
+import org.jetbrains.exposed.v1.core.ReferenceOption
+import org.jetbrains.exposed.v1.core.ResultRow
+import org.jetbrains.exposed.v1.core.dao.id.java.UUIDTable
+import org.jetbrains.exposed.v1.json.json
+import se.uulm.snowballr.backend.model.dto.paper.Author
+import se.uulm.snowballr.backend.model.dto.paper.ExternalId
+import se.uulm.snowballr.backend.model.dto.paper.Paper
 import java.time.OffsetDateTime
 
 /**
@@ -14,20 +15,20 @@ import java.time.OffsetDateTime
  *
  * Columns:
  * - [title]: Represents the title of the paper as a [String].
- * - [externalId]: Represents an optional unique external identifier of the paper as a nullable [String].
  * - [abstract]: Represents the abstract of the paper as a [String].
  * - [year]: Represents the publication year of the paper as an [Int].
  * - [publisher]: Represents the publisher of the paper as a nullable [String].
  * - [publicationType]: Represents the type of publication as a nullable [String].
  * - [publicationName]: Represents the name of the publication where the paper is published, as a nullable [String].
+ * - [authors]: Represents the authors of the paper as list of [Author].
  * - [pdfId]: Represents a reference to the [PdfTable] where the PDF data for the paper is stored.
+ * - [fetcherMetadata]: Represents metadata used by fetchers as a [Map].
  * - [createdAt]: Represents the timestamp of when the paper was created as an [OffsetDateTime].
  * - [modifiedAt]: Represents the timestamp of when the paper was last modified as an [OffsetDateTime].
  * - [modifiedBy]: A foreign key referencing the user table, representing the user who last modified the paper.
  */
 object PaperTable : UUIDTable("paper") {
     val title = text("title")
-    val externalId = text("external_id").uniqueIndex().nullable()
     val abstract = text("abstract")
     val year = integer("year")
     val publisher = text("publisher")
@@ -54,10 +55,10 @@ object PaperTable : UUIDTable("paper") {
 /**
  * Creates a [Paper] from this [ResultRow].
  */
-fun ResultRow.toPaper() = Paper(
+fun ResultRow.toPaper(externalIds: List<ExternalId>) = Paper(
     id = this[PaperTable.id].value,
     title = this[PaperTable.title],
-    externalId = this[PaperTable.externalId],
+    externalIds = externalIds,
     abstract = this[PaperTable.abstract],
     year = this[PaperTable.year],
     publisher = this[PaperTable.publisher],

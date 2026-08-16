@@ -22,10 +22,9 @@ import org.simplejavamail.api.mailer.config.TransportStrategy
 import org.simplejavamail.mailer.MailerBuilder
 import se.uulm.snowballr.backend.env.Env
 import se.uulm.snowballr.backend.env.EnvReader
-import se.uulm.snowballr.backend.model.SnowballRException
-import se.uulm.snowballr.backend.model.SnowballRException.EmailException
 import se.uulm.snowballr.backend.model.email.EmailData
-import se.uulm.snowballr.backend.model.email.EmailTemplate
+import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
+import se.uulm.snowballr.backend.model.exception.internal.email.MailSendFailedException
 
 /**
  * A base class for testing the [EmailManager].
@@ -92,7 +91,8 @@ class EmailManagerTest {
 
             val verificationToken = "this-is-a-test-token-123"
             val expectedVerificationLink = emailManager.createVerificationLink(verificationToken)
-            val emailData = EmailData.EmailVerification("John", expectedVerificationLink)
+            val expirationTime = "in 24 hours"
+            val emailData = EmailData.EmailVerification("John", expectedVerificationLink, expirationTime)
 
             emailManager.sendVerificationEmail(recipientEmail, emailData)
 
@@ -110,9 +110,10 @@ class EmailManagerTest {
             assertEquals(recipientEmail, receivedMessage.allRecipients[0].toString())
             assertThat(fromHeader).contains(testSenderName)
             assertThat(fromHeader).contains(testSenderEmail)
-            assertEquals(EmailTemplate.EMAIL_VERIFICATION.subject, subject)
+            assertEquals(emailData.subject, subject)
             assertThat(body).contains("Hello John,")
             assertThat(body).contains("<a href=\"$expectedVerificationLink\">$expectedVerificationLink</a>")
+            assertThat(body).contains("This link will expire in 24 hours.")
         }
 
         @Test
@@ -130,7 +131,14 @@ class EmailManagerTest {
 
             val acceptProjectInvitationToken = "this-is-a-test-token-123"
             val expectedAcceptanceLink = emailManager.createAcceptProjectInvitationLink(acceptProjectInvitationToken)
-            val emailData = EmailData.AcceptProjectInvitation("John", "Test Project", expectedAcceptanceLink)
+            val expirationTime = "in 24 hours"
+            val emailData = EmailData.AcceptProjectInvitation(
+                "John",
+                "Jane Doe",
+                "Test Project",
+                expectedAcceptanceLink,
+                expirationTime,
+            )
 
             emailManager.sendAcceptProjectInvitationEmail(recipientEmail, emailData)
 
@@ -148,10 +156,12 @@ class EmailManagerTest {
             assertEquals(recipientEmail, receivedMessage.allRecipients[0].toString())
             assertThat(fromHeader).contains(testSenderName)
             assertThat(fromHeader).contains(testSenderEmail)
-            assertEquals(EmailTemplate.ACCEPT_PROJECT_INVITATION.subject, subject)
+            assertEquals(emailData.subject, subject)
             assertThat(body).contains("Hello John,")
+            assertThat(body).contains("Jane Doe invited you to join the project")
             assertThat(body).contains("Test Project")
             assertThat(body).contains("<a href=\"$expectedAcceptanceLink\">$expectedAcceptanceLink</a>")
+            assertThat(body).contains("This invitation will expire in 24 hours.")
         }
 
         @Test
@@ -159,12 +169,12 @@ class EmailManagerTest {
             val emailTemplateManager = EmailTemplateManager()
             val emailManager = EmailManager(envReaderMock, mailerMock, emailTemplateManager)
 
-            val emailData = EmailData.EmailVerification("John", "any-link")
+            val emailData = EmailData.EmailVerification("John", "any-link", "")
             val mailerException = TestMailException("Mailer failed to send email")
 
             every { mailerMock.sendMail(any()) } throws mailerException
 
-            val thrownException = assertThrows<EmailException.MailSendFailed> {
+            val thrownException = assertThrows<MailSendFailedException> {
                 emailManager.sendVerificationEmail(recipientEmail, emailData)
             }
             assertEquals(mailerException, thrownException.cause)
@@ -174,12 +184,12 @@ class EmailManagerTest {
         fun `When template is not pre-compiled, then FailedPreconditionException is thrown`() {
             val emailManager = EmailManager(envReaderMock, mailerMock, emailTemplateManagerMock)
 
-            val emailData = EmailData.EmailVerification("John", "any-link")
+            val emailData = EmailData.EmailVerification("John", "any-link", "")
 
             every { emailTemplateManagerMock.getTemplate(any()) } throws
-                SnowballRException.FailedPreconditionException("Template not pre-compiled")
+                FailedPreconditionException("Template not pre-compiled")
 
-            assertThrows<SnowballRException.FailedPreconditionException> {
+            assertThrows<FailedPreconditionException> {
                 emailManager.sendVerificationEmail(recipientEmail, emailData)
             }
         }

@@ -1,5 +1,8 @@
 package se.uulm.snowballr.backend.repository.association
 
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.select
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.table.association.CitationTable
 import java.util.UUID
@@ -21,6 +24,16 @@ interface ICitationTableRepo {
      * Returns the forward references of a paper by its ID.
      */
     suspend fun getForwardReferencedPaperIdsOfPaperById(id: UUID): List<UUID>
+
+    /**
+     * Adds a backward reference: records that paper [id] cites [referencedPaperId].
+     */
+    suspend fun addBackwardReferencedPaper(id: UUID, referencedPaperId: UUID)
+
+    /**
+     * Adds a forward reference: records that paper [citingPaperId] cites paper [id].
+     */
+    suspend fun addForwardReferencedPaper(id: UUID, citingPaperId: UUID)
 }
 
 /**
@@ -49,5 +62,20 @@ class CitationTableRepo(
             .where { CitationTable.citedPaperId eq id }
             .map { it[CitationTable.paperId].value }
             .toList()
+    }
+
+    override suspend fun addBackwardReferencedPaper(id: UUID, referencedPaperId: UUID) =
+        addReferencedPaper(id, referencedPaperId)
+
+    override suspend fun addForwardReferencedPaper(id: UUID, citingPaperId: UUID) =
+        addReferencedPaper(citingPaperId, id)
+
+    private suspend fun addReferencedPaper(citingPaperId: UUID, citedPaperId: UUID) {
+        db.query {
+            CitationTable.insert {
+                it[CitationTable.paperId] = citingPaperId
+                it[CitationTable.citedPaperId] = citedPaperId
+            }
+        }
     }
 }

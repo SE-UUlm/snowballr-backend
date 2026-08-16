@@ -1,17 +1,21 @@
 package se.uulm.snowballr.backend.repository
 
-import org.jetbrains.exposed.sql.ResultRow
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.deleteWhere
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.ResultRow
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.lessEq
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import se.uulm.snowballr.backend.db.IDatabase
-import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.SnowballRException.InvitationTokenNotFoundException
-import se.uulm.snowballr.backend.model.dto.InvitationToken
+import se.uulm.snowballr.backend.env.EnvReader
+import se.uulm.snowballr.backend.model.dto.projectmember.InvitationToken
+import se.uulm.snowballr.backend.model.exception.notfound.InvitationTokenNotFoundException
 import se.uulm.snowballr.backend.table.InvitationTokenTable
 import se.uulm.snowballr.backend.table.toInvitationToken
 import java.time.OffsetDateTime
 import java.util.UUID
+
+private val logger = KotlinLogging.logger { }
 
 interface IInvitationTokenTableRepo {
     /**
@@ -57,17 +61,32 @@ interface IInvitationTokenTableRepo {
      * @param token The invitation token to delete.
      */
     suspend fun deleteInvitationToken(token: String)
+
+    /**
+     * Deletes all invitation tokens that have expired.
+     */
+    suspend fun deleteExpiredInvitationTokens()
+
+    /**
+     * Deletes all invitation tokens associated with a given project.
+     */
+    suspend fun deleteInvitationTokensForProject(projectId: UUID)
 }
 
 class InvitationTokenTableRepo(
     private val db: IDatabase,
+    private val envReader: EnvReader,
 ) : IInvitationTokenTableRepo {
     override suspend fun saveInvitationToken(email: String, projectId: UUID, token: String) {
+        val verificationTokenLifeTimeInDays = envReader.env.lifetime.invitationTokenLifeTimeInDays.toLong()
+        val expirationDate = OffsetDateTime.now().plusDays(verificationTokenLifeTimeInDays)
+
         db.query {
-            InvitationTokenTable.insertAndGet(ResultRow::toInvitationToken, EntityType.INVITATION_TOKEN) {
+            InvitationTokenTable.insertAndGet(ResultRow::toInvitationToken) {
                 it[InvitationTokenTable.email] = email
                 it[InvitationTokenTable.projectId] = projectId
                 it[InvitationTokenTable.token] = token
+                it[InvitationTokenTable.expiresAt] = expirationDate
             }
         }
     }
@@ -76,11 +95,7 @@ class InvitationTokenTableRepo(
         val result =
             InvitationTokenTable.getEntityOrNull(ResultRow::toInvitationToken) { InvitationTokenTable.token eq token }
 
-        if (result != null) {
-            Result.success(result)
-        } else {
-            Result.failure(InvitationTokenNotFoundException())
-        }
+        wrapAsResult(result, InvitationTokenNotFoundException())
     }
 
     override suspend fun getInvitationTokenByEmailAndProjectId(
@@ -91,11 +106,7 @@ class InvitationTokenTableRepo(
             (InvitationTokenTable.email eq email) and (InvitationTokenTable.projectId eq projectId)
         }
 
-        if (token != null) {
-            Result.success(token)
-        } else {
-            Result.failure(InvitationTokenNotFoundException())
-        }
+        wrapAsResult(token, InvitationTokenNotFoundException())
     }
 
     override suspend fun getActiveInvitationTokensForProject(projectId: UUID): List<InvitationToken> = db.query {
@@ -109,6 +120,20 @@ class InvitationTokenTableRepo(
     override suspend fun deleteInvitationToken(token: String) {
         db.query {
             InvitationTokenTable.deleteWhere { InvitationTokenTable.token eq token }
+        }
+    }
+
+    override suspend fun deleteExpiredInvitationTokens() = db.query {
+        val deletedTokens = InvitationTokenTable.deleteWhere {
+            InvitationTokenTable.expiresAt lessEq OffsetDateTime.now()
+        }
+
+        logger.info { "Deleted $deletedTokens expired invitation tokens." }
+    }
+
+    override suspend fun deleteInvitationTokensForProject(projectId: UUID) {
+        db.query {
+            InvitationTokenTable.deleteWhere { InvitationTokenTable.projectId eq projectId }
         }
     }
 }

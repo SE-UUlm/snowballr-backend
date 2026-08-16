@@ -2,6 +2,9 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
-    <ID>Deprecation:SnowballRServer.kt$SnowballRServer$newInstance</ID>
+    <ID>ForbiddenComment:FetcherOrchestrator.kt:FetcherOrchestrator$// TODO: don't use creation result, re-fetch all refs to also include existing refs</ID>
+    <ID>ForbiddenComment:FetcherOrchestrator.kt:FetcherOrchestrator$// TODO: merge data</ID>
+    <ID>ForbiddenComment:FetcherOrchestrator.kt:FetcherOrchestrator$// TODO: paper filtering/merging</ID>
+    <ID>ForbiddenComment:FetcherOrchestrator.kt:FetcherOrchestrator$// TODO: replace with check for whole paper data by similarity not only external ID</ID>
   </CurrentIssues>
 </SmellBaseline>

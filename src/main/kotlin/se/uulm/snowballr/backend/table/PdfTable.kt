@@ -1,9 +1,9 @@
 package se.uulm.snowballr.backend.table
 
-import org.jetbrains.exposed.dao.id.UUIDTable
-import org.jetbrains.exposed.sql.ResultRow
-import org.jetbrains.exposed.sql.statements.api.ExposedBlob
-import se.uulm.snowballr.backend.model.dto.Pdf
+import org.jetbrains.exposed.v1.core.ResultRow
+import org.jetbrains.exposed.v1.core.dao.id.java.UUIDTable
+import org.jetbrains.exposed.v1.core.statements.api.ExposedBlob
+import se.uulm.snowballr.backend.model.dto.paper.Pdf
 
 /**
  * Represents the database table "pdf" and provides a mapping for managing PDF-related data in the database.

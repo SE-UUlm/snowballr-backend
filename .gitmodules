@@ -1,3 +1,0 @@
-[submodule "api"]
-	path = api
-	url = git@github.com:SE-UUlm/snowballr-api.git

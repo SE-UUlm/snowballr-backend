@@ -3,39 +3,33 @@ package se.uulm.snowballr.backend.service.paper
 import io.mockk.coEvery
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.service.MainServiceTest
-import snowballr.Base
 import java.util.UUID
 
-class GetPaperByIdTest : MainServiceTest() {
-    private val paperId = UUID.randomUUID()
-
-    private fun getExampleRequest() = Base.Id
-        .newBuilder()
-        .setId(paperId.toString())
-        .build()
-
+class GetPaperByIdTest : PaperServiceTest() {
     @Test
     fun `When fetching the paper fails, then a TestSpecificException is thrown`() = runTest {
+        val paperId = UUID.randomUUID()
+
         coEvery { paperRepoMock.getPaperById(paperId) } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { mainService.getPaperById(getExampleRequest()) }
+        assertThrows<TestSpecificException> { service.getPaperById(paperId) }
     }
 
     @Test
-    fun `When a paper is retrieved successfully, then no exception is thrown`() = runTest {
+    fun `When a paper is retrieved successfully, then the correct values are returned`() = runTest {
         val author = DataBuilder.createExampleAuthor()
-        val paper = DataBuilder.createExamplePaper(id = paperId, authors = listOf(author))
+        val paper = DataBuilder.createExamplePaper(authors = listOf(author))
 
         coEvery { paperRepoMock.getPaperById(paper.id) } returns Result.success(paper)
         coEvery {
             citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
         } returns listOf(UUID.randomUUID())
 
-        assertDoesNotThrow { mainService.getPaperById(getExampleRequest()) }
+        val result = service.getPaperById(paper.id)
+
+        assertPaperEquality(paper, result)
     }
 }

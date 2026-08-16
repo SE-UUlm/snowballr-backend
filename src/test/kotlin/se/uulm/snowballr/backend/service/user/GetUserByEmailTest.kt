@@ -1,89 +1,65 @@
 package se.uulm.snowballr.backend.service.user
 
 import io.mockk.coEvery
+import io.mockk.coJustRun
+import io.mockk.coVerify
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
-import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
-import se.uulm.snowballr.backend.service.MainServiceTest
-import snowballr.Base
-import snowballr.UserOuterClass.UserRole
-import snowballr.UserOuterClass.UserStatus
+import se.uulm.snowballr.backend.model.UserIdentifierType
 
-class GetUserByEmailTest : MainServiceTest() {
-    private val exampleEmail = "test@example.com"
-    private fun getExampleRequest() = Base.Email.newBuilder().setEmail(exampleEmail).build()
-
+class GetUserByEmailTest : UserServiceTest() {
     @Test
-    fun `When retrieving requested user by email fails, then a TestSpecificException is thrown`() = runTest {
+    fun `When the current user requests themselves, then user is not requested again`() = runTest {
         val currentUser = DataBuilder.createExampleUser()
 
         mockCurrentUser(currentUser)
-        coEvery { userRepoMock.getUserByEmail(exampleEmail) } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { mainService.getUserByEmail(getExampleRequest()) }
+        val requestedUser = service.getUserByEmail(currentUser.email)
+
+        assertEquals(currentUser.id, requestedUser.id)
+        coVerify(exactly = 0) { userRepoMock.getUserByEmail(currentUser.email) }
     }
 
     @Test
-    fun `When verifying user access fails, then an UnauthorizedException is thrown`() = runTest {
-        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-        val requestedUser = DataBuilder.createExampleUser(email = exampleEmail)
+    fun `When retrieving the requested user fails, then a TestSpecificException is thrown`() = runTest {
+        val currentUser = DataBuilder.createExampleUser()
+        val requestedUserEmail = "otherUser@example.com"
 
         mockCurrentUser(currentUser)
-        coEvery { userRepoMock.getUserByEmail(exampleEmail) } returns Result.success(requestedUser)
-        coEvery { projectMemberRepoMock.getMembersInSameProjectsAsUser(requestedUser.id) } returns emptyList()
+        coEvery { userRepoMock.getUserByEmail(requestedUserEmail) } returns Result.failure(TestSpecificException())
 
-        assertThrows<UnauthorizedException> { mainService.getUserByEmail(getExampleRequest()) }
+        assertThrows<TestSpecificException> { service.getUserByEmail(requestedUserEmail) }
     }
 
     @Test
-    fun `When requested user is inactive, then a NotFoundException is thrown`() = runTest {
-        val currentUser = DataBuilder.createExampleUser(email = exampleEmail)
+    fun `When a user requests a user, but has no access, then a TestSpecificException is thrown`() = runTest {
+        val currentUser = DataBuilder.createExampleUser()
+        val requestedUser = DataBuilder.createExampleUser(email = "otherUser@example.com")
 
         mockCurrentUser(currentUser)
+        coEvery { userRepoMock.getUserByEmail(requestedUser.email) } returns Result.success(requestedUser)
+        coEvery {
+            userAccessCheckerMock.isAllowedToReadUser(currentUser, requestedUser, UserIdentifierType.EMAIL)
+        } throws TestSpecificException()
 
-        val inactiveStatuses = UserStatus.entries.filterNot {
-            it == UserStatus.USER_STATUS_ACTIVE || it == UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
-        }
-
-        inactiveStatuses.forEach { status ->
-            val requestedUser = DataBuilder.createExampleUser(
-                id = currentUser.id,
-                email = exampleEmail,
-                status = status,
-            )
-
-            coEvery { userRepoMock.getUserByEmail(exampleEmail) } returns Result.success(requestedUser)
-
-            assertThrows<NotFoundException>("Should throw NotFoundException for status $status") {
-                mainService.getUserByEmail(getExampleRequest())
-            }
-        }
+        assertThrows<TestSpecificException> { service.getUserByEmail(requestedUser.email) }
     }
 
     @Test
-    fun `When all retrievals succeed and user is active, then user is returned`() = runTest {
-        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+    fun `When a user requests a user and has access, then the user is returned`() = runTest {
+        val currentUser = DataBuilder.createExampleUser()
+        val requestedUser = DataBuilder.createExampleUser(email = "otherUser@example.com")
 
         mockCurrentUser(currentUser)
+        coEvery { userRepoMock.getUserByEmail(requestedUser.email) } returns Result.success(requestedUser)
+        coJustRun { userAccessCheckerMock.isAllowedToReadUser(currentUser, requestedUser, UserIdentifierType.EMAIL) }
 
-        val activeStatuses = listOf(
-            UserStatus.USER_STATUS_ACTIVE,
-            UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED,
-        )
+        val result = service.getUserByEmail(requestedUser.email)
 
-        activeStatuses.forEach { status ->
-            val requestedUser = DataBuilder.createExampleUser(email = exampleEmail, status = status)
-
-            coEvery { userRepoMock.getUserByEmail(exampleEmail) } returns Result.success(requestedUser)
-
-            assertDoesNotThrow("Should succeed for status $status") {
-                mainService.getUserByEmail(getExampleRequest())
-            }
-        }
+        assertEquals(requestedUser.email, result.email)
     }
 }

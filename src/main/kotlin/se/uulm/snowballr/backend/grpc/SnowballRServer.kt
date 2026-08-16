@@ -1,24 +1,71 @@
 package se.uulm.snowballr.backend.grpc
 
+import com.google.protobuf.util.FieldMaskUtil
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.grpc.Server
 import io.grpc.ServerBuilder
 import io.grpc.health.v1.HealthCheckResponse.ServingStatus
 import io.grpc.protobuf.services.HealthStatusManager
-import io.grpc.protobuf.services.ProtoReflectionService
+import io.grpc.protobuf.services.ProtoReflectionServiceV1
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
-import se.uulm.snowballr.backend.auth.GrpcContext
+import se.uulm.snowballr.backend.context.RequestContext
+import se.uulm.snowballr.backend.grpc.GrpcHelpers.parseCriterionId
+import se.uulm.snowballr.backend.grpc.GrpcHelpers.parsePaperId
+import se.uulm.snowballr.backend.grpc.GrpcHelpers.parseProjectId
+import se.uulm.snowballr.backend.grpc.GrpcHelpers.parseProjectPaperId
+import se.uulm.snowballr.backend.grpc.GrpcHelpers.parseReviewId
+import se.uulm.snowballr.backend.grpc.GrpcHelpers.parseUserId
+import se.uulm.snowballr.backend.grpc.GrpcHelpers.returnBoolValue
+import se.uulm.snowballr.backend.grpc.GrpcHelpers.returnNothing
 import se.uulm.snowballr.backend.grpc.interceptor.authenticationInterceptor
 import se.uulm.snowballr.backend.grpc.interceptor.exceptionInterceptor
 import se.uulm.snowballr.backend.grpc.interceptor.loggingInterceptor
+import se.uulm.snowballr.backend.grpc.interceptor.requestContextCoroutineInterceptor
 import se.uulm.snowballr.backend.grpc.interceptor.validationInterceptor
-import se.uulm.snowballr.backend.service.IMainService
+import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.dto.paper.Author
+import se.uulm.snowballr.backend.model.dto.paper.ExternalId
+import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
+import se.uulm.snowballr.backend.model.dto.project.ProjectField
+import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.project.SnowballingType
+import se.uulm.snowballr.backend.model.dto.user.UserField
+import se.uulm.snowballr.backend.model.dto.user.UserRole
+import se.uulm.snowballr.backend.model.dto.user.UserStatus
+import se.uulm.snowballr.backend.model.export.ExportFormat
+import se.uulm.snowballr.backend.model.incoming.authentication.ChangePasswordRequest
+import se.uulm.snowballr.backend.model.incoming.authentication.LoginRequest
+import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
+import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
+import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
+import se.uulm.snowballr.backend.model.incoming.paper.UpdatePaperRequest
+import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
+import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
+import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectSettingRequest
+import se.uulm.snowballr.backend.model.incoming.projectmember.UpdateProjectMemberRoleRequest
+import se.uulm.snowballr.backend.model.incoming.review.CreateReviewRequest
+import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
+import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
+import se.uulm.snowballr.backend.model.parseUUID
+import se.uulm.snowballr.backend.scheduler.SchedulerManager
+import se.uulm.snowballr.backend.service.IAuthenticationService
+import se.uulm.snowballr.backend.service.ICriterionService
+import se.uulm.snowballr.backend.service.IExportService
+import se.uulm.snowballr.backend.service.IFetcherService
+import se.uulm.snowballr.backend.service.IInvitationService
+import se.uulm.snowballr.backend.service.IPaperService
+import se.uulm.snowballr.backend.service.IProjectMemberService
+import se.uulm.snowballr.backend.service.IProjectPaperService
+import se.uulm.snowballr.backend.service.IProjectService
+import se.uulm.snowballr.backend.service.IReadingListService
+import se.uulm.snowballr.backend.service.IReviewService
+import se.uulm.snowballr.backend.service.IUserService
 import snowballr.Authentication
 import snowballr.Base
 import snowballr.CriterionOuterClass
 import snowballr.Export
-import snowballr.Fetcher
+import snowballr.Fetcher.AvailableFetchers
 import snowballr.PaperOuterClass
 import snowballr.ProjectOuterClass
 import snowballr.ReviewOuterClass
@@ -65,9 +112,10 @@ class SnowballRServer(
      * for debugging, development, and command-line tools that interact with gRPC servers without requiring
      * precompiled service definitions.
      *
-     * **Note:** ProtoReflectionServiceV1 does not work - calls are not registered by the server.
+     * Serves the `grpc.reflection.v1` protocol only. Clients that only speak the deprecated `v1alpha`
+     * protocol are not supported.
      */
-    private val reflectionService = ProtoReflectionService.newInstance()
+    private val reflectionService = ProtoReflectionServiceV1.newInstance()
 
     /**
      * Represents the gRPC server instance used for handling incoming requests.
@@ -87,6 +135,10 @@ class SnowballRServer(
             // Interceptors in reverse order of execution
             .intercept(exceptionInterceptor)
             .intercept(validationInterceptor)
+            // Must appear AFTER authenticationInterceptor in this list — gRPC reverses .intercept() order,
+            // so this runs second. It reads REQUEST_CONTEXT_KEY written by auth and installs the
+            // RequestContext into the service coroutine context.
+            .intercept(requestContextCoroutineInterceptor)
             .intercept(authenticationInterceptor)
             .intercept(loggingInterceptor)
             // Services
@@ -100,6 +152,7 @@ class SnowballRServer(
      *
      * This method performs the following operations:
      * - Starts the gRPC server, making it listen on the specified port.
+     * - Starts the [SchedulerManager] to handle scheduling of tasks.
      * - Registers a shutdown hook to handle the server shutdown process when the JVM is shutting down.
      *   The shutdown hook stops the server and confirms the server has been shut down.
      */
@@ -156,30 +209,53 @@ class SnowballRServer(
     class SnowballRService :
         SnowballRGrpcKt.SnowballRCoroutineImplBase(),
         KoinComponent {
-        private val mainService: IMainService by inject()
+        private val authenticationService: IAuthenticationService by inject()
+        private val criterionService: ICriterionService by inject()
+        private val exportService: IExportService by inject()
+        private val fetcherService: IFetcherService by inject()
+        private val invitationService: IInvitationService by inject()
+        private val paperService: IPaperService by inject()
+        private val projectMemberService: IProjectMemberService by inject()
+        private val projectPaperService: IProjectPaperService by inject()
+        private val projectService: IProjectService by inject()
+        private val readingListService: IReadingListService by inject()
+        private val reviewService: IReviewService by inject()
+        private val userService: IUserService by inject()
 
-        override suspend fun getAvailableFetchers(request: Base.Nothing): Fetcher.AvailableFetchers =
-            mainService.getAvailableFetchers()
+        override suspend fun getAvailableFetchers(request: Base.Nothing): AvailableFetchers = AvailableFetchers
+            .newBuilder()
+            .addAllFetchers(fetcherService.getAvailableFetchers().map { it.toGrpc() })
+            .build()
 
-        override suspend fun getAvailableFetcherOptions(
-            request: Fetcher.GetAvailableFetcherOptionsRequest,
-        ): Fetcher.FetcherOptions = mainService.getAvailableFetcherOptions(request)
+        override suspend fun register(request: Authentication.RegisterRequest) = returnNothing {
+            userService.register(
+                RegisterRequest(
+                    firstName = request.firstName,
+                    lastName = request.lastName,
+                    email = request.email,
+                    password = request.password,
+                ),
+            )
+        }
 
-        override suspend fun register(request: Authentication.RegisterRequest): Base.Nothing =
-            mainService.register(request)
+        override suspend fun verifyEmail(request: Authentication.VerifyEmailRequest) = returnNothing {
+            authenticationService.verifyEmail(request.token)
+        }
 
-        override suspend fun verifyEmail(request: Authentication.VerifyEmailRequest): Base.Nothing =
-            mainService.verifyEmail(request)
+        override suspend fun login(request: Authentication.LoginRequest) = returnNothing {
+            authenticationService.login(LoginRequest(email = request.email, password = request.password))
+        }
 
-        override suspend fun login(request: Authentication.LoginRequest): Base.Nothing = mainService.login(request)
-
-        override suspend fun logout(request: Base.Nothing): Base.Nothing = mainService.logout()
+        override suspend fun logout(request: Base.Nothing) = returnNothing {
+            authenticationService.logout()
+        }
 
         override suspend fun getAuthenticationStatus(
             request: Base.Nothing,
         ): Authentication.AuthenticationStatusResponse = Authentication.AuthenticationStatusResponse.newBuilder()
-            .setAuthenticationStatus(GrpcContext.getAuthenticationStatusFromContext()).build()
+            .setAuthenticationStatus(RequestContext.current().authStatus.toGrpc()).build()
 
+        /** Renew Session is handled in the [authenticationInterceptor]. */
         override suspend fun renewSession(request: Base.Nothing): Base.Nothing = Base.Nothing.getDefaultInstance()
 
         override suspend fun requestPasswordReset(request: Authentication.RequestPasswordResetRequest): Base.Nothing =
@@ -188,22 +264,61 @@ class SnowballRServer(
         override suspend fun resetPassword(request: Authentication.PasswordResetRequest): Base.Nothing =
             super.resetPassword(request)
 
-        override suspend fun changePassword(request: Authentication.PasswordChangeRequest): Base.Nothing =
-            super.changePassword(request)
+        override suspend fun changePassword(request: Authentication.PasswordChangeRequest) = returnNothing {
+            authenticationService.changePassword(
+                ChangePasswordRequest(
+                    oldPassword = request.oldPassword,
+                    newPassword = request.newPassword,
+                ),
+            )
+        }
 
-        override suspend fun getAllUsers(request: Base.Nothing): UserOuterClass.User.List = mainService.getAllUsers()
+        override suspend fun getAllUsers(request: Base.Nothing): UserOuterClass.User.List =
+            userService.getAllUsers().toGrpc()
 
-        override suspend fun getCurrentUser(request: Base.Nothing): UserOuterClass.User = mainService.getCurrentUser()
+        override suspend fun getCurrentUser(request: Base.Nothing): UserOuterClass.User =
+            userService.getCurrentUser().toGrpc()
 
-        override suspend fun getUserById(request: Base.Id): UserOuterClass.User = mainService.getUserById(request)
+        override suspend fun getUserById(request: Base.Id): UserOuterClass.User =
+            userService.getUserById(parseUserId(request)).toGrpc()
 
         override suspend fun getUserByEmail(request: Base.Email): UserOuterClass.User =
-            mainService.getUserByEmail(request)
+            userService.getUserByEmail(request.email).toGrpc()
 
-        override suspend fun updateUser(request: UserOuterClass.User.Update): UserOuterClass.User =
-            mainService.updateUser(request)
+        override suspend fun updateUser(request: UserOuterClass.User.Update): UserOuterClass.User {
+            val paths = FieldMaskUtil.normalize(request.mask).pathsList.filterNot { it == "user.id" }
+            val fields = paths.map { userFieldFromGrpc(it) }.toSet()
 
-        override suspend fun softDeleteUser(request: Base.Id): Base.Nothing = mainService.softDeleteUser(request)
+            val hasUnspecifiedRole = request.user.role == UserOuterClass.UserRole.USER_ROLE_UNSPECIFIED
+            val role = if (!fields.contains(UserField.ROLE) && hasUnspecifiedRole) {
+                UserRole.DEFAULT
+            } else {
+                userRoleFromGrpc(request.user.role)
+            }
+
+            val hasUnspecifiedStatus = request.user.status == UserOuterClass.UserStatus.USER_STATUS_UNSPECIFIED
+            val status = if (!fields.contains(UserField.STATUS) && hasUnspecifiedStatus) {
+                UserStatus.ACTIVE
+            } else {
+                userStatusFromGrpc(request.user.status)
+            }
+
+            return userService.updateUser(
+                UpdateUserRequest(
+                    userId = parseUUID(request.user.id, EntityType.USER),
+                    firstName = request.user.firstName,
+                    lastName = request.user.lastName,
+                    email = request.user.email,
+                    role = role,
+                    status = status,
+                ),
+                fields,
+            ).toGrpc()
+        }
+
+        override suspend fun softDeleteUser(request: Base.Id) = returnNothing {
+            userService.softDeleteUser(parseUserId(request))
+        }
 
         override suspend fun softUndeleteUser(request: Base.Id): Base.Nothing = super.softUndeleteUser(request)
 
@@ -211,131 +326,237 @@ class SnowballRServer(
             super.getAllPapersToReview(request)
 
         override suspend fun getPapersToReviewForProject(request: Base.Id): ProjectOuterClass.Project.Paper.List =
-            mainService.getPapersToReviewForProject(request)
+            projectPaperService.getPapersToReviewForProject(parseProjectId(request)).toGrpc()
 
         override suspend fun getNextPaper(request: Base.Id): ProjectOuterClass.Project.Paper =
-            mainService.getNextPaper(request)
+            projectPaperService.getNextPaper(parseProjectPaperId(request)).toGrpc()
 
         override suspend fun getNextPaperToReview(request: Base.Id): ProjectOuterClass.Project.Paper =
-            mainService.getNextPaperToReview(request)
+            projectPaperService.getNextPaperToReview(parseProjectPaperId(request)).toGrpc()
 
         override suspend fun getPreviousPaper(request: Base.Id): ProjectOuterClass.Project.Paper =
-            mainService.getPreviousPaper(request)
+            projectPaperService.getPreviousPaper(parseProjectPaperId(request)).toGrpc()
 
         override suspend fun getUserSettings(request: Base.Nothing): UserSettingsOuterClass.UserSettings =
-            mainService.getUserSettings()
+            userService.getUserSettings().toGrpc()
 
         override suspend fun updateUserSettings(
             request: UserSettingsOuterClass.UserSettings.Update,
         ): UserSettingsOuterClass.UserSettings = super.updateUserSettings(request)
 
         override suspend fun getReadingList(request: Base.Nothing): PaperOuterClass.Paper.List =
-            mainService.getReadingList()
+            readingListService.getReadingList().toGrpc()
 
-        override suspend fun isPaperOnReadingList(request: Base.Id): Base.BoolValue =
-            mainService.isPaperOnReadingList(request)
+        override suspend fun isPaperOnReadingList(request: Base.Id) = returnBoolValue {
+            readingListService.isPaperOnReadingList(parsePaperId(request))
+        }
 
-        override suspend fun addPaperToReadingList(request: Base.Id): Base.Nothing =
-            mainService.addPaperToReadingList(request)
+        override suspend fun addPaperToReadingList(request: Base.Id) = returnNothing {
+            readingListService.addPaperToReadingList(parsePaperId(request))
+        }
 
-        override suspend fun removePaperFromReadingList(request: Base.Id): Base.Nothing =
-            mainService.removePaperFromReadingList(request)
-
-        override suspend fun getPendingInvitationsForUser(request: Base.Id): ProjectOuterClass.Project.List =
-            super.getPendingInvitationsForUser(request)
+        override suspend fun removePaperFromReadingList(request: Base.Id) = returnNothing {
+            readingListService.removePaperFromReadingList(parsePaperId(request))
+        }
 
         override suspend fun getInviteCandidates(
             request: ProjectOuterClass.Project.InviteCandidatesRequest,
-        ): UserOuterClass.User.List = mainService.getInviteCandidates(request)
+        ): UserOuterClass.User.List = invitationService.getInviteCandidates(
+            projectId = runCatching { parseUUID(request.projectId, EntityType.PROJECT) }.getOrDefault(null),
+            query = request.query,
+        ).toGrpc()
 
-        override suspend fun inviteUserToProject(request: ProjectOuterClass.Project.Member.Invite): Base.Nothing =
-            mainService.inviteUserToProject(request)
+        override suspend fun inviteUserToProject(request: ProjectOuterClass.Project.Member.Invite) = returnNothing {
+            invitationService.inviteUserToProject(
+                projectId = parseUUID(request.projectId, EntityType.PROJECT),
+                userEmail = request.userEmail,
+            )
+        }
 
-        override suspend fun acceptProjectInvitation(request: ProjectOuterClass.Project.Member.Accept): Base.Nothing =
-            mainService.acceptProjectInvitation(request)
+        override suspend fun acceptProjectInvitation(request: ProjectOuterClass.Project.Member.Accept) = returnNothing {
+            invitationService.acceptProjectInvitation(request.token)
+        }
 
         override suspend fun getPendingInvitationsForProject(request: Base.Id): UserOuterClass.User.List =
-            mainService.getPendingInvitationsForProject(request)
+            invitationService.getPendingInvitationsForProject(parseProjectId(request)).toGrpc()
 
         override suspend fun getProjectMembers(request: Base.Id): ProjectOuterClass.Project.Member.List =
-            mainService.getProjectMembers(request)
+            projectMemberService.getProjectMembers(parseProjectId(request)).toGrpc()
 
-        override suspend fun removeProjectMember(request: ProjectOuterClass.Project.Member.Remove): Base.Nothing =
-            mainService.removeProjectMember(request)
+        override suspend fun removeProjectMember(request: ProjectOuterClass.Project.Member.Remove) = returnNothing {
+            projectMemberService.removeProjectMember(
+                projectId = parseUUID(request.projectId, EntityType.PROJECT),
+                userEmail = request.userEmail,
+            )
+        }
 
         override suspend fun getAllProjects(request: Base.Nothing): ProjectOuterClass.Project.List =
-            mainService.getAllProjects()
+            projectService.getAllProjects().toGrpc()
 
         override suspend fun getAllDeletedProjects(request: Base.Nothing): ProjectOuterClass.Project.List =
             super.getAllDeletedProjects(request)
 
         override suspend fun getAllDeletedProjectsForUser(request: Base.Id): ProjectOuterClass.Project.List =
-            mainService.getAllDeletedProjectsForUser(request)
+            projectService.getAllDeletedProjectsForUser(parseUserId(request)).toGrpc()
 
         override suspend fun getAllArchivedProjects(request: Base.Nothing): ProjectOuterClass.Project.List =
             super.getAllArchivedProjects(request)
 
         override suspend fun getAllProjectsForUser(request: Base.Id): ProjectOuterClass.Project.List =
-            mainService.getAllProjectsForUser(request)
+            projectService.getAllProjectsForUser(parseUserId(request)).toGrpc()
 
         override suspend fun getAllArchivedProjectsForUser(request: Base.Id): ProjectOuterClass.Project.List =
-            mainService.getAllArchivedProjectsForUser(request)
+            projectService.getAllArchivedProjectsForUser(parseUserId(request)).toGrpc()
 
         override suspend fun createProject(request: ProjectOuterClass.Project.Create): ProjectOuterClass.Project =
-            mainService.createProject(request)
+            projectService.createProject(CreateProjectRequest(name = request.name)).toGrpc()
 
         override suspend fun getProjectById(request: Base.Id): ProjectOuterClass.Project =
-            mainService.getProjectById(request)
+            projectService.getProjectById(parseProjectId(request)).toGrpc()
 
-        override suspend fun updateProject(request: ProjectOuterClass.Project.Update): ProjectOuterClass.Project =
-            mainService.updateProject(request)
+        override suspend fun updateProject(request: ProjectOuterClass.Project.Update): ProjectOuterClass.Project {
+            val paths = FieldMaskUtil.normalize(request.mask).pathsList.filterNot { it == "project.id" }
+            val fields = paths.map { projectFieldFromGrpc(it) }.toSet()
 
-        override suspend fun exportProject(request: Export.ExportRequest): Base.Blob = super.exportProject(request)
+            val hasUnspecifiedStatus =
+                request.project.status == ProjectOuterClass.ProjectStatus.PROJECT_STATUS_UNSPECIFIED
+            val status = if (!fields.contains(ProjectField.STATUS) && hasUnspecifiedStatus) {
+                ProjectStatus.ACTIVE
+            } else {
+                projectStatusFromGrpc(request.project.status)
+            }
 
-        override suspend fun softDeleteProject(request: Base.Id): Base.Nothing = mainService.softDeleteProject(request)
+            val hasUnspecifiedSnowballingType = request.project.settings.snowballingType ==
+                ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_UNSPECIFIED
+            val snowballingType =
+                if (!fields.contains(ProjectField.SNOWBALLING_TYPE) && hasUnspecifiedSnowballingType) {
+                    SnowballingType.BOTH
+                } else {
+                    snowballingTypeFromGrpc(request.project.settings.snowballingType)
+                }
+
+            return projectService.updateProject(
+                UpdateProjectRequest(
+                    projectId = parseUUID(request.project.id, EntityType.PROJECT),
+                    name = request.project.name,
+                    status = status,
+                    settings = UpdateProjectSettingRequest(
+                        similarityThreshold = request.project.settings.similarityThreshold,
+                        snowballingType = snowballingType,
+                        reviewMaybeAllowed = request.project.settings.reviewMaybeAllowed,
+                        fetchers = request.project.settings.fetchersMap.mapValues { it.value.optionsMap },
+                        decisionMatrix = reviewDecisionMatrixFromGrpc(request.project.settings.decisionMatrix),
+                    ),
+                ),
+                fields,
+            ).toGrpc()
+        }
+
+        override suspend fun getAvailableExportFormats(request: Base.Nothing): Export.AvailableExportFormatsResponse =
+            exportService.getAvailableExportFormats().toGrpc()
+
+        override suspend fun exportProject(request: Export.ExportRequest): Export.ExportResponse =
+            exportService.exportProject(
+                projectId = parseUUID(request.id, EntityType.PROJECT),
+                format = ExportFormat.valueOf(request.format),
+            ).toGrpc()
+
+        override suspend fun softDeleteProject(request: Base.Id) = returnNothing {
+            projectService.softDeleteProject(parseProjectId(request))
+        }
 
         override suspend fun softUndeleteProject(request: Base.Id): Base.Nothing = super.softUndeleteProject(request)
 
         override suspend fun getProjectInformation(
             request: ProjectOuterClass.Project.Information.Get,
-        ): ProjectOuterClass.Project.Information = mainService.getProjectInformation(request)
+        ): ProjectOuterClass.Project.Information = projectService.getProjectInformation(
+            projectId = parseUUID(request.projectId, EntityType.PROJECT),
+            fields = FieldMaskUtil.normalize(request.mask).pathsList.map { projectInfoFieldFromGrpc(it) }.toSet(),
+        ).toGrpc()
 
         override suspend fun getDecisionStatisticsForStage(
             request: ProjectOuterClass.Project.Information.DecisionStatistics.Get,
-        ): ProjectOuterClass.Project.Information.DecisionStatistics = mainService.getDecisionStatisticsForStage(request)
+        ): ProjectOuterClass.Project.Information.DecisionStatistics = projectService.getDecisionStatisticsForStage(
+            projectId = parseUUID(request.projectId, EntityType.PROJECT),
+            stage = request.stage.toInt(),
+        ).toGrpc()
 
-        override suspend fun updateProjectMemberRole(request: ProjectOuterClass.Project.Member.Update): Base.Nothing =
-            mainService.updateProjectMemberRole(request)
+        override suspend fun updateProjectMemberRole(request: ProjectOuterClass.Project.Member.Update) = returnNothing {
+            projectMemberService.updateProjectMemberRole(
+                UpdateProjectMemberRoleRequest(
+                    projectId = parseUUID(request.projectId, EntityType.PROJECT),
+                    userId = parseUUID(request.userId, EntityType.USER),
+                    newRole = memberRoleFromGrpc(request.newRole),
+                ),
+            )
+        }
 
         override suspend fun getCriterionById(request: Base.Id): CriterionOuterClass.Criterion =
-            mainService.getCriterionById(request)
+            criterionService.getCriterionById(parseCriterionId(request)).toGrpc()
 
         override suspend fun getAllCriteriaForProject(request: Base.Id): CriterionOuterClass.Criterion.List =
-            mainService.getAllCriteriaForProject(request)
+            criterionService.getAllCriteriaForProject(parseProjectId(request)).toGrpc()
 
         override suspend fun createCriterion(
             request: CriterionOuterClass.Criterion.Create,
-        ): CriterionOuterClass.Criterion = mainService.createCriterion(request)
+        ): CriterionOuterClass.Criterion {
+            val projectId = if (request.projectId.isNotEmpty()) {
+                parseUUID(request.projectId, EntityType.PROJECT)
+            } else {
+                null
+            }
+
+            return criterionService.createCriterion(
+                CreateCriterionRequest(
+                    tag = request.tag,
+                    name = request.name,
+                    description = request.description,
+                    category = criterionCategoryFromGrpc(request.category),
+                    projectId = projectId,
+                ),
+            ).toGrpc()
+        }
 
         override suspend fun updateCriterion(
             request: CriterionOuterClass.Criterion.Update,
-        ): CriterionOuterClass.Criterion = mainService.updateCriterion(request)
+        ): CriterionOuterClass.Criterion {
+            val paths = FieldMaskUtil.normalize(request.mask).pathsList.filterNot { it == "criterion.id" }
+            val fields = paths.map { criterionFieldFromGrpc(it) }.toSet()
+
+            return criterionService.updateCriterion(
+                UpdateCriterionRequest(
+                    criterionId = parseUUID(request.criterion.id, EntityType.CRITERION),
+                    tag = request.criterion.tag,
+                    name = request.criterion.name,
+                    description = request.criterion.description,
+                    category = criterionCategoryFromGrpc(request.criterion.category),
+                ),
+                fields,
+            ).toGrpc()
+        }
 
         override suspend fun deleteCriterion(request: Base.Id): Base.Nothing = super.deleteCriterion(request)
 
         override suspend fun getProjectPaperById(request: Base.Id): ProjectOuterClass.Project.Paper =
-            mainService.getProjectPaperById(request)
+            projectPaperService.getProjectPaperById(parseProjectPaperId(request)).toGrpc()
 
         override suspend fun getProjectPaperByRelativeId(
             request: ProjectOuterClass.Project.Paper.Get,
-        ): ProjectOuterClass.Project.Paper = mainService.getProjectPaperByRelativeId(request)
+        ): ProjectOuterClass.Project.Paper = projectPaperService.getProjectPaperByRelativeId(
+            projectId = parseUUID(request.projectId, EntityType.PROJECT),
+            relativeId = request.relativeProjectPaperId.toInt(),
+        ).toGrpc()
 
         override suspend fun getAllProjectPapersForProject(request: Base.Id): ProjectOuterClass.Project.Paper.List =
-            mainService.getAllProjectPapersForProject(request)
+            projectPaperService.getAllProjectPapersForProject(parseProjectId(request)).toGrpc()
 
         override suspend fun addPaperToProject(
             request: ProjectOuterClass.Project.Paper.Add,
-        ): ProjectOuterClass.Project.Paper = mainService.addPaperToProject(request)
+        ): ProjectOuterClass.Project.Paper = projectPaperService.addPaperToProject(
+            projectId = parseUUID(request.projectId, EntityType.PROJECT),
+            paperId = parseUUID(request.paperId, EntityType.PAPER),
+            stage = request.stage.toInt(),
+        ).toGrpc()
 
         override suspend fun updateProjectPaper(
             request: ProjectOuterClass.Project.Paper.Update,
@@ -344,34 +565,87 @@ class SnowballRServer(
         override suspend fun removePaperFromProject(request: Base.Id): Base.Nothing =
             super.removePaperFromProject(request)
 
-        override suspend fun getReviewById(request: Base.Id): ReviewOuterClass.Review = mainService.getReviewById(
-            request,
-        )
+        override suspend fun getReviewById(request: Base.Id): ReviewOuterClass.Review =
+            reviewService.getReviewById(parseReviewId(request)).toGrpc()
 
         override suspend fun getAllReviewsForProjectPaper(request: Base.Id): ReviewOuterClass.Review.List =
-            mainService.getAllReviewsForProjectPaper(request)
+            reviewService.getAllReviewsForProjectPaper(parseProjectPaperId(request)).toGrpc()
 
         override suspend fun createReview(request: ReviewOuterClass.Review.Create): ReviewOuterClass.Review =
-            mainService.createReview(request)
+            reviewService.createReview(
+                CreateReviewRequest(
+                    projectPaperId = parseUUID(request.projectPaperId, EntityType.PROJECT_PAPER),
+                    decision = reviewDecisionFromGrpc(request.decision),
+                    selectedCriteriaIds = request.selectedCriteriaIdsList.map { parseUUID(it, EntityType.CRITERION) },
+                ),
+            ).toGrpc()
 
         override suspend fun updateReview(request: ReviewOuterClass.Review.Update): ReviewOuterClass.Review =
             super.updateReview(request)
 
         override suspend fun deleteReview(request: Base.Id): Base.Nothing = super.deleteReview(request)
 
-        override suspend fun getPaperById(request: Base.Id): PaperOuterClass.Paper = mainService.getPaperById(request)
+        override suspend fun getPaperById(request: Base.Id): PaperOuterClass.Paper =
+            paperService.getPaperById(parsePaperId(request)).toGrpc()
+
+        override suspend fun searchLocalProjectPaperCandidates(
+            request: ProjectOuterClass.Project.Paper.SearchQuery,
+        ): PaperOuterClass.Paper.List = fetcherService.searchLocalProjectPaperCandidates(
+            projectId = parseUUID(request.projectId, EntityType.PROJECT),
+            query = request.query,
+        ).toGrpc()
+
+        override suspend fun searchFetcherProjectPaperCandidates(
+            request: ProjectOuterClass.Project.Paper.SearchQuery,
+        ): PaperOuterClass.Paper.List = fetcherService.searchFetcherProjectPaperCandidates(
+            projectId = parseUUID(request.projectId, EntityType.PROJECT),
+            query = request.query,
+        ).toGrpc()
 
         override suspend fun createPaper(request: PaperOuterClass.Paper): PaperOuterClass.Paper =
-            mainService.createPaper(request)
+            paperService.createPaper(
+                CreatePaperRequest(
+                    title = request.title,
+                    externalIds = request.externalIdsList.map {
+                        ExternalId(ExternalIdType.valueOf(it.type), it.value)
+                    },
+                    abstract = request.abstrakt,
+                    year = request.year,
+                    publisher = request.publisher,
+                    publicationName = request.publicationName,
+                    publicationType = request.publicationType,
+                    authors = request.authorsList.map { Author(it.firstName, it.lastName) },
+                    fetcherMetadata = request.fetcherMetadataMap,
+                ),
+            ).toGrpc()
 
-        override suspend fun updatePaper(request: PaperOuterClass.Paper.Update): PaperOuterClass.Paper =
-            mainService.updatePaper(request)
+        override suspend fun updatePaper(request: PaperOuterClass.Paper.Update): PaperOuterClass.Paper {
+            val paths = FieldMaskUtil.normalize(request.mask).pathsList.filterNot { it == "paper.id" }
+            val fields = paths.map { paperFieldFromGrpc(it) }.toSet()
+
+            return paperService.updatePaper(
+                UpdatePaperRequest(
+                    paperId = parseUUID(request.paper.id, EntityType.PAPER),
+                    title = request.paper.title,
+                    externalIds = request.paper.externalIdsList.map {
+                        ExternalId(ExternalIdType.valueOf(it.type), it.value)
+                    },
+                    abstract = request.paper.abstrakt,
+                    year = request.paper.year,
+                    publisher = request.paper.publisher,
+                    publicationName = request.paper.publicationName,
+                    publicationType = request.paper.publicationType,
+                    authors = request.paper.authorsList.map { Author(it.firstName, it.lastName) },
+                ),
+                fields,
+            ).toGrpc()
+        }
 
         override suspend fun getForwardReferencedPapers(request: Base.Id): PaperOuterClass.Paper.List =
-            mainService.getForwardReferencedPapers(request)
+            paperService.getForwardReferencedPapers(parsePaperId(request)).toGrpc()
 
         override suspend fun getBackwardReferencedPapers(request: Base.Id): PaperOuterClass.Paper.List =
-            mainService.getBackwardReferencedPapers(request)
+            paperService.getBackwardReferencedPapers(parsePaperId(request)).toGrpc()
 
         override suspend fun getPaperPdf(request: Base.Id): Base.Blob = super.getPaperPdf(request)
 

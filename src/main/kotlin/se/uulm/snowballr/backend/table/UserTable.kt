@@ -1,31 +1,75 @@
 package se.uulm.snowballr.backend.table
 
 import kotlinx.serialization.json.Json
-import org.jetbrains.exposed.dao.id.UUIDTable
-import org.jetbrains.exposed.sql.Column
-import org.jetbrains.exposed.sql.ResultRow
-import org.jetbrains.exposed.sql.json.json
-import se.uulm.snowballr.backend.model.dto.User
-import se.uulm.snowballr.backend.model.dto.UserSettings
-import snowballr.ProjectOuterClass.ReviewDecisionMatrix
-import snowballr.ProjectOuterClass.SnowballingType
-import snowballr.UserOuterClass.UserRole
-import snowballr.UserOuterClass.UserStatus
+import org.jetbrains.exposed.v1.core.Column
+import org.jetbrains.exposed.v1.core.ResultRow
+import org.jetbrains.exposed.v1.core.dao.id.java.UUIDTable
+import org.jetbrains.exposed.v1.json.json
+import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPattern
+import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPatternEntry
+import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
+import se.uulm.snowballr.backend.model.dto.project.SnowballingType
+import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
+import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
+import se.uulm.snowballr.backend.model.dto.user.User
+import se.uulm.snowballr.backend.model.dto.user.UserRole
+import se.uulm.snowballr.backend.model.dto.user.UserSettings
+import se.uulm.snowballr.backend.model.dto.user.UserStatus
+import se.uulm.snowballr.backend.model.fetcher.FetcherMap
 import java.time.OffsetDateTime
 import java.util.UUID
 
+fun patternOf(vararg decisions: Pair<ReviewDecision, Int>, result: PaperDecision) = DecisionMatrixPattern(
+    decision = result,
+    entries = decisions.map { (decision, count) -> DecisionMatrixPatternEntry(decision, count) },
+)
+
 private const val REQUIRED_REVIEWERS = 2
+private val ACCEPT_DECLINE_PATTERN = patternOf(
+    ReviewDecision.ACCEPTED to 1,
+    ReviewDecision.DECLINED to 1,
+    result = PaperDecision.IN_REVIEW,
+)
+private val ACCEPT_ANY_PATTERN = patternOf(
+    ReviewDecision.ACCEPTED to 1,
+    result = PaperDecision.ACCEPTED,
+)
+private val DECLINE_ANY_PATTERN = patternOf(
+    ReviewDecision.DECLINED to 1,
+    result = PaperDecision.DECLINED,
+)
+private val MAYBE_MAYBE_PATTERN = patternOf(
+    ReviewDecision.MAYBE to REQUIRED_REVIEWERS,
+    result = PaperDecision.IN_REVIEW,
+)
 
 private const val ARE_HOTKEYS_SHOWN_DEFAULT = true
 private const val IS_REVIEW_MODE_ENABLED_DEFAULT = false
 private val CRITERIA_IDS_DEFAULT = emptyList<UUID>()
-private const val SIMILARITY_THRESHOLD_DEFAULT = 0F
-private val DECISION_MATRIX_DEFAULT: ByteArray = ReviewDecisionMatrix.newBuilder()
-    .setNumberOfReviewers(REQUIRED_REVIEWERS)
-    .build()
-    .toByteArray()
-private val FETCHERS_DEFAULT = emptyMap<String, Map<String, String>>()
-private val SNOWBALLING_TYPE_DEFAULT = SnowballingType.SNOWBALLING_TYPE_BOTH
+private const val SIMILARITY_THRESHOLD_DEFAULT = 0.85F
+
+/**
+ * This default decision matrix assumes two reviewers by default.
+ *
+ * It encodes the basic rules for combining reviewer decisions.
+ * Patterns are checked in order, and the first pattern whose entry count requirements
+ * are satisfied determines the result:
+ *  - Accept + Decline → still in review (need final decision)
+ *  - Accept + Anything not already matched → Accepted
+ *  - Decline + Anything not already matched → Declined
+ *  - Maybe + Maybe → still in review (need final decision)
+ */
+private val DECISION_MATRIX_DEFAULT: ByteArray = ReviewDecisionMatrix(
+    numberOfReviewers = REQUIRED_REVIEWERS,
+    patterns = listOf(
+        ACCEPT_DECLINE_PATTERN,
+        ACCEPT_ANY_PATTERN,
+        DECLINE_ANY_PATTERN,
+        MAYBE_MAYBE_PATTERN,
+    ),
+).toByteArray()
+private val FETCHERS_DEFAULT: FetcherMap = emptyMap()
+private val SNOWBALLING_TYPE_DEFAULT = SnowballingType.BOTH
 private const val REVIEW_MAYBE_ALLOWED_DEFAULT = true
 
 /**
@@ -43,7 +87,7 @@ private const val REVIEW_MAYBE_ALLOWED_DEFAULT = true
  * - [criteriaIds]: Represents a list of criteria IDs associated with the user as a [List] of [UUID].
  * - [similarityThreshold]: Represents the user's similarity threshold as a [Float].
  * - [decisionMatrix]: Represents the review decision matrix of the user as a binary value.
- * - [fetchers]: Represents the fetchers used by the project as a json object mapping the fetcher names to their
+ * - [fetchers]: Represents the fetchers used by the project as a JSON object mapping the fetcher names to their
  * options.
  * - [snowballingType]: Represents the snowballing type associated with the user, stored as an enumeration value of
  * [SnowballingType].
@@ -67,8 +111,8 @@ object UserTable : UUIDTable("user") {
 
     // Project settings defaults
     val similarityThreshold = float("similarity_threshold").clientDefault { SIMILARITY_THRESHOLD_DEFAULT }
-    val decisionMatrix = binary("review_decision_matrix").clientDefault { DECISION_MATRIX_DEFAULT }
-    val fetchers = json<Map<String, Map<String, String>>>("fetchers", Json).clientDefault { FETCHERS_DEFAULT }
+    val decisionMatrix = redactedBinary("review_decision_matrix").clientDefault { DECISION_MATRIX_DEFAULT }
+    val fetchers = json<FetcherMap>("fetchers", Json).clientDefault { FETCHERS_DEFAULT }
     val snowballingType =
         enumeration<SnowballingType>("snowballing_type").clientDefault { SNOWBALLING_TYPE_DEFAULT }
     val reviewMaybeAllowed = bool("review_maybe_allowed").clientDefault { REVIEW_MAYBE_ALLOWED_DEFAULT }

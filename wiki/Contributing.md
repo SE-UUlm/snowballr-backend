@@ -12,14 +12,18 @@ On this page, we explain how to contribute to the SnowballR backend project. We 
   * [Layer Implementation](#layer-implementation)
     * [Table](#table)
     * [Repository](#repository)
+    * [Access Checkers and Rules](#access-checkers-and-rules)
     * [Service](#service)
-      * [Access Rules and Authorization Checks](#access-rules-and-authorization-checks)
     * [Input Validation](#input-validation)
   * [Testing](#testing)
   * [Miscellaneous Commands](#miscellaneous-commands)
     * [Formatting](#formatting)
     * [Linting](#linting)
+    * [Type Checking](#type-checking)
   * [Release procedure](#release-procedure)
+  * [Use another API Version](#use-another-api-version)
+  * [TypeScript API Client](#typescript-api-client)
+  * [Fetcher Orchestration Progress](#fetcher-orchestration-progress)
 <!-- TOC -->
 <!-- @formatter:on -->
 <!-- markdownlint-enable MD007 -->
@@ -31,17 +35,19 @@ To set up the development environment, follow the steps in
 
 ```plaintext
 .
-├── api/                     (snowballr-api submodule)
 ├── src/
 │   ├── main/
 │   │   ├── kotlin/
+│   │   │   ├── access/      (access checkers and rules)
 │   │   │   ├── auth/        (auth related classes)
 │   │   │   ├── db/          (database interface)
 │   │   │   ├── env/         (environment variables)
+│   │   │   ├── export/      (export related classes)
 │   │   │   ├── fetcher/     (fetcher related classes)
 │   │   │   ├── grpc/        (gRPC server and its interceptors)
 │   │   │   ├── model/       (model classes)
 │   │   │   ├── repository/  (repository layer)
+│   │   │   ├── scheduler/   (CRON jobs and their management)
 │   │   │   ├── service/     (service layer)
 │   │   │   ├── table/       (DB table definitions / table layer)
 │   │   │   └── validation/  (input validation layer)
@@ -74,11 +80,14 @@ Follow these few conventions when creating or modifying a table:
     * this only stores the ordinal value
     * as gRPC enforces unique enum ordinals, even if some are removed, we can ensure that this doesn't mess up our
       migration
-    * ensure ordinal consistency for non-gRPC enums using hard-coded tests
+    * ensure ordinal consistency for non-gRPC enums using hard-coded tests (see
+      [EnumOrdinalTest.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/test/kotlin/se/uulm/snowballr/backend/model/EnumOrdinalTest.kt))
 * use `uniqueIndex()` for [natural keys](https://en.wikipedia.org/wiki/Natural_key), such as the users' email
 * if there's a foreign key, provide reference options, such as `RESTRICT` or `CASCADE` for `onDelete` and `onUpdate`and
   provide a comment which describes why the reference option was chosen (read more in
   [this post](https://stackoverflow.com/questions/6720050/foreign-key-constraints-when-to-use-on-update-and-on-delete/6720458#6720458))
+* ensure that sensitive data, such as passwords, or non-human-readable data, such as binary data, is not logged by using
+  custom column types that override the `valueToString()` method.
 
 As each entity is represented by a class in this project, always provide a mapping method:
 
@@ -99,8 +108,9 @@ for an example.
 The repository layer implements CRUD operations for entities in the database. If there doesn't already exist a
 repository associated with your use case, add a new one with the pattern `[Entity Name]TableRepo`. Then, add the
 required method first to the interface and then to the repository implementation. All repositories accept the database
-as an argument. Furthermore, a method always consists of a `db.dbQuey { ... }` block, which represents a transaction to the
-database. Only ever invoke database statements in such a block, otherwise an exception will be thrown upon execution.
+as an argument. Furthermore, a method always consists of a `db.dbQuey { ... }` block, which represents a transaction to
+the database. Only ever invoke database statements in such a block, otherwise an exception will be thrown upon
+execution.
 
 Here, you can use the [Exposed](https://github.com/JetBrains/Exposed) DSL to build SQL statements:
 
@@ -120,46 +130,14 @@ val entity = ExampleTable
     .toExample()
 ```
 
+In this layer, we assume that all preconditions are already met, such as access checks and existence of associated
+entities. The repository methods should only focus on interacting with the database and nothing else.
+
 See
 [ProjectTableRepo.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/repository/ProjectTableRepo.kt)
 for an example.
 
-### Service
-
-The service layer is the layer where the actual business logic happens. This includes access checks and checking whether
-associated entities exist. We group the service layer according to the entities in our system, such as the
-[ProjectService](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend//service/ProjectService.kt).
-A service always has an interface, which defines its methods and an implementation, which uses said interface. As there
-exists a 1-to-1 mapping of incoming requests to service methods, the service handles all requests of its associated
-entity.
-
-The [MainService](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/service/MainService.kt)
-combines all services in one class, which can then be used in the gRPC server to invoke the according method for each
-request. If there isn't already a service for the entity associated with your use case, add another one with the pattern
-`[Entity Name]Service`. Furthermore, let `IMainService` inherit its interface and inject the implementation:
-
-```kotlin
-interface IMainService :
-    IExampleService
-
-class MainService(
-    private val exampleService: IExampleService
-) : IMainService,
-    IExampleService by exampleService
-```
-
-For the dependency injection to work, add all repositories and services to the `snowballRModule` in
-[Module.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/Module.kt).
-Build the service method implementation in a way that preconditions are checked first. We want to fail as fast as
-possible, and if the user doesn't have access to the operation or the associated entity does not exist, we don't
-want to have already persisted data. Only if every precondition is met, make changes to the persisted data and finish
-the method with returning required data, such as the updated entity for an update request.
-
-See
-[ProjectService.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/service/ProjectService.kt)
-for an example.
-
-#### Access Rules and Authorization Checks
+### Access Checkers and Rules
 
 To provide a composable and reusable way to enforce authorization logic across the service layer, we use
 **access rules**. These rules ensure consistent permission enforcement and centralize authorization logic within
@@ -172,7 +150,7 @@ short-circuit behavior, to form complex authorization logic. If two access rules
 where one target type is a property of the other — the rule can be adapted using the `forProperty()` helper.
 If an access rule was designed for no specific target type, it can be adapted to a concrete type using the `forTarget()`
 helper. For more details about these operators and helpers, see
-[`AccessRule.kt`](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/service/accessrules/AccessRule.kt).
+[`AccessRule.kt`](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/access/rules/AccessRule.kt).
 
 ```kotlin
 // Chain multiple checks using AND and OR logic
@@ -182,11 +160,12 @@ isEntityActive()
 ```
 
 Custom access rules should be defined in the
-[`service/accessrules/`](https://github.com/SE-UUlm/snowballr-backend/tree/develop/src/main/kotlin/se/uulm/snowballr/backend/service/accessrules)
+[`access/rules/`](https://github.com/SE-UUlm/snowballr-backend/tree/develop/src/main/kotlin/se/uulm/snowballr/backend/access/rules)
 directory.
 Each access rule should:
 
-1. Override the `suspend fun isAllowedToAccess(requester: User, target: T): Boolean` function, possibly as lambda function.
+1. Override the `suspend fun isAllowedToAccess(requester: User, target: T): Boolean` function, possibly as lambda
+   function.
 2. Be annotated with `@CheckReturnValue` to ensure that the rule is executed.
 3. Return an instance of `AccessRule<T>`.
 
@@ -198,45 +177,59 @@ fun isSameUserAndActive() = AccessRule<User> { currentUser, entity ->
 }
 ```
 
-Access rules are applied within service methods using the `checkFor()` function.
-This function evaluates the rule chain for the given user and target entity and throws an exception if access is denied,
-or an `AccessRuleCheckFailedException` if no specific exception is defined and the access not granted.
+To abstract complex access rule combinations, we employ the access checkers defined in
+[`access/`](https://github.com/SE-UUlm/snowballr-backend/tree/develop/src/main/kotlin/se/uulm/snowballr/backend/access).
+They provide an easy-to-use interface to evaluate authorization logic for access operations for specific entities. For
+instance for an entity `Example` the respective `EntityAccessChecker` class would contain methods such as
+`isAllowedToReadExample`, `isAllowedToUpdateExample`, and `isAllowedToAddAnotherExampleToExample`.
 
 ```kotlin
-val userId = parseUUID(request.id, EntityType.USER)
-val user = userRepo.getUserById(userId).getOrThrow()
-
-isSameUserAndActive().checkFor(currentUser, user)
-// ...
-```
-
-Combining multiple access rules now allows for more complex authorization logic, such as controlling whether an entity can
-be deleted.
-
-```kotlin
-// In EntityAccessRule.kt
+// In EntityAccessChecker.kt
 @CheckReturnValue
-fun isAllowedToDeleteEntity(): AccessRule<UUID> {
-    return isEntityActive()
+suspend fun isAllowedToDeleteEntity(currentUser: User, entity: Entity) {
+    isEntityActive()
         .andAlso(isEntityOwner())
         .orElseThrow(EntityNotDeletableException())
+        .checkFor(currentUser, entity)
 }
 
 // In EntityService.kt
-override suspend fun deleteEntity(request: Base.Id): Base.Nothing =
-    withUser(userRepo) { currentUser ->
-        val entityId = parseUUID(request.id, EntityType.ENTITY)
-        val entity = repo.getEntityById(entityId).getOrThrow()
+override suspend fun deleteEntity(entityId: UUID) = withUser(userRepo) { currentUser ->
+    val entity = repo.getEntityById(entityId).getOrThrow()
 
-        // Check authorization using the composed rule
-        isAllowedToDeleteEntity()
-            .forProperty(Entity::id)
-            .orElse(isServerAdmin().forTarget())
-            .orElseThrow { user, entity -> UnauthorizedException(user, entity.description) }
-            .checkFor(currentUser, entity)
-        // ...
-    }
+    accessChecker.isAllowedToDeleteEntity(currentUser, entity)
+}
 ```
+
+### Service
+
+The service layer is the layer where the actual business logic happens. This includes checking whether associated
+entities exist and delegating authorization to the access checkers. We group the service layer according to the entities
+in our system, such as the
+[ProjectService](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend//service/ProjectService.kt).
+A service always has an interface, which defines its methods and an implementation, which uses said interface. As there
+exists a 1-to-1 mapping of incoming requests to service methods, the service handles all requests of its associated
+entity.
+
+If there isn't already a service for the entity associated with your use case, add another one with the pattern
+`[Entity Name]Service`. To wire it up, make two additions:
+
+1. Register the implementation in `serviceLayerDeps()` in
+   [Module.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/Module.kt)
+   and inject the service interface directly into `SnowballRService` in
+   [SnowballRServer.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/grpc/SnowballRServer.kt).
+
+2. Create an entity-specific `ExampleServiceTest` base class in the service test package, as described on the
+   [Testing](https://github.com/SE-UUlm/snowballr-backend/wiki/Testing#service) page.
+
+Build the service method implementation in a way that preconditions are checked first. We want to fail as fast as
+possible, and if the user doesn't have access to the operation or the associated entity does not exist, we don't
+want to have already persisted data. Only if every precondition is met, make changes to the persisted data and finish
+the method with returning required data, such as the updated entity for an update request.
+
+See
+[ProjectService.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/service/ProjectService.kt)
+for an example.
 
 ### Input Validation
 
@@ -320,46 +313,87 @@ For information about our testing setup, see [Testing](https://github.com/SE-UUl
 ./gradlew format
 ```
 
+For Python files:
+
+```bash
+uvx ruff format .
+```
+
 ### Linting
 
 ```bash
 ./gradlew lint
 ```
 
+For Python files:
+
+```bash
+uvx ruff check .
+```
+
+### Type Checking
+
+Requires the virtual environment to resolve installed packages. Set it up first
+if not already done (see
+[Getting Started](https://github.com/SE-UUlm/snowballr-backend/wiki/Getting-Started)):
+
+```bash
+uv venv .venv
+uv pip install --python .venv/bin/python3 -r requirements.txt
+```
+
+```bash
+uvx ty check
+```
+
 ## Release procedure
 
 We create a new release whenever a set of features, bug fixes, or changes is ready to be deployed and used by the
-frontend.
-To release a new version of the backend, follow these steps:
+frontend. To release a new version of the backend, follow the steps in the
+[SnowballR Wiki](https://github.com/SE-UUlm/snowballr/wiki/Contributing#release-procedure).
 
-1. Create a release branch for the release:
+## Use another API Version
 
-   ```bash
-   git checkout -b releases/vX.Y.Z
-   ```
+To use another API version than the currently used one, go to the `build.gradle.kts` file and change the
+`apiVersion` variable to the desired version. Make sure that the version exists in the
+[API repository](https://github.com/SE-UUlm/snowballr-api). After changing the version, recompile the code using
+`./gradlew compileKotlin`.
 
-   Replace `X`, `Y`, `Z` with the correct version numbers according to semantic versioning.
+## TypeScript API Client
 
-2. Add an entry to the *CHANGELOG.md*. Prefer using [hallmark](https://github.com/vweevers/hallmark) to add the entry:
+The backend generates a TypeScript client from the committed OpenAPI spec (`api/openapi.json`, see `openApiGenerate`
+in `build.gradle.kts`) and publishes it to npm as
+[`@se-uulm/snowballr-api-client`](https://www.npmjs.com/package/@se-uulm/snowballr-api-client). Three release channels
+(npm dist-tags) are published automatically by `.github/workflows/npm-publish.yml`, so in-progress backend changes
+can be tested from the frontend without waiting for a stable release:
 
-   ```bash
-   hallmark cc add major|minor|patch
-   ```
+| Channel  | Published when                                        | Install with                                      |
+|----------|-------------------------------------------------------|---------------------------------------------------|
+| `alpha`  | Every push to a branch with an open PR into `develop` | `npm install @se-uulm/snowballr-api-client@alpha` |
+| `beta`   | Every merge to `develop`                              | `npm install @se-uulm/snowballr-api-client@beta`  |
+| `latest` | Every `vX.Y.Z` tag push (stable release)              | `npm install @se-uulm/snowballr-api-client`       |
 
-   Follow the guidelines of [Common Changelog](https://common-changelog.org/), i.e. especially use imperative mood.
+The alpha/beta version numbers (e.g. `0.1.1-alpha.a3f9c2e`) are produced by the `gitVersioning` configuration in
+`build.gradle.kts`: the patch version of the last `vX.Y.Z` tag is bumped by one and suffixed with the channel name and
+the short commit hash.
 
-   > **Note**: To use hallmark locally install it globally with `npm install -g hallmark`
+To build the client locally, use the `buildTsClient` Gradle task.
 
-3. Commit and push changes to the *CHANGELOG.md*.
+## Fetcher Orchestration Progress
 
-4. Create a pull request and request a review, so the *CHANGELOG.md* syntax and content is validated.
-
-5. After the pull request is merged, create a tag with the same version - so "vX.Y.Z" - at the merge commit.
-
-   ```bash
-   git pull main
-   git tag vX.Y.Z
-   git push origin vX.Y.Z
-   ```
-
-   Then the CI automatically creates the release.
+* [x] Jobs for fetching references can be enqueued
+* [x] Jobs are processed sequentially
+* [x] References are fetched for each fetcher configured in the project
+* [x] Fetching results are merged and filtered (no duplicated data)
+* [x] If fetched paper matches DB paper, paper in DB is updated and no new one is created
+* [x] Non-existent papers are added to the DB
+* [x] Citation references are stored in DB
+* [x] Papers that are not already in another stage are added to the target stage
+* [x] `maxStage` of the project is bumped if necessary
+* [ ] Logging in job processing contains unique job ID (MDC)
+* [x] Failed jobs are caught and discarded so the consumer loop continues
+* [ ] Create Paper -> Existence check via similarity
+* [ ] Update Paper -> Existence check via similarity
+* [ ] Search Fetcher ProjectPaper Candidates -> Existence check via similarity
+* [ ] Investigate performance improvements for paper deduplication
+    * e.g. limit the length of the abstracts before comparing them

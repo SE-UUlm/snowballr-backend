@@ -11,19 +11,32 @@ import io.grpc.Status
 import io.grpc.health.v1.HealthGrpc
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
-import se.uulm.snowballr.backend.auth.AuthenticationManager
+import se.uulm.snowballr.backend.auth.ACCESS_TOKEN_COOKIE_NAME
 import se.uulm.snowballr.backend.auth.DummyUser
-import se.uulm.snowballr.backend.auth.GrpcContext
 import se.uulm.snowballr.backend.auth.IAuthenticationManager
 import se.uulm.snowballr.backend.auth.ICookieManager
+import se.uulm.snowballr.backend.auth.REFRESH_TOKEN_COOKIE_NAME
+import se.uulm.snowballr.backend.context.RequestContext
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.model.auth.AuthRequestState
-import snowballr.Authentication.AuthenticationStatus
+import se.uulm.snowballr.backend.model.auth.AuthenticationStatus
 import snowballr.SnowballRGrpcKt
 import io.grpc.reflection.v1.ServerReflectionGrpc as ServerReflectionV1Grpc
 import io.grpc.reflection.v1alpha.ServerReflectionGrpc as ServerReflectionV1AlphaGrpc
 
 private val logger = KotlinLogging.logger {}
+
+/**
+ * Metadata key for reading the inbound `Cookie` header.
+ */
+private val COOKIE_METADATA_KEY: Metadata.Key<String> =
+    Metadata.Key.of("cookie", Metadata.ASCII_STRING_MARSHALLER)
+
+/**
+ * Metadata key for writing the outbound `Set-Cookie` header.
+ */
+private val SET_COOKIE_METADATA_KEY: Metadata.Key<String> =
+    Metadata.Key.of("set-cookie", Metadata.ASCII_STRING_MARSHALLER)
 
 /**
  * A set of gRPC service names that are excluded from certain processing within the application.
@@ -70,12 +83,14 @@ private val AUTH_BYPASS_METHODS =
  *
  * 1. Parses the `Cookie` header to extract the access and refresh tokens.
  * 2. Validates the access token:
- *    - If valid, extracts the user ID and adds it to the gRPC context before proceeding.
+ *    - If valid, extracts the user ID and stores it in the [RequestContext] before proceeding.
  *    - If invalid, attempts to refresh it using the refresh token.
  *       - If refresh succeeds, sets a new access token cookie and proceeds with the call.
  *       - If refresh fails, clears the auth cookies, and closes the call with UNAUTHENTICATED status.
  *
- * The cookies to set in the response are stored in the context and injected into the response headers by
+ * The per-call [RequestContext] (identity, authentication status, and cookies to set) is built here and
+ * handed to the [requestContextCoroutineInterceptor] via [REQUEST_CONTEXT_KEY], which installs it into the
+ * service coroutine. Cookies queued on the [RequestContext] are injected into the response headers by
  * [AuthForwardingCall].
  *
  * This design supports browser-based gRPC clients using cookies for authentication and avoids an extra round-trip
@@ -94,14 +109,14 @@ val authenticationInterceptor: ServerInterceptor =
          */
         private fun <ReqT> emptyListener(): ServerCall.Listener<ReqT?> = object : ServerCall.Listener<ReqT?>() {}
 
-        override fun <ReqT : Any?, RespT : Any?> interceptCall(
+        override fun <ReqT, RespT> interceptCall(
             call: ServerCall<ReqT?, RespT?>?,
             headers: Metadata?,
             next: ServerCallHandler<ReqT?, RespT?>?,
         ): ServerCall.Listener<ReqT?>? {
             val serviceName = call?.run { methodDescriptor.serviceName }
             val methodName = call?.run { methodDescriptor.fullMethodName }
-            logger.info { "Authenticating call to ${methodName ?: "<unknown method>"}" }
+            logger.debug { "Authenticating call to ${methodName ?: "<unknown method>"}" }
 
             if (methodName == null || serviceName == null) {
                 call?.close(Status.UNAUTHENTICATED.withDescription("Method or service name is null"), Metadata())
@@ -113,19 +128,15 @@ val authenticationInterceptor: ServerInterceptor =
                 return next?.startCall(call, headers)
             }
 
-            // This map will be captured by the forwarding call's closure
-            val cookiesToSet = mutableMapOf<String, String?>()
-            val forwardingCall = AuthForwardingCall(call, cookieManager, cookiesToSet)
-            val initialContext = Context.current()
-                .withValue(
-                    GrpcContext.COOKIES_TO_SET_CONTEXT_KEY,
-                    cookiesToSet,
-                ).withValue(
-                    GrpcContext.AUTHENTICATION_STATUS,
-                    AuthenticationStatus.AUTHENTICATION_STATUS_UNSPECIFIED,
-                )
+            // The request context is mutated during authentication and handed to the coroutine via REQUEST_CONTEXT_KEY.
+            // Reuse the request ID assigned by the loggingInterceptor so its logs and the service logs correlate.
+            val requestContext = REQUEST_ID_CONTEXT_KEY.get()
+                ?.let { RequestContext(requestId = it) }
+                ?: RequestContext()
+            val forwardingCall = AuthForwardingCall(call, cookieManager, requestContext)
+            val grpcContext = Context.current().withValue(REQUEST_CONTEXT_KEY, requestContext)
 
-            return initialContext.call {
+            return grpcContext.call {
                 when (methodName) {
                     in PUBLIC_METHODS -> {
                         logger.trace { "Method $methodName is public, bypassing authentication." }
@@ -138,13 +149,13 @@ val authenticationInterceptor: ServerInterceptor =
                                 "processing authentication status."
                         }
                         val authState = AuthRequestState(forwardingCall, headers, next)
-                        handleAuthentication(authState, true, methodName)
+                        handleAuthentication(authState, requestContext, true, methodName)
                     }
 
                     else -> {
                         logger.trace { "Method $methodName requires authentication." }
                         val authState = AuthRequestState(forwardingCall, headers, next)
-                        handleAuthentication(authState, false, methodName)
+                        handleAuthentication(authState, requestContext, false, methodName)
                     }
                 }
             }
@@ -154,9 +165,9 @@ val authenticationInterceptor: ServerInterceptor =
          * Handles the authentication process for a gRPC call.
          *
          * This method retrieves the access and refresh tokens from the request cookies and delegates
-         * authentication to the [AuthenticationManager]. If the access token is valid or successfully
-         * refreshed using the refresh token, it proceeds with the call and attaches the user ID to the gRPC
-         * context.
+         * authentication to the [IAuthenticationManager], which populates the [requestContext] with the
+         * authentication status and any refreshed cookies. If the access token is valid or successfully
+         * refreshed, it stores the user ID in the [requestContext] and proceeds with the call.
          *
          * If authentication fails (i.e., both the access and refresh tokens are invalid or expired), the
          * call is closed with an UNAUTHENTICATED status and an empty listener is returned.
@@ -164,34 +175,36 @@ val authenticationInterceptor: ServerInterceptor =
          * @param ReqT The type of the request.
          * @param RespT The type of the response.
          * @param authState The [AuthRequestState] containing the call, headers, and next handler.
+         * @param requestContext The per-call [RequestContext] to populate.
          * @param skipRefresh If true, skips the refresh token logic and only validates the access token.
          * @param methodName The full method name being called, used to determine if the call should proceed.
          * @return A [ServerCall.Listener] that will handle the call, or an empty listener if authentication fails.
          */
-        private fun <ReqT : Any?, RespT : Any?> handleAuthentication(
+        private fun <ReqT, RespT> handleAuthentication(
             authState: AuthRequestState<ReqT, RespT>,
+            requestContext: RequestContext,
             skipRefresh: Boolean,
             methodName: String,
         ): ServerCall.Listener<ReqT?>? {
             val authBypassEnabled = this.envReader.env.miscellaneous.authBypassEnabled
             if (authBypassEnabled) {
-                return proceedWithDummyUser(authState)
+                return proceedWithDummyUser(authState, requestContext)
             }
 
-            val cookieHeader = authState.headers?.get(GrpcContext.COOKIE_METADATA_KEY)
+            val cookieHeader = authState.headers?.get(COOKIE_METADATA_KEY)
             val cookies = cookieManager.parseCookies(cookieHeader)
-            val accessToken = cookies[GrpcContext.ACCESS_TOKEN_COOKIE_NAME]
-            val refreshToken = cookies[GrpcContext.REFRESH_TOKEN_COOKIE_NAME]
+            val accessToken = cookies[ACCESS_TOKEN_COOKIE_NAME]
+            val refreshToken = cookies[REFRESH_TOKEN_COOKIE_NAME]
 
-            val authResult = authManager.authenticate(accessToken, refreshToken, skipRefresh)
-            return authResult.parsedJwtAuthClaimsResult.fold(
+            val claimsResult = authManager.authenticate(accessToken, refreshToken, skipRefresh, requestContext)
+            return claimsResult.fold(
                 onSuccess = { claims ->
-                    val context = authResult.updatedContext.withValue(GrpcContext.USER_ID_CONTEXT_KEY, claims.userId)
-                    context.call { authState.next?.startCall(authState.call, authState.headers) }
+                    requestContext.userId = claims.userId
+                    authState.next?.startCall(authState.call, authState.headers)
                 },
                 onFailure = {
                     if (methodName == SnowballRGrpcKt.getAuthenticationStatusMethod.fullMethodName) {
-                        authResult.updatedContext.call { authState.next?.startCall(authState.call, authState.headers) }
+                        authState.next?.startCall(authState.call, authState.headers)
                     } else {
                         authState.call.close(Status.UNAUTHENTICATED.withDescription("Session is invalid"), Metadata())
                         emptyListener()
@@ -208,10 +221,12 @@ val authenticationInterceptor: ServerInterceptor =
          * @param ReqT The type of the request.
          * @param RespT The type of the response.
          * @param authState The [AuthRequestState] containing the call, headers, and next handler.
+         * @param requestContext The per-call [RequestContext] to populate with the dummy user.
          * @return A [ServerCall.Listener] that will handle the call, or an empty listener if the method is not allowed.
          */
-        private fun <ReqT : Any?, RespT : Any?> proceedWithDummyUser(
+        private fun <ReqT, RespT> proceedWithDummyUser(
             authState: AuthRequestState<ReqT, RespT>,
+            requestContext: RequestContext,
         ): ServerCall.Listener<ReqT?>? {
             val methodName = authState.call.methodDescriptor.fullMethodName
             if (methodName !in AUTH_BYPASS_METHODS) {
@@ -223,11 +238,9 @@ val authenticationInterceptor: ServerInterceptor =
                 return emptyListener()
             }
 
-            val context = Context.current()
-                .withValue(GrpcContext.USER_ID_CONTEXT_KEY, DummyUser.id)
-                .withValue(GrpcContext.AUTHENTICATION_STATUS, AuthenticationStatus.AUTHENTICATION_STATUS_AUTHENTICATED)
-
-            return context.call { authState.next?.startCall(authState.call, authState.headers) }
+            requestContext.userId = DummyUser.id
+            requestContext.authStatus = AuthenticationStatus.AUTHENTICATED
+            return authState.next?.startCall(authState.call, authState.headers)
         }
     }
 
@@ -235,24 +248,25 @@ val authenticationInterceptor: ServerInterceptor =
  * A forwarding server call that sets authentication-related cookies in the response headers.
  *
  * This class extends [ForwardingServerCall] to intercept the `sendHeaders` method and add cookies
- * to the response headers based on the context's cookiesToSet map.
+ * to the response headers based on the cookies queued on the [requestContext].
  *
  * @param ReqT The type of the request.
  * @param RespT The type of the response.
  * @param delegate The original server call to forward to.
  * @param cookieManager The cookie service instance.
- * @param cookiesToSet The map of cookies that should be set in the response headers.
+ * @param requestContext The per-call request context holding the cookies that should be set in the response.
  */
 private class AuthForwardingCall<ReqT, RespT>(
     delegate: ServerCall<ReqT, RespT>?,
     private val cookieManager: ICookieManager,
-    private val cookiesToSet: Map<String, String?>,
+    private val requestContext: RequestContext,
 ) : ForwardingServerCall.SimpleForwardingServerCall<ReqT, RespT>(delegate) {
     override fun sendHeaders(headers: Metadata) {
+        val cookiesToSet = requestContext.cookies
         if (cookiesToSet.isNotEmpty()) {
             cookiesToSet.entries
                 .mapNotNull { (name, value) -> cookieManager.buildAuthCookieString(name, value) }
-                .forEach { headers.put(GrpcContext.SET_COOKIE_METADATA_KEY, it) }
+                .forEach { headers.put(SET_COOKIE_METADATA_KEY, it) }
         }
         super.sendHeaders(headers)
     }

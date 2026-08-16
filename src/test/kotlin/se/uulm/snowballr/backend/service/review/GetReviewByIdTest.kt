@@ -1,113 +1,60 @@
 package se.uulm.snowballr.backend.service.review
 
 import io.mockk.coEvery
+import io.mockk.coJustRun
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.Arguments
-import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
-import se.uulm.snowballr.backend.service.MainServiceTest
-import snowballr.Base
-import snowballr.UserOuterClass.UserRole
 import java.util.UUID
-import java.util.stream.Stream
-import kotlin.reflect.KFunction
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class GetReviewByIdTest : MainServiceTest() {
-    private val reviewId = UUID.randomUUID()
+class GetReviewByIdTest : ReviewServiceTest() {
+    @Test
+    fun `When a user requests a review and has access, then the correct values are returned`() = runTest {
+        val user = DataBuilder.createExampleUser()
+        val review = DataBuilder.createExampleReview()
+        val selectedCriteriaIds = listOf(UUID.randomUUID())
 
-    private fun getExampleRequest() = Base.Id.newBuilder().setId(reviewId.toString()).build()
-
-    fun failingFunctions(): Stream<Arguments?> = Stream.of(
-        Arguments.of(reviewRepoMock::getReviewById),
-        Arguments.of(projectPaperRepoMock::getProjectPaperById),
-    )
-
-    @Suppress("ReturnCount")
-    private fun mockHappyPathUntil(failAt: KFunction<*>?, isUserAdmin: Boolean) {
-        val currentUser = DataBuilder.createExampleUser(
-            role = if (isUserAdmin) {
-                UserRole.USER_ROLE_ADMIN
-            } else {
-                UserRole.USER_ROLE_DEFAULT
-            },
-        )
-        val review = DataBuilder.createExampleReview(id = reviewId, userId = currentUser.id)
-        val project = DataBuilder.createExampleProject()
-        val projectPaper = DataBuilder.createExampleProjectPaper(id = review.projectPaperId, projectId = project.id)
-        val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
-        val selectedCriteriaIds = listOf<UUID>(UUID.randomUUID())
-
-        mockCurrentUser(currentUser)
-
-        if (failAt == reviewRepoMock::getReviewById) {
-            coEvery { reviewRepoMock.getReviewById(review.id) } returns Result.failure(TestSpecificException())
-            return
-        }
+        mockCurrentUser(user)
         coEvery { reviewRepoMock.getReviewById(review.id) } returns Result.success(review)
-
-        if (failAt == projectPaperRepoMock::getProjectPaperById) {
-            coEvery {
-                projectPaperRepoMock.getProjectPaperById(review.projectPaperId)
-            } returns Result.failure(TestSpecificException())
-            return
-        }
-        coEvery { projectPaperRepoMock.getProjectPaperById(review.projectPaperId) } returns Result.success(projectPaper)
-
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns
-            if (isUserAdmin) {
-                emptyList()
-            } else {
-                listOf(projectMember)
-            }
+        coJustRun { reviewAccessCheckerMock.isAllowedToReadReview(user, review) }
         coEvery {
             reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(review.id)
         } returns selectedCriteriaIds
-    }
 
-    @ParameterizedTest
-    @MethodSource("failingFunctions")
-    fun `When a step fails, then a TestSpecificException is thrown`(failAt: KFunction<*>) = runTest {
-        mockHappyPathUntil(failAt, true)
+        val reviewResult = service.getReviewById(review.id)
 
-        assertThrows<TestSpecificException> {
-            mainService.getReviewById(getExampleRequest())
-        }
-    }
-
-    @Test
-    fun `When a server admin retrieves the review, then no exception is thrown`() = runTest {
-        mockHappyPathUntil(null, true)
-
-        assertDoesNotThrow { mainService.getReviewById(getExampleRequest()) }
+        assertEquals(review.id, reviewResult.id)
+        assertEquals(1, reviewResult.selectedCriteriaIds.size)
+        val selectedCriterionId = reviewResult.selectedCriteriaIds[0]
+        assertEquals(selectedCriteriaIds[0], selectedCriterionId)
+        assertReviewEquality(review, reviewResult)
     }
 
     @Test
-    fun `When a project member retrieves the review, then no exception is thrown`() = runTest {
-        mockHappyPathUntil(null, false)
+    fun `When retrieving the review fails, then a TestSpecificException is thrown`() = runTest {
+        val user = DataBuilder.createExampleUser()
+        val review = DataBuilder.createExampleReview()
 
-        assertDoesNotThrow { mainService.getReviewById(getExampleRequest()) }
+        mockCurrentUser(user)
+        coEvery { reviewRepoMock.getReviewById(review.id) } returns Result.failure(TestSpecificException())
+
+        assertThrows<TestSpecificException> { service.getReviewById(review.id) }
     }
 
     @Test
-    fun `When a non project member retrieves the review, then an UnauthorizedException is thrown`() = runTest {
-        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-        val review = DataBuilder.createExampleReview(id = reviewId, userId = currentUser.id)
-        val project = DataBuilder.createExampleProject()
-        val projectPaper = DataBuilder.createExampleProjectPaper(id = review.projectPaperId, projectId = project.id)
+    fun `When a user requests a review, but has no access, then a TestSpecificException is thrown`() = runTest {
+        val user = DataBuilder.createExampleUser()
+        val review = DataBuilder.createExampleReview()
 
-        mockCurrentUser(currentUser)
+        mockCurrentUser(user)
         coEvery { reviewRepoMock.getReviewById(review.id) } returns Result.success(review)
-        coEvery { projectPaperRepoMock.getProjectPaperById(review.projectPaperId) } returns Result.success(projectPaper)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
+        coEvery {
+            reviewAccessCheckerMock.isAllowedToReadReview(user, review)
+        } throws TestSpecificException()
 
-        assertThrows<UnauthorizedException> { mainService.getReviewById(getExampleRequest()) }
+        assertThrows<TestSpecificException> { service.getReviewById(review.id) }
     }
 }

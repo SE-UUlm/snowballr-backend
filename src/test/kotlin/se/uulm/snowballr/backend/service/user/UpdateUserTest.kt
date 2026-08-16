@@ -1,155 +1,164 @@
 package se.uulm.snowballr.backend.service.user
 
-import com.google.protobuf.FieldMask
 import io.mockk.coEvery
+import io.mockk.coJustRun
+import io.mockk.coVerify
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.model.SnowballRException.DuplicateEntityException
-import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
-import se.uulm.snowballr.backend.service.MainServiceTest
-import snowballr.UserOuterClass.UserRole
-import snowballr.UserOuterClass.UserStatus
-import java.util.UUID
-import snowballr.UserOuterClass.User as GrpcUser
+import se.uulm.snowballr.backend.model.dto.user.User
+import se.uulm.snowballr.backend.model.dto.user.UserField
+import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateUserException
+import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
 
-class UpdateUserTest : MainServiceTest() {
-    private val requestedUserId = UUID.randomUUID()
-    private val requestEmail = "newemail@example.com"
-
-    private fun getExampleRequest(changeRole: Boolean = false): GrpcUser.Update {
-        val userBuilder = GrpcUser.newBuilder()
-            .setId(requestedUserId.toString())
-            .setEmail(requestEmail)
-
-        if (changeRole) {
-            userBuilder.setRole(UserRole.USER_ROLE_ADMIN)
-        }
-
-        val mask = FieldMask.newBuilder()
-            .addPaths("email")
-            .addPaths("role")
-            .build()
-
-        return GrpcUser.Update.newBuilder()
-            .setUser(userBuilder.build())
-            .setMask(mask)
-            .build()
-    }
+class UpdateUserTest : UserServiceTest() {
+    private fun getExampleRequest(user: User) = UpdateUserRequest(
+        userId = user.id,
+        firstName = user.firstName,
+        lastName = user.lastName,
+        email = user.email,
+        role = user.role,
+        status = user.status,
+    )
 
     @Test
-    fun `When requested user retrieval fails, then a TestSpecificException is thrown`() = runTest {
-        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
+    fun `When retrieving user fails, then a TestSpecificException is thrown`() = runTest {
+        val currentUser = DataBuilder.createExampleUser()
+        val otherUser = DataBuilder.createExampleUser()
+
+        val request = getExampleRequest(otherUser)
 
         mockCurrentUser(currentUser)
-        coEvery { userRepoMock.getUserById(requestedUserId) } returns Result.failure(TestSpecificException())
+        coEvery { userRepoMock.getUserById(otherUser.id) } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { mainService.updateUser(getExampleRequest()) }
+        assertThrows<TestSpecificException> { service.updateUser(request, emptySet()) }
     }
 
     @Test
-    fun `When user is not admin and tries to change another user's role, then an UnauthorizedException is thrown`() =
+    fun `When a user updates another user, but has no access, then a TestSpecificException is thrown`() = runTest {
+        val currentUser = DataBuilder.createExampleUser()
+        val otherUser = DataBuilder.createExampleUser()
+
+        val request = getExampleRequest(otherUser)
+
+        mockCurrentUser(currentUser)
+        coEvery { userRepoMock.getUserById(otherUser.id) } returns Result.success(otherUser)
+        coEvery {
+            userAccessCheckerMock.isAllowedToUpdateUser(currentUser, otherUser)
+        } throws TestSpecificException()
+
+        assertThrows<TestSpecificException> { service.updateUser(request, emptySet()) }
+    }
+
+    @Test
+    fun `When a user tries to change another user's role, but has no access, then a TestSpecificException is thrown`() =
         runTest {
-            val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-            val requestedUser = DataBuilder.createExampleUser(id = requestedUserId)
+            val currentUser = DataBuilder.createExampleUser()
+            val otherUser = DataBuilder.createExampleUser()
+
+            val request = getExampleRequest(otherUser)
 
             mockCurrentUser(currentUser)
-            coEvery { userRepoMock.getUserById(requestedUserId) } returns Result.success(requestedUser)
+            coEvery { userRepoMock.getUserById(otherUser.id) } returns Result.success(otherUser)
+            coJustRun { userAccessCheckerMock.isAllowedToUpdateUser(currentUser, otherUser) }
+            coEvery {
+                userAccessCheckerMock.isAllowedToUpdateUserRole(currentUser, otherUser.id)
+            } throws TestSpecificException()
 
-            assertThrows<UnauthorizedException> { mainService.updateUser(getExampleRequest(true)) }
+            assertThrows<TestSpecificException> { service.updateUser(request, setOf(UserField.ROLE)) }
         }
 
     @Test
-    fun `When user is not admin and tries to update another user, then an UnauthorizedException is thrown`() = runTest {
-        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-        val otherUser = DataBuilder.createExampleUser(id = requestedUserId)
-        val request = GrpcUser.Update.newBuilder()
-            .setUser(GrpcUser.newBuilder().setId(otherUser.id.toString()).setFirstName("NewFirstName"))
-            .setMask(FieldMask.newBuilder().addPaths("first_name"))
-            .build()
+    fun `When a user tries to change another user's email to an existent email, then a DuplicateUserException is thrown`() =
+        runTest {
+            val currentUser = DataBuilder.createExampleUser()
+            val otherUser = DataBuilder.createExampleUser(email = "other@user.com")
+
+            val request = getExampleRequest(otherUser)
+
+            mockCurrentUser(currentUser)
+            coEvery { userRepoMock.getUserById(otherUser.id) } returns Result.success(otherUser)
+            coJustRun { userAccessCheckerMock.isAllowedToUpdateUser(currentUser, otherUser) }
+            coEvery { userRepoMock.doesUserExistByEmail(otherUser.email) } returns true
+
+            assertThrows<DuplicateUserException> { service.updateUser(request, setOf(UserField.EMAIL)) }
+        }
+
+    @Test
+    fun `When admin updates the email of another user, then it succeeds`() = runTest {
+        val currentUser = DataBuilder.createExampleUser()
+        val otherUser = DataBuilder.createExampleUser(email = "other@user.com")
+
+        val request = getExampleRequest(otherUser)
 
         mockCurrentUser(currentUser)
         coEvery { userRepoMock.getUserById(otherUser.id) } returns Result.success(otherUser)
+        coJustRun { userAccessCheckerMock.isAllowedToUpdateUser(currentUser, otherUser) }
+        coEvery { userRepoMock.doesUserExistByEmail(otherUser.email) } returns false
+        coEvery { userRepoMock.updateUser(request, setOf(UserField.EMAIL)) } returns otherUser
 
-        assertThrows<UnauthorizedException> { mainService.updateUser(request) }
+        val updatedUser = service.updateUser(request, setOf(UserField.EMAIL))
+
+        assertEquals(otherUser.id, updatedUser.id)
+        assertEquals(otherUser.email, updatedUser.email)
     }
 
     @Test
-    fun `When updating email to existent email, then a DuplicateEntityException is thrown`() = runTest {
-        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        val requestedUser = DataBuilder.createExampleUser(
-            id = requestedUserId,
-            email = requestEmail,
-            status = UserStatus.USER_STATUS_ACTIVE,
-        )
+    fun `When admin updates all other fields of another user, then it succeeds`() = runTest {
+        val currentUser = DataBuilder.createExampleUser()
+        val otherUser = DataBuilder.createExampleUser()
 
-        mockCurrentUser(currentUser)
-        coEvery { userRepoMock.getUserById(requestedUserId) } returns Result.success(requestedUser)
-        coEvery { userRepoMock.doesUserExistByEmail(requestedUser.email) } returns true
-
-        assertThrows<DuplicateEntityException> { mainService.updateUser(getExampleRequest()) }
-    }
-
-    @Test
-    fun `When user updates own email, then it succeeds`() = runTest {
-        val currentUser = DataBuilder.createExampleUser(id = requestedUserId, role = UserRole.USER_ROLE_DEFAULT)
-        val request = GrpcUser.Update.newBuilder()
-            .setUser(
-                GrpcUser.newBuilder()
-                    .setId(currentUser.id.toString())
-                    .setEmail("new-and-shiny@example.com"),
-            )
-            .setMask(FieldMask.newBuilder().addPaths("email"))
-            .build()
-
-        mockCurrentUser(currentUser)
-        coEvery { userRepoMock.doesUserExistByEmail("new-and-shiny@example.com") } returns false
-        coEvery { userRepoMock.updateUser(request) } returns currentUser
-
-        assertDoesNotThrow { mainService.updateUser(request) }
-    }
-
-    @Test
-    fun `When admin updates another user's role, then it succeeds`() = runTest {
-        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        val otherUser = DataBuilder.createExampleUser(
-            id = requestedUserId,
-            role = UserRole.USER_ROLE_DEFAULT,
-            status = UserStatus.USER_STATUS_ACTIVE,
-        )
-        val request = GrpcUser.Update.newBuilder()
-            .setUser(
-                GrpcUser.newBuilder()
-                    .setId(otherUser.id.toString())
-                    .setRole(UserRole.USER_ROLE_ADMIN),
-            )
-            .setMask(FieldMask.newBuilder().addPaths("role"))
-            .build()
+        val request = getExampleRequest(otherUser)
+        val fields = setOf(UserField.FIRST_NAME, UserField.LAST_NAME, UserField.ROLE, UserField.STATUS)
 
         mockCurrentUser(currentUser)
         coEvery { userRepoMock.getUserById(otherUser.id) } returns Result.success(otherUser)
-        coEvery { userRepoMock.updateUser(request) } returns otherUser
+        coJustRun { userAccessCheckerMock.isAllowedToUpdateUser(currentUser, otherUser) }
+        coJustRun { userAccessCheckerMock.isAllowedToUpdateUserRole(currentUser, otherUser.id) }
+        coEvery { userRepoMock.updateUser(request, fields) } returns otherUser
 
-        assertDoesNotThrow { mainService.updateUser(request) }
+        val updatedUser = service.updateUser(request, fields)
+
+        assertEquals(otherUser.id, updatedUser.id)
+        assertEquals(otherUser.firstName, updatedUser.firstName)
+        assertEquals(otherUser.lastName, updatedUser.lastName)
+        assertEquals(otherUser.role, updatedUser.role)
+        assertEquals(otherUser.status, updatedUser.status)
     }
 
     @Test
-    fun `When admin updates all fields of another user, then it succeeds`() = runTest {
-        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        val requestedUser = DataBuilder.createExampleUser(
-            id = requestedUserId,
-            email = requestEmail,
-            status = UserStatus.USER_STATUS_ACTIVE,
-        )
+    fun `When a non-admin user tries to change their own role, then a TestSpecificException is thrown`() = runTest {
+        val currentUser = DataBuilder.createExampleUser()
+
+        val request = getExampleRequest(currentUser)
 
         mockCurrentUser(currentUser)
-        coEvery { userRepoMock.getUserById(requestedUserId) } returns Result.success(requestedUser)
-        coEvery { userRepoMock.doesUserExistByEmail(requestedUser.email) } returns false
-        coEvery { userRepoMock.updateUser(getExampleRequest()) } returns requestedUser
+        coJustRun { userAccessCheckerMock.isAllowedToUpdateUser(currentUser, currentUser) }
+        coEvery {
+            userAccessCheckerMock.isAllowedToUpdateUserRole(currentUser, currentUser.id)
+        } throws TestSpecificException()
 
-        assertDoesNotThrow { mainService.updateUser(getExampleRequest()) }
+        assertThrows<TestSpecificException> { service.updateUser(request, setOf(UserField.ROLE)) }
+
+        coVerify(exactly = 0) { userRepoMock.updateUser(any(), any()) }
     }
+
+    @Test
+    fun `When a user tries to change their own email to an existent email, then a DuplicateUserException is thrown`() =
+        runTest {
+            val currentUser = DataBuilder.createExampleUser()
+
+            val request = getExampleRequest(currentUser)
+
+            mockCurrentUser(currentUser)
+            coJustRun { userAccessCheckerMock.isAllowedToUpdateUser(currentUser, currentUser) }
+            coEvery { userRepoMock.doesUserExistByEmail(currentUser.email) } returns true
+
+            assertThrows<DuplicateUserException> { service.updateUser(request, setOf(UserField.EMAIL)) }
+
+            coVerify(exactly = 0) { userRepoMock.updateUser(any(), any()) }
+        }
 }

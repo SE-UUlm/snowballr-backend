@@ -5,21 +5,24 @@ import com.zaxxer.hikari.HikariDataSource
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.Schema
-import org.jetbrains.exposed.sql.SchemaUtils
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.Transaction
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.insertAndGetId
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
-import org.jetbrains.exposed.sql.transactions.transaction
+import kotlinx.coroutines.withContext
+import org.jetbrains.exposed.v1.core.Schema
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.JdbcTransaction
+import org.jetbrains.exposed.v1.jdbc.SchemaUtils
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.insertAndGetId
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import se.uulm.snowballr.backend.auth.DummyUser
 import se.uulm.snowballr.backend.db.DatabaseHelper.addExtensions
 import se.uulm.snowballr.backend.env.Env
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.table.UserTable
+import java.io.Closeable
 import java.sql.Connection
+import org.jetbrains.exposed.v1.jdbc.Database as JdbcDatabase
 
 private val logger = KotlinLogging.logger { }
 
@@ -45,8 +48,12 @@ private const val DB_USER = "postgres"
  * transactional block. It abstracts the lower-level details of connecting to the database and
  * managing transaction lifecycles, allowing for simpler and more testable database interactions.
  */
-interface IDatabase {
-    suspend fun <T> query(dispatcher: CoroutineDispatcher = Dispatchers.IO, block: suspend Transaction.() -> T): T
+interface IDatabase : Closeable {
+    suspend fun <T> query(
+        dispatcher: CoroutineDispatcher = Dispatchers.IO,
+        transactionIsolation: Int = Connection.TRANSACTION_SERIALIZABLE,
+        block: suspend JdbcTransaction.() -> T,
+    ): T
 }
 
 /**
@@ -59,18 +66,20 @@ class Database(
     private val envReader: EnvReader,
 ) : IDatabase {
     private val dataSource: HikariDataSource
+    private val exposedDatabase: JdbcDatabase
 
     init {
         logger.info { "Connecting to database" }
         dataSource = initDataSource(envReader.env.database)
-        transaction(Database.connect(dataSource)) {
+        exposedDatabase = JdbcDatabase.connect(dataSource)
+        transaction(exposedDatabase) {
             setUpDatabase()
             seedDummyUserIfEnabled()
         }
         logger.info { "Database connection established" }
     }
 
-    private fun Transaction.setUpDatabase() {
+    private fun JdbcTransaction.setUpDatabase() {
         // Schema
         val schema = Schema(SCHEMA_NAME, DB_USER)
         SchemaUtils.createSchema(schema)
@@ -97,14 +106,19 @@ class Database(
         return HikariDataSource(config)
     }
 
-    override suspend fun <T> query(dispatcher: CoroutineDispatcher, block: suspend Transaction.() -> T): T =
-        newSuspendedTransaction(
-            dispatcher,
-            Database.connect(dataSource),
-            Connection.TRANSACTION_SERIALIZABLE,
-        ) {
+    override suspend fun <T> query(
+        dispatcher: CoroutineDispatcher,
+        transactionIsolation: Int,
+        block: suspend JdbcTransaction.() -> T,
+    ): T = withContext(dispatcher) {
+        suspendTransaction(exposedDatabase, transactionIsolation) {
             block()
         }
+    }
+
+    override fun close() {
+        dataSource.close()
+    }
 
     /**
      * Seeds the database with a dummy user if the environment configuration requires it.

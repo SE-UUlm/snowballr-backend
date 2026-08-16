@@ -1,15 +1,17 @@
 package se.uulm.snowballr.backend.table
 
-import arrow.core.mapValuesNotNull
-import org.jetbrains.exposed.sql.Column
-import org.jetbrains.exposed.sql.ReferenceOption
-import org.jetbrains.exposed.sql.Table
-import org.jetbrains.exposed.sql.TextColumnType
-import org.jetbrains.exposed.sql.kotlin.datetime.timestampWithTimeZone
-import org.postgresql.util.HStoreConverter
+import org.jetbrains.exposed.v1.core.BasicBinaryColumnType
+import org.jetbrains.exposed.v1.core.Column
+import org.jetbrains.exposed.v1.core.ReferenceOption
+import org.jetbrains.exposed.v1.core.Table
+import org.jetbrains.exposed.v1.core.TextColumnType
+import org.jetbrains.exposed.v1.datetime.timestampWithTimeZone
+import se.uulm.snowballr.backend.table.columntypes.HStoreColumnType
+import se.uulm.snowballr.backend.table.columntypes.ObfuscatedTextColumnType
+import se.uulm.snowballr.backend.table.columntypes.RedactedBinaryColumnType
 import java.time.OffsetDateTime
 
-/** Common column definition for a user reference */
+/** Common column definition for a user reference. */
 fun Table.userReference(name: String, onDelete: ReferenceOption, onUpdate: ReferenceOption) =
     reference(name, UserTable, onDelete, onUpdate)
 
@@ -30,7 +32,7 @@ fun Table.modifiedAt() = timestampWithTimeZone("modified_at").nullable()
 /**
  * Nullable reference to the user who modified the entity.
  *
- * - `onDelete=RESTRICT` so that no user can be deleted who is referenced by a entity
+ * - `onDelete=RESTRICT` so that no user can be deleted who is referenced by an entity
  * - `onUpdate=CASCADE` so that when the user ID is updated, the foreign key ID is updated too
  */
 fun Table.modifiedBy() = userReference("modified_by", ReferenceOption.RESTRICT, ReferenceOption.CASCADE).nullable()
@@ -46,9 +48,6 @@ fun Table.deletedAt() = timestampWithTimeZone("deleted_at").nullable()
  */
 fun Table.deletedBy() = userReference("deleted_by", ReferenceOption.RESTRICT, ReferenceOption.CASCADE).nullable()
 
-/** Common column definition for the "expires at" timestamp. */
-fun Table.expiresAt() = timestampWithTimeZone("expires_at").clientDefault { OffsetDateTime.now().plusDays(1) }
-
 /**
  * Same as [Table.text], but with the [ObfuscatedTextColumnType] instead of the [TextColumnType].
  */
@@ -56,18 +55,13 @@ fun Table.obfuscatedText(name: String, collate: String? = null, eagerLoading: Bo
     registerColumn(name, ObfuscatedTextColumnType(collate, eagerLoading))
 
 /**
- * Stores a Map<String, String> inside an [HStoreColumnType]. Unallowed characters are automatically escaped.
+ * Same as [Table.binary], but with the [RedactedBinaryColumnType] instead of the [BasicBinaryColumnType].
  */
-fun Table.stringMap(name: String): Column<Map<String, String>> = registerColumn(
-    name,
-    HStoreColumnType(),
-).transform(
-    wrap = {
-        HStoreConverter
-            .fromString(it.trim('{', '}'))
-            .mapValuesNotNull { entry -> entry.value }
-    },
-    unwrap = {
-        HStoreConverter.toString(it)
-    },
-)
+fun Table.redactedBinary(name: String) = registerColumn(name, RedactedBinaryColumnType())
+
+/**
+ * Stores a Map<String, String> inside an [HStoreColumnType]. Unallowed characters are automatically escaped.
+ *
+ * The order of the key-value pairs is not guaranteed.
+ */
+fun Table.stringMap(name: String): Column<Map<String, String>> = registerColumn(name, HStoreColumnType())

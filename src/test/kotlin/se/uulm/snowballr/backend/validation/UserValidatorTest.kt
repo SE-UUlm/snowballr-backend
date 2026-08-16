@@ -26,7 +26,7 @@ class UserValidatorTest {
             .setLastName("user")
             .setRole(UserRole.USER_ROLE_DEFAULT)
         private val validFieldMask: FieldMask = FieldMaskUtil
-            .fromStringList(listOf("user.email", "user.first_name", "user.last_name", "user.role"))
+            .fromStringList(listOf("user.id", "user.email", "user.first_name", "user.last_name", "user.role"))
 
         private val validUpdateRequestBuilder: Update.Builder =
             Update

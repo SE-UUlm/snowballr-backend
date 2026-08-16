@@ -1,11 +1,15 @@
-To test the functionality of our app, we employ various tests. To run all tests at once, you can use:
+To test the functionality of our app, we employ various tests. To run tests, you can use:
 
 ```bash
+# Unit tests
 ./gradlew test
+
+# Integration tests
+./gradlew integrationTest
 ```
 
-The coverage report is located at `./build/coverageHtml/index.html` and the test report at
-`./build/testReportHtml/index.html`.
+The coverage report is located at `build/coverageHtml/index.html` and the test report at
+`build/testReportHtml/index.html`.
 
 On this page, we cover the following topics:
 
@@ -17,6 +21,7 @@ On this page, we cover the following topics:
     * [Repository](#repository)
     * [Service](#service)
     * [Input Validation](#input-validation)
+  * [Integration Tests](#integration-tests)
 <!-- TOC -->
 <!-- @formatter:on -->
 <!-- markdownlint-enable MD007 -->
@@ -53,8 +58,8 @@ possible to keep it consistent with the already existing tests and to make the a
 If the _JUnit_ assertions are not easily usable, then use the
 [AssertJ](https://github.com/assertj/assertj?tab=readme-ov-file) test assertions.
 
-All test classes must have the same relative path under `./src/test` as the implementation class under
-`./src/main` and the same name with an additional `Test` at the end. This ensures a clear structure and an easy way to
+All test classes must have the same relative path under `src/test` as the implementation class under
+`src/main` and the same name with an additional `Test` at the end. This ensures a clear structure and an easy way to
 find the according test class. The service test classes break this convention as described below.
 
 ### Repository
@@ -94,7 +99,8 @@ For parameterized tests using gRPC enums, we provide the custom `GrpcEnumSourceT
 `UNRECOGNIZED` value because using this value to create an object will lead to an exception being thrown.
 
 If you need a test user, set the `needsTestUser` argument of the `RepositoryTest` superclass constructor to true.
-This automatically inserts a dummy user into the database. You can access this user’s ID through the `testUserId` variable.
+This automatically inserts a dummy user into the database. You can access this user’s ID through the `testUserId`
+variable.
 
 See
 [CriterionTableRepoTest.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/test/kotlin/se/uulm/snowballr/backend/repository/CriterionTableRepoTest.kt)
@@ -102,28 +108,33 @@ for an example.
 
 ### Service
 
-Similar to the repository tests, the service tests use the base class
-[MainServiceTest](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/test/kotlin/se/uulm/snowballr/backend/service/MainServiceTest.kt).
-In there, the mocks for all repositories are declared. If the mock of the repo you are working on is not already added,
-add it below the existing mocks with the pattern `[Repository Name]Mock = mockk<I[Repository Name]>()`.
-Furthermore, pass it to the `MainService` constructor because we use the `mainService` object to call the methods we
-want to test. We create a test class for each service method separately as they are expected to contain a lot of test
-cases. All test classes of a service are grouped in a package named after the associated entity. A service test class
-has the following test structure:
+Service tests use a two-level base class hierarchy. The abstract class
+[BaseServiceTest](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/test/kotlin/se/uulm/snowballr/backend/service/BaseServiceTest.kt)
+handles the Koin lifecycle (start/stop) and mock verification. It requires subclasses to implement `getModule()` and
+`getAllMocks()`. On top of it, each service has its own `sealed class` base, e.g.
+[UserServiceTest](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/test/kotlin/se/uulm/snowballr/backend/service/user/UserServiceTest.kt),
+which declares only the mocks relevant to that service, wires them into a Koin module, and exposes the service under
+test as `service` via Koin injection.
+
+We create a test class for each service method separately as they are expected to contain a lot of test cases. All test
+classes of a service are grouped in a package named after the associated entity and extend the entity-specific base
+class. A service test class has the following structure:
 
 ```kotlin
-class CreateExampleTest : MainServiceTest() {
+class CreateExampleTest : ExampleServiceTest() {
     @Test
-    fun `When an example is correctly created, then no exception is thrown`() =
+    fun `When an example is correctly created, then the created example has the correct values`() =
         runTest {
             val request = ExampleOuterClass.Example.Create.getDefaultInstance()
             val example = ExampleOuterClass.Example.getDefaultInstance()
 
             // Mock the behavior of the repositories
-            coEvery { exampleRepoMock.createExample(any()) } returns example
+            coEvery { exampleRepoMock.createExample(any()) } returns Result.success(example)
 
             // Assert service behavior
-            assertDoesNotThrow { mainService.createExample(request) }
+            val result = service.createExample(request)
+
+            assertEquals(example.property, result.property)
         }
 
     @Test
@@ -132,18 +143,25 @@ class CreateExampleTest : MainServiceTest() {
             val request = ExampleOuterClass.Example.Create.getDefaultInstance()
 
             // Mock the behavior of the repositories
-            coEvery { exampleRepoMock.createExample(any()) } throws TestSpecificException()
+            coEvery { exampleRepoMock.createExample(any()) } returns Result.failure(TestSpecificException())
 
             // Assert service behavior
-            assertThrows<TestSpecificException> { mainService.createExample(request) }
+            assertThrows<TestSpecificException> { service.createExample(request) }
         }
 }
 ```
 
+If there is no entity-specific base class yet for the service you are working on, create one as a `sealed class`
+extending `BaseServiceTest`. Declare only the mocks needed by that service, implement `getModule()` to register them in
+a Koin module together with the service implementation, and implement `getAllMocks()` to return all declared mock
+instances. See
+[UserServiceTest](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/test/kotlin/se/uulm/snowballr/backend/service/user/UserServiceTest.kt)
+for an example.
+
 It is important that we mock each external dependency, such as the call to the repository. In the example above, we mock
-that the repository returns a specific object or throws an exception. We then test the behavior of the service method
-according to the behavior of our dependencies. For more complex mocks such as how often a method is called, refer to the
-rich documentation of the used mocking library [MockK](https://mockk.io/).
+that the repository returns a specific object or wraps an exception in a failure result. We then test the behavior of
+the service method according to the behavior of our dependencies. For more complex mocks such as how often a method is
+called, refer to the rich documentation of the used mocking library [MockK](https://mockk.io/).
 
 ### Input Validation
 
@@ -189,3 +207,38 @@ for an example.
 > For details on helpers for local development and manual testing, such as user seeding and authentication bypass, see
 > the [Configuration](https://github.com/SE-UUlm/snowballr-backend/wiki/Configuration#authentication-bypass-and-user-seeding)
 > guide._
+
+## Integration Tests
+
+Integration tests are used to test the behavior of services and repositories working together against a real database.
+The only components that are mocked are the environment variables and the email service, i.e., all external
+dependencies. As with the repository tests, an isolated PostgreSQL database is used.
+Each integration test class calls the entity-specific service directly (e.g. `projectService`, `userService`), all of
+which are injected from the same real Koin module that is used in production.
+
+Integration tests are organized in subdirectories under
+[`integration`](https://github.com/SE-UUlm/snowballr-backend/tree/develop/src/test/kotlin/se/uulm/snowballr/backend/integration):
+
+* [`services`](https://github.com/SE-UUlm/snowballr-backend/tree/develop/src/test/kotlin/se/uulm/snowballr/backend/integration/services):
+  One test class per service, covering the main operations of each service end-to-end through the full stack. Tests here
+  verify that operations produce the correct observable outcome (e.g., creating a paper and retrieving it by ID, or that
+  a review decision updates the paper's state).
+* [`access`](https://github.com/SE-UUlm/snowballr-backend/tree/develop/src/test/kotlin/se/uulm/snowballr/backend/integration/access):
+  Tests that verify authorization rules are enforced end-to-end. Because service tests mock the access checkers, these
+  tests are the only ones that confirm access control actually works with the real authorization logic and the real
+  database.
+* [`regression`](https://github.com/SE-UUlm/snowballr-backend/tree/develop/src/test/kotlin/se/uulm/snowballr/backend/integration/regression):
+  Tests for previously fixed bugs. Add a test here whenever a bug is fixed, so that it cannot silently reappear.
+
+The class
+[`IntegrationTest`](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/test/kotlin/se/uulm/snowballr/backend/integration/IntegrationTest.kt)
+is the base class for all integration tests. It provides helper methods for commonly reused workflows to avoid
+duplicating setup code across test classes:
+
+| Helper                                                 | Description                                                                |
+|--------------------------------------------------------|----------------------------------------------------------------------------|
+| `createPaper(title, externalId?)`                      | Creates a paper with default metadata                                      |
+| `addUser(user)`                                        | Registers and verifies a user account                                      |
+| `inviteUserToProject(project, user, acceptInvitation)` | Invites a registered user to a project, optionally accepting               |
+| `inviteEmailToProject(project, email)`                 | Invites an unregistered email address to a project                         |
+| `actAsUser(userId, block)`                             | Executes `block` as the specified user, then restores the original context |

@@ -4,7 +4,6 @@ import arrow.core.EitherNel
 import arrow.core.raise.either
 import arrow.core.raise.zipOrAccumulate
 import se.uulm.snowballr.backend.model.ValidationIssue
-import snowballr.ProjectOuterClass.Project
 import snowballr.ProjectOuterClass.Project.Member
 import snowballr.ProjectOuterClass.Project.Member.Remove
 
@@ -20,7 +19,7 @@ object ProjectMemberValidator {
     fun validateRemoveRequest(request: Remove): EitherNel<ValidationIssue, Unit> = either {
         zipOrAccumulate(
             { ensureIdValidity(FIELD_PROJECT_ID, request.projectId) },
-            { ensureIdValidity(FIELD_USER_ID, request.userId) },
+            { ensureEmailValidity(request.userEmail) },
         ) { _, _ -> }
     }
 
@@ -34,7 +33,7 @@ object ProjectMemberValidator {
         ensureFieldNonBlank(FIELD_TOKEN, request.token)
     }.toEitherNel()
 
-    fun validateMemberUpdateRequest(request: Project.Member.Update): EitherNel<ValidationIssue, Unit> = either {
+    fun validateMemberUpdateRequest(request: Member.Update): EitherNel<ValidationIssue, Unit> = either {
         ensureIdValidity(FIELD_PROJECT_ID, request.projectId)
         ensureIdValidity(FIELD_USER_ID, request.userId)
         ensureEnumNotUnspecified(FIELD_NEW_ROLE, request.newRole)

@@ -1,18 +1,19 @@
 package se.uulm.snowballr.backend.service.user
 
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import se.uulm.snowballr.backend.DataBuilder
-import se.uulm.snowballr.backend.service.MainServiceTest
 
-class GetCurrentUserTest : MainServiceTest() {
+class GetCurrentUserTest : UserServiceTest() {
     @Test
-    fun `When retrieving the current user, then no exception is thrown`() = runTest {
+    fun `When retrieving the current user, then the correct user is returned`() = runTest {
         val user = DataBuilder.createExampleUser()
 
         mockCurrentUser(user)
 
-        assertDoesNotThrow { mainService.getCurrentUser() }
+        val result = service.getCurrentUser()
+
+        assertEquals(user.id, result.id)
     }
 }

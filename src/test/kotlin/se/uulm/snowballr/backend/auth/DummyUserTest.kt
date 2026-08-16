@@ -1,14 +1,10 @@
 package se.uulm.snowballr.backend.auth
 
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import snowballr.ProjectOuterClass.ReviewDecisionMatrix
-import snowballr.ProjectOuterClass.SnowballingType
-import snowballr.UserOuterClass.UserRole
-import snowballr.UserOuterClass.UserStatus
+import se.uulm.snowballr.backend.model.dto.user.UserRole
+import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import java.util.UUID
 
 class DummyUserTest {
@@ -19,22 +15,13 @@ class DummyUserTest {
         assertEquals("Alice", DummyUser.firstName)
         assertEquals("Smith", DummyUser.lastName)
         assertEquals("VALIDPassword__1234", DummyUser.password)
-        // User Settings
-        assertTrue(DummyUser.areHotkeysShown)
-        assertFalse(DummyUser.isReviewModeEnabled)
-        assertThat(DummyUser.criteriaIds).isEmpty()
-        assertEquals(0F, DummyUser.similarityThreshold)
-        assertTrue(ReviewDecisionMatrix.getDefaultInstance().toByteArray().contentEquals(DummyUser.decisionMatrix))
-        assertThat(DummyUser.fetchers).isEmpty()
-        assertEquals(SnowballingType.SNOWBALLING_TYPE_BOTH, DummyUser.snowballingType)
-        assertTrue(DummyUser.reviewMaybeAllowed)
 
         assertTrue(
             PasswordUtils.verifyPassword(DummyUser.password, DummyUser.passwordHash),
             "DummyUser.passwordHash does not match DummyUser.password",
         )
 
-        assertEquals(UserRole.USER_ROLE_ADMIN, DummyUser.role)
-        assertEquals(UserStatus.USER_STATUS_ACTIVE, DummyUser.status)
+        assertEquals(UserRole.ADMIN, DummyUser.role)
+        assertEquals(UserStatus.ACTIVE, DummyUser.status)
     }
 }

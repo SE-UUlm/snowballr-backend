@@ -1,45 +1,50 @@
 package se.uulm.snowballr.backend.service
 
+import io.github.oshai.kotlinlogging.KotlinLogging
+import se.uulm.snowballr.backend.access.IProjectAccessChecker
+import se.uulm.snowballr.backend.access.IReviewAccessChecker
+import se.uulm.snowballr.backend.fetcher.IFetcherOrchestrator
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
-import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.SnowballRException.DuplicateReviewException
-import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
-import se.uulm.snowballr.backend.model.dto.Review
-import se.uulm.snowballr.backend.model.dto.toGrpcReview
-import se.uulm.snowballr.backend.model.dto.toGrpcReviews
-import se.uulm.snowballr.backend.model.parseUUID
+import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
+import se.uulm.snowballr.backend.model.dto.project.ProjectField
+import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
+import se.uulm.snowballr.backend.model.dto.project.SnowballingType
+import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
+import se.uulm.snowballr.backend.model.dto.review.Review
+import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
+import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
+import se.uulm.snowballr.backend.model.exception.alreadyexists.DuplicateReviewException
+import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
+import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
+import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectSettingRequest
+import se.uulm.snowballr.backend.model.incoming.review.CreateReviewRequest
+import se.uulm.snowballr.backend.model.outgoing.review.ReviewResponse
+import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IReviewTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
-import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.IReviewHasCriterionTableRepo
-import se.uulm.snowballr.backend.service.accessrules.checkFor
-import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadProject
-import se.uulm.snowballr.backend.service.accessrules.isAllowedToReadReview
-import se.uulm.snowballr.backend.service.accessrules.isProjectActive
-import snowballr.Base
-import snowballr.ProjectOuterClass.PaperDecision
-import snowballr.ProjectOuterClass.ReviewDecisionMatrix
-import snowballr.ReviewOuterClass
 import java.util.UUID
-import snowballr.ReviewOuterClass.Review as GrpcReview
+
+private val logger = KotlinLogging.logger {}
 
 interface IReviewService {
     /**
      * Service implementation of [SnowballRService.getReviewById].
      */
-    suspend fun getReviewById(request: Base.Id): GrpcReview
+    suspend fun getReviewById(reviewId: UUID): ReviewResponse
 
     /**
      * Service implementation of [SnowballRService.getAllReviewsForProjectPaper].
      */
-    suspend fun getAllReviewsForProjectPaper(request: Base.Id): GrpcReview.List
+    suspend fun getAllReviewsForProjectPaper(projectPaperId: UUID): List<ReviewResponse>
 
     /**
      * Service implementation of [SnowballRService.createReview].
      */
-    suspend fun createReview(request: GrpcReview.Create): GrpcReview
+    suspend fun createReview(request: CreateReviewRequest): ReviewResponse
 }
 
 /**
@@ -56,121 +61,162 @@ interface IReviewService {
  * @param userRepo Interface for persistence and retrieval operations related to users.
  * @param projectPaperRepo Interface for persistence and retrieval operations related to project papers.
  * @param projectRepo Interface for persistence and retrieval operations related to projects.
- * @param projectMemberRepo Interface for persistence and retrieval operations related to project members.
- * @param reviewHasCriterionRepo Interface for persistence and retrieval operations related to review criteria.
+ * @param criterionRepo Interface for persistence and retrieval operations related to criteria.
+ * @param reviewHasCriterionRepo Interface for persistence and retrieval operations related to review-criteria relation.
+ * @param accessChecker Interface for checking access permissions for reviews based on defined rules.
+ * @param projectAccessChecker Interface for checking access permissions for projects based on defined rules.
+ * @param fetcherOrchestrator Interface for enqueuing fetcher jobs for fetching referenced papers.
  */
+@Suppress("LongParameterList")
 class ReviewService(
     private val repo: IReviewTableRepo,
     private val userRepo: IUserTableRepo,
     private val projectPaperRepo: IProjectPaperTableRepo,
     private val projectRepo: IProjectTableRepo,
-    private val projectMemberRepo: IProjectMemberTableRepo,
+    private val criterionRepo: ICriterionTableRepo,
     private val reviewHasCriterionRepo: IReviewHasCriterionTableRepo,
+    private val accessChecker: IReviewAccessChecker,
+    private val projectAccessChecker: IProjectAccessChecker,
+    private val fetcherOrchestrator: IFetcherOrchestrator,
 ) : IReviewService {
-    override suspend fun getReviewById(request: Base.Id): GrpcReview = withUser(userRepo) { currentUser ->
-        val reviewId = parseUUID(request.id, EntityType.REVIEW)
-
+    override suspend fun getReviewById(reviewId: UUID): ReviewResponse = withUser(userRepo) { currentUser ->
         val review = repo.getReviewById(reviewId).getOrThrow()
 
-        isAllowedToReadReview(projectMemberRepo, projectPaperRepo).checkFor(currentUser, review)
+        accessChecker.isAllowedToReadReview(currentUser, review)
 
         val selectedCriteriaIds = reviewHasCriterionRepo.getSelectedCriteriaIdsForReviewById(reviewId)
-        review.toGrpcReview(selectedCriteriaIds.map(UUID::toString))
+
+        ReviewResponse.fromReviewAndIds(review, selectedCriteriaIds)
     }
 
-    override suspend fun getAllReviewsForProjectPaper(request: Base.Id): GrpcReview.List =
+    override suspend fun getAllReviewsForProjectPaper(projectPaperId: UUID): List<ReviewResponse> =
         withUser(userRepo) { currentUser ->
-            val projectPaperId = parseUUID(request.id, EntityType.PROJECT_PAPER)
             val projectPaper = projectPaperRepo.getProjectPaperById(projectPaperId).getOrThrow()
 
-            isAllowedToReadProject(projectMemberRepo).checkFor(currentUser, projectPaper.projectId)
+            projectAccessChecker.isAllowedToReadProject(currentUser, projectPaper.projectId)
 
-            val reviews = repo.getAllReviewsForProjectPaper(projectPaperId)
-            val reviewSelectedCriteriaMap = mutableMapOf<Review, List<String>>()
-            for (review in reviews) {
-                reviewSelectedCriteriaMap[review] = reviewHasCriterionRepo
-                    .getSelectedCriteriaIdsForReviewById(review.id).map(UUID::toString)
+            repo.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaperId)
+                .map { ReviewResponse.fromReviewWithSelectedCriteriaIds(it) }
+        }
+
+    override suspend fun createReview(request: CreateReviewRequest): ReviewResponse =
+        withUser(userRepo) { currentUser ->
+            val projectPaper = projectPaperRepo.getProjectPaperById(request.projectPaperId).getOrThrow()
+
+            val projectResult = projectRepo.getProjectById(projectPaper.projectId)
+            accessChecker.isAllowedToCreateReview(currentUser, projectPaper.projectId, projectResult)
+            val project = projectResult.getOrThrow()
+
+            val reviewsForProjectPaper = repo.getAllReviewsForProjectPaper(request.projectPaperId)
+            val hasUserAlreadyReviewed = reviewsForProjectPaper.any { review -> review.userId == currentUser.id }
+            if (hasUserAlreadyReviewed) {
+                throw DuplicateReviewException(request.projectPaperId, currentUser.id)
             }
 
-            reviews.toGrpcReviews(reviewSelectedCriteriaMap)
+            if (projectPaper.hasFinalDecision) {
+                throw FailedPreconditionException(
+                    "The project paper must be either unreviewed or still in review. " +
+                        "Finally decided project papers cannot be reviewed anymore.",
+                )
+            }
+
+            val review = repo.createReview(request, currentUser.id)
+            val selectedCriteriaIds = reviewHasCriterionRepo.getSelectedCriteriaIdsForReviewById(review.id)
+
+            val hasSelectedExclusionCriterion = hasSelectedHardExclusionCriterion(project.id, selectedCriteriaIds)
+
+            val decision = if (hasSelectedExclusionCriterion && review.doesDeclinePaper) {
+                PaperDecision.DECLINED
+            } else {
+                determinePaperDecision(reviewsForProjectPaper + review, project.reviewDecisionMatrix)
+            }
+            projectPaperRepo.updateProjectPaperDecision(request.projectPaperId, decision)
+
+            if (project.status != ProjectStatus.ACTIVE_LOCKED) {
+                setProjectStatusActiveLocked(project.id)
+            }
+            if (decision === PaperDecision.ACCEPTED) {
+                fetcherOrchestrator.enqueue(FetcherEnqueueJob(projectPaper, currentUser.id))
+            }
+
+            logger.info {
+                "Review ${review.id} created for project paper ${request.projectPaperId} (${review.decision})"
+            }
+            ReviewResponse.fromReviewAndIds(review, selectedCriteriaIds)
         }
+
+    private suspend fun hasSelectedHardExclusionCriterion(projectId: UUID, selectedCriteriaIds: List<UUID>): Boolean {
+        val hardExclusionCriteria = criterionRepo.getAllProjectCriteria(projectId)
+            .filter { criterion -> criterion.category == CriterionCategory.HARD_EXCLUSION }
+            .map { criterion -> criterion.id }
+
+        return selectedCriteriaIds.any { id -> hardExclusionCriteria.contains(id) }
+    }
 
     /**
-     * Determines the final paper decision based on the given list of reviews and updates the project paper decision
-     * accordingly.
+     * Determines the final paper decision based on the given list of reviews.
      *
-     * At the moment, this is a simple sum function that adds one for each accepted review, subtracts one for each rejected,
-     * and leaves the sum unchanged for each maybe review. If the entire sum is above 0, the paper is accepted,
-     * if it is below 0, the paper is declined, if it is 0, the paper is in review. If the list is empty, the paper
-     * is considered to be unreviewed. At least two reviews are required to make a final decision.
-     * TODO: Exchange this by loading the decision matrix and calculating the final decision based on the matrix (see #345)
+     * This function follows the following decision process:
+     * - If the number of reviews is below the required threshold (as defined in the decision matrix),
+     *   the paper remains with [PaperDecision.IN_REVIEW].
+     * - Once the expected number of reviews is reached, the function attempts to match the current review distribution
+     *   against the configured decision matrix patterns. If a matching pattern is found (order-sensitive),
+     *   its associated final decision is returned.
+     * - If no matrix pattern matches, the default decision is [PaperDecision.IN_REVIEW]
+     * - If the required number of reviews were not enough to determine a final decision [PaperDecision.ACCEPTED] or
+     *   [PaperDecision.DECLINED]), the latest review (assumed to be the deciding one) determines final decision. The
+     *   paper is then only set to [PaperDecision.ACCEPTED] in case the latest review was [ReviewDecision.ACCEPTED];
+     *   otherwise, it is set to [PaperDecision.DECLINED].
      *
-     * @param projectPaperId ID of the project paper for which the final paper decision is to be determined.
+     * @param reviews List of reviews to be considered for the final paper decision. The latest review is assumed to be the last one in the list.
      * @param decisionMatrix Decision matrix of the project, where the project paper is in, that can be used to define
      * the final paper decision.
-     * @param reviews List of reviews to be considered for the final paper decision.
+     * @return The computed [PaperDecision] based on the given reviews.
      */
-    private suspend fun updatePaperDecision(
-        projectPaperId: UUID,
-        decisionMatrix: ReviewDecisionMatrix,
-        reviews: List<Review>,
-    ) {
-        if (reviews.isEmpty()) {
-            projectPaperRepo.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_UNREVIEWED)
-            return
-        } else if (reviews.size < decisionMatrix.numberOfReviewers) {
-            projectPaperRepo.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_IN_REVIEW)
-            return
+    private fun determinePaperDecision(reviews: List<Review>, decisionMatrix: ReviewDecisionMatrix): PaperDecision {
+        if (reviews.size < decisionMatrix.numberOfReviewers) {
+            return PaperDecision.IN_REVIEW
         }
+        if (reviews.size == decisionMatrix.numberOfReviewers) {
+            val counts = reviews.groupingBy { it.decision }.eachCount()
 
-        val sum = reviews.sumOf { review ->
-            when (review.decision) {
-                ReviewOuterClass.ReviewDecision.REVIEW_DECISION_UNSPECIFIED -> 0
-                ReviewOuterClass.ReviewDecision.REVIEW_DECISION_DECLINED -> -1
-                ReviewOuterClass.ReviewDecision.REVIEW_DECISION_MAYBE -> 0
-                ReviewOuterClass.ReviewDecision.REVIEW_DECISION_ACCEPTED -> 1
-                ReviewOuterClass.ReviewDecision.UNRECOGNIZED -> 0
+            for (pattern in decisionMatrix.patterns) {
+                val doesFoundMatch = pattern.entries.all { entry ->
+                    (counts[entry.decision] ?: 0) >= entry.count
+                }
+                if (doesFoundMatch) {
+                    return pattern.decision
+                }
             }
+
+            return PaperDecision.IN_REVIEW
         }
 
-        if (sum > 0) {
-            projectPaperRepo.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_ACCEPTED)
-        } else if (sum < 0) {
-            projectPaperRepo.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_DECLINED)
+        val decidingReview = reviews.last()
+        return if (decidingReview.doesAcceptPaper) {
+            PaperDecision.ACCEPTED
         } else {
-            projectPaperRepo.updateProjectPaperDecision(projectPaperId, PaperDecision.PAPER_DECISION_IN_REVIEW)
+            PaperDecision.DECLINED
         }
     }
 
-    override suspend fun createReview(request: GrpcReview.Create): GrpcReview = withUser(userRepo) { currentUser ->
-        val projectPaperId = parseUUID(request.projectPaperId, EntityType.PROJECT_PAPER)
-        val projectPaper = projectPaperRepo.getProjectPaperById(projectPaperId).getOrThrow()
+    private suspend fun setProjectStatusActiveLocked(projectId: UUID) {
+        val request = UpdateProjectRequest(
+            projectId = projectId,
+            name = "",
+            status = ProjectStatus.ACTIVE_LOCKED,
+            settings = UpdateProjectSettingRequest(
+                similarityThreshold = 0F,
+                snowballingType = SnowballingType.BOTH,
+                reviewMaybeAllowed = false,
+                fetchers = emptyMap(),
+                decisionMatrix = ReviewDecisionMatrix(
+                    numberOfReviewers = 1,
+                    patterns = emptyList(),
+                ),
+            ),
+        )
 
-        isAllowedToReadProject(projectMemberRepo).checkFor(currentUser, projectPaper.projectId)
-
-        val project = projectRepo.getProjectById(projectPaper.projectId).getOrThrow()
-        isProjectActive().checkFor(currentUser, project)
-
-        val reviewsForProjectPaper = repo.getAllReviewsForProjectPaper(projectPaperId)
-        val hasUserAlreadyReviewed = reviewsForProjectPaper.any { review -> review.userId == currentUser.id }
-        if (hasUserAlreadyReviewed) {
-            throw DuplicateReviewException(projectPaperId.toString(), currentUser.id.toString())
-        }
-
-        val isPaperNotFinallyDecided = projectPaper.decision == PaperDecision.PAPER_DECISION_IN_REVIEW ||
-            projectPaper.decision == PaperDecision.PAPER_DECISION_UNREVIEWED
-        if (!isPaperNotFinallyDecided) {
-            throw FailedPreconditionException(
-                "The project paper must be either unreviewed or still in review. " +
-                    "Finally decided project papers cannot be reviewed anymore.",
-            )
-        }
-
-        val review = repo.createReview(request, currentUser.id)
-        val selectedCriteriaIds = reviewHasCriterionRepo.getSelectedCriteriaIdsForReviewById(review.id)
-
-        updatePaperDecision(projectPaper.id, project.reviewDecisionMatrix, reviewsForProjectPaper + review)
-
-        review.toGrpcReview(selectedCriteriaIds.map(UUID::toString))
+        projectRepo.updateProject(request, setOf(ProjectField.STATUS))
     }
 }

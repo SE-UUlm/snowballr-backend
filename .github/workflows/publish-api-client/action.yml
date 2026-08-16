@@ -1,0 +1,29 @@
+name: Publish the API Client
+description: Publishes the TS Client to the specified channel on NPM
+inputs:
+    channel:
+        description: The NPM channel where the package should be published
+        required: true
+runs:
+    using: composite
+    steps:
+        - name: Common Setup
+          uses: ./.github/workflows/setup-all/
+
+        - name: Setup Node.js
+          uses: actions/setup-node@v6
+          with:
+              node-version: 24
+              registry-url: "https://registry.npmjs.org"
+
+        - name: Build TS Client
+          shell: bash
+          run: ./gradlew buildTsClient
+
+        - name: Verify API consistency
+          shell: bash
+          run: git diff --exit-code
+
+        - name: Publish NPM package
+          shell: bash
+          run: cd build/generated/ts-client && npm publish --access public --tag ${{ inputs.channel }}

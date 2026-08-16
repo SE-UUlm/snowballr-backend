@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.repository.association
 
+import org.jetbrains.exposed.v1.core.eq
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.repository.getEntities
 import se.uulm.snowballr.backend.table.association.ReviewHasCriterionTable
@@ -12,7 +13,7 @@ import java.util.UUID
  * using this interface, the functionality for managing selected criteria of a review can remain decoupled from the specifics of the database
  * layer.
  */
-interface IReviewHasCriterionTableRepo {
+fun interface IReviewHasCriterionTableRepo {
     suspend fun getSelectedCriteriaIdsForReviewById(reviewId: UUID): List<UUID>
 }
 

@@ -1,99 +1,106 @@
 package se.uulm.snowballr.backend.service.projectpaper
 
 import io.mockk.coEvery
+import io.mockk.coJustRun
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
-import se.uulm.snowballr.backend.model.SnowballRException.UnauthorizedException
-import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
-import se.uulm.snowballr.backend.service.MainServiceTest
-import snowballr.Base
-import snowballr.UserOuterClass.UserRole
+import se.uulm.snowballr.backend.TestSpecificException
 import java.util.UUID
+import kotlin.test.assertContains
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class GetAllProjectPapersForProjectTest : MainServiceTest() {
-    private val projectId = UUID.randomUUID()
-
-    private fun getExampleRequest() = Base.Id.newBuilder().setId(projectId.toString()).build()
-
+class GetAllProjectPapersForProjectTest : ProjectPaperServiceTest() {
+    @Test
     @Suppress("LongMethod")
-    private fun mockHappyPath(isUserAdmin: Boolean) {
-        val currentUser = DataBuilder.createExampleUser(
-            role = if (isUserAdmin) {
-                UserRole.USER_ROLE_ADMIN
-            } else {
-                UserRole.USER_ROLE_DEFAULT
-            },
-        )
-        val project = DataBuilder.createExampleProject(id = projectId)
-        val author = DataBuilder.createExampleAuthor()
-        val paper = DataBuilder.createExamplePaper(id = projectId, authors = listOf(author))
-        val projectPaper = DataBuilder.createExampleProjectPaper(projectId = project.id, paperId = paper.id)
-        val projectPaperWithPaper = ProjectPaperWithPaper(projectPaper, paper)
-        val projectMember = DataBuilder.createExampleProjectMember(projectId = project.id, userId = currentUser.id)
-        val review = DataBuilder.createExampleReview()
+    fun `When a user requests all project papers for a project and has access, then the correct values are returned`() =
+        runTest {
+            val user = DataBuilder.createExampleUser()
+            val project = DataBuilder.createExampleProject()
+            val criterion0 = DataBuilder.createExampleProjectCriterion()
+            val criterion1 = DataBuilder.createExampleProjectCriterion()
+            val criterion2 = DataBuilder.createExampleProjectCriterion()
+            val projectPaper0 = DataBuilder.createExampleProjectPaperWithPaper()
+            val projectPaper0Refs = listOf(UUID.randomUUID(), UUID.randomUUID())
+            val projectPaper0Review0 = DataBuilder.createExampleReviewWithSelectedCriteriaIds(
+                selectedCriteriaIds = listOf(criterion0.id, criterion1.id),
+            )
+            val projectPaper0Review1 = DataBuilder.createExampleReviewWithSelectedCriteriaIds(
+                selectedCriteriaIds = listOf(criterion2.id, criterion1.id),
+            )
+            val projectPaper1 = DataBuilder.createExampleProjectPaperWithPaper()
+            val projectPaper1Refs = listOf(UUID.randomUUID(), UUID.randomUUID())
+            val projectPaper1Review0 = DataBuilder.createExampleReviewWithSelectedCriteriaIds(
+                selectedCriteriaIds = listOf(criterion2.id, criterion0.id),
+            )
+            val projectPaper1Review1 = DataBuilder.createExampleReviewWithSelectedCriteriaIds(
+                selectedCriteriaIds = listOf(criterion0.id, criterion2.id),
+            )
+            val projectPapersWithPapers = listOf(projectPaper0, projectPaper1)
 
-        mockCurrentUser(currentUser)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns
-            if (isUserAdmin) {
-                emptyList()
-            } else {
-                listOf(projectMember)
-            }
-        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns true
-        coEvery { projectPaperRepoMock.getAllProjectPapersWithPapers(project.id) } returns listOf(projectPaperWithPaper)
-        coEvery {
-            citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
-        } returns listOf(UUID.randomUUID())
-        coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper.id) } returns listOf(review)
-        coEvery {
-            reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(review.id)
-        } returns listOf(UUID.randomUUID())
-    }
+            mockCurrentUser(user)
+            coJustRun { projectAccessCheckerMock.isAllowedToReadProject(user, project.id) }
+            coEvery { projectPaperRepoMock.getAllProjectPapersWithPapers(project.id) } returns projectPapersWithPapers
+            coEvery {
+                citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(projectPaper0.paper.id)
+            } returns projectPaper0Refs
+            coEvery {
+                citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(projectPaper1.paper.id)
+            } returns projectPaper1Refs
+            coEvery {
+                reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaper0.projectPaper.id)
+            } returns listOf(projectPaper0Review0, projectPaper0Review1)
+            coEvery {
+                reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaper1.projectPaper.id)
+            } returns listOf(projectPaper1Review0, projectPaper1Review1)
 
-    @Test
-    fun `When a server admin requests the project papers, then no exception is thrown`() = runTest {
-        mockHappyPath(true)
+            val projectPapers = service.getAllProjectPapersForProject(project.id)
 
-        assertDoesNotThrow { mainService.getAllProjectPapersForProject(getExampleRequest()) }
-    }
-
-    @Test
-    fun `When a project member requests the project papers, then no exception is thrown`() = runTest {
-        mockHappyPath(false)
-
-        assertDoesNotThrow { mainService.getAllProjectPapersForProject(getExampleRequest()) }
-    }
-
-    @Test
-    fun `When a non project member requests the project papers, then an UnauthorizedException is thrown`() = runTest {
-        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_DEFAULT)
-        val project = DataBuilder.createExampleProject(id = projectId)
-
-        mockCurrentUser(currentUser)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
-
-        assertThrows<UnauthorizedException> {
-            mainService.getAllProjectPapersForProject(getExampleRequest())
+            assertEquals(2, projectPapers.size)
+            assertEquals(projectPaper0.projectPaper.id, projectPapers[0].id)
+            assertEquals(projectPaper1.projectPaper.id, projectPapers[1].id)
+            val projectPaper0Result = projectPapers[0]
+            val projectPaper1Result = projectPapers[1]
+            val backwardRefs0 = projectPaper0Result.paper.backwardReferencedIds
+            val backwardRefs1 = projectPaper1Result.paper.backwardReferencedIds
+            assertEquals(projectPaper0Refs.size, backwardRefs0.size)
+            assertEquals(projectPaper1Refs.size, backwardRefs1.size)
+            projectPaper0Refs.forEach { refId -> assertContains(backwardRefs0, refId) }
+            projectPaper1Refs.forEach { refId -> assertContains(backwardRefs1, refId) }
+            val reviews0 = projectPaper0Result.reviews
+            val reviews1 = projectPaper1Result.reviews
+            assertEquals(2, reviews0.size)
+            assertEquals(2, reviews1.size)
+            val review0CriterionIds0 = reviews0[0].selectedCriteriaIds
+            val review0CriterionIds1 = reviews0[1].selectedCriteriaIds
+            val review1CriterionIds0 = reviews1[0].selectedCriteriaIds
+            val review1CriterionIds1 = reviews1[1].selectedCriteriaIds
+            assertEquals(2, review0CriterionIds0.size)
+            assertEquals(2, review0CriterionIds1.size)
+            assertEquals(2, review1CriterionIds0.size)
+            assertEquals(2, review1CriterionIds1.size)
+            assertContains(review0CriterionIds0, criterion0.id)
+            assertContains(review0CriterionIds0, criterion1.id)
+            assertContains(review0CriterionIds1, criterion2.id)
+            assertContains(review0CriterionIds1, criterion1.id)
+            assertContains(review1CriterionIds0, criterion2.id)
+            assertContains(review1CriterionIds0, criterion0.id)
+            assertContains(review1CriterionIds1, criterion0.id)
+            assertContains(review1CriterionIds1, criterion2.id)
         }
-    }
 
     @Test
-    fun `When a nonexistent project is requested, then a NotFoundException is thrown`() = runTest {
-        val currentUser = DataBuilder.createExampleUser(role = UserRole.USER_ROLE_ADMIN)
-        val project = DataBuilder.createExampleProject(id = projectId)
+    fun `When a user requests all project papers for a project, but has no access, then a TestSpecificException is thrown`() =
+        runTest {
+            val user = DataBuilder.createExampleUser()
+            val project = DataBuilder.createExampleProject()
 
-        mockCurrentUser(currentUser)
-        coEvery { projectMemberRepoMock.getProjectMembers(project.id) } returns emptyList()
-        coEvery { projectRepoMock.doesProjectExistById(project.id) } returns false
+            mockCurrentUser(user)
+            coEvery {
+                projectAccessCheckerMock.isAllowedToReadProject(user, project.id)
+            } throws TestSpecificException()
 
-        assertThrows<NotFoundException> {
-            mainService.getAllProjectPapersForProject(getExampleRequest())
+            assertThrows<TestSpecificException> { service.getAllProjectPapersForProject(project.id) }
         }
-    }
 }

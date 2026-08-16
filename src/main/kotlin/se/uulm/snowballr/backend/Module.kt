@@ -3,11 +3,24 @@ package se.uulm.snowballr.backend
 import com.github.jknack.handlebars.Template
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.bind
-import org.koin.core.module.dsl.createdAtStart
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 import org.simplejavamail.api.mailer.Mailer
 import org.simplejavamail.mailer.MailerBuilder
+import se.uulm.snowballr.backend.access.CriterionAccessChecker
+import se.uulm.snowballr.backend.access.ICriterionAccessChecker
+import se.uulm.snowballr.backend.access.IInvitationAccessChecker
+import se.uulm.snowballr.backend.access.IProjectAccessChecker
+import se.uulm.snowballr.backend.access.IProjectMemberAccessChecker
+import se.uulm.snowballr.backend.access.IProjectPaperAccessChecker
+import se.uulm.snowballr.backend.access.IReviewAccessChecker
+import se.uulm.snowballr.backend.access.IUserAccessChecker
+import se.uulm.snowballr.backend.access.InvitationAccessChecker
+import se.uulm.snowballr.backend.access.ProjectAccessChecker
+import se.uulm.snowballr.backend.access.ProjectMemberAccessChecker
+import se.uulm.snowballr.backend.access.ProjectPaperAccessChecker
+import se.uulm.snowballr.backend.access.ReviewAccessChecker
+import se.uulm.snowballr.backend.access.UserAccessChecker
 import se.uulm.snowballr.backend.auth.AuthenticationManager
 import se.uulm.snowballr.backend.auth.CookieManager
 import se.uulm.snowballr.backend.auth.IAuthenticationManager
@@ -19,10 +32,15 @@ import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.env.EnvService
 import se.uulm.snowballr.backend.env.IEnvService
-import se.uulm.snowballr.backend.fetcher.FetcherManager
+import se.uulm.snowballr.backend.fetcher.FetcherOrchestrator
+import se.uulm.snowballr.backend.fetcher.IFetcherManager
+import se.uulm.snowballr.backend.fetcher.IFetcherOrchestrator
+import se.uulm.snowballr.backend.fetcher.PythonPluginFetcherManager
 import se.uulm.snowballr.backend.mail.EmailManager
 import se.uulm.snowballr.backend.mail.EmailTemplateManager
 import se.uulm.snowballr.backend.mail.IEmailManager
+import se.uulm.snowballr.backend.matching.IPaperMatcher
+import se.uulm.snowballr.backend.matching.PaperMatcher
 import se.uulm.snowballr.backend.repository.CriterionTableRepo
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
@@ -47,14 +65,21 @@ import se.uulm.snowballr.backend.repository.association.ProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.ProjectPaperTableRepo
 import se.uulm.snowballr.backend.repository.association.ReadingListTableRepo
 import se.uulm.snowballr.backend.repository.association.ReviewHasCriterionTableRepo
+import se.uulm.snowballr.backend.scheduler.IProjectMaintenanceService
+import se.uulm.snowballr.backend.scheduler.ITokenMaintenanceService
+import se.uulm.snowballr.backend.scheduler.IUserMaintenanceService
+import se.uulm.snowballr.backend.scheduler.ProjectMaintenanceService
+import se.uulm.snowballr.backend.scheduler.TokenMaintenanceService
+import se.uulm.snowballr.backend.scheduler.UserMaintenanceService
 import se.uulm.snowballr.backend.service.AuthenticationService
 import se.uulm.snowballr.backend.service.CriterionService
+import se.uulm.snowballr.backend.service.ExportService
 import se.uulm.snowballr.backend.service.FetcherService
 import se.uulm.snowballr.backend.service.IAuthenticationService
 import se.uulm.snowballr.backend.service.ICriterionService
+import se.uulm.snowballr.backend.service.IExportService
 import se.uulm.snowballr.backend.service.IFetcherService
 import se.uulm.snowballr.backend.service.IInvitationService
-import se.uulm.snowballr.backend.service.IMainService
 import se.uulm.snowballr.backend.service.IPaperService
 import se.uulm.snowballr.backend.service.IProjectMemberService
 import se.uulm.snowballr.backend.service.IProjectPaperService
@@ -63,7 +88,6 @@ import se.uulm.snowballr.backend.service.IReadingListService
 import se.uulm.snowballr.backend.service.IReviewService
 import se.uulm.snowballr.backend.service.IUserService
 import se.uulm.snowballr.backend.service.InvitationService
-import se.uulm.snowballr.backend.service.MainService
 import se.uulm.snowballr.backend.service.PaperService
 import se.uulm.snowballr.backend.service.ProjectMemberService
 import se.uulm.snowballr.backend.service.ProjectPaperService
@@ -81,18 +105,19 @@ import se.uulm.snowballr.backend.service.UserService
  * - The database ([IDatabase]), which only requires some env variables provided by the [EnvReader].
  * - The repository layer (e.g. [IProjectTableRepo]), which uses the [IDatabase] implementation for database operations.
  * - Custom services / manager / clients that are used by the core service layer.
- * - The core service layer, which consists of entity-related services (e.g. [IProjectService]) and the [IMainService],
+ * - The core service layer, which consists of entity-related services (e.g. [IProjectService]).
  * which combines all services into one access point.
  *
  * The ordering ensures proper dependency resolution and initialization.
  */
 val snowballRModule =
-    module {
+    module(createdAtStart = true) {
         envDeps()
         dbDeps()
         repositoryLayerDeps()
         mailServiceDeps()
         customServicesDeps()
+        accessCheckerDeps()
         serviceLayerDeps()
     }
 
@@ -109,9 +134,11 @@ private fun Module.envDeps() {
  */
 private fun Module.dbDeps() {
     singleOf(::Database) {
-        createdAtStart()
         bind<IDatabase>()
     }
+    single<ITokenMaintenanceService> { TokenMaintenanceService() }
+    single<IUserMaintenanceService> { UserMaintenanceService() }
+    single<IProjectMaintenanceService> { ProjectMaintenanceService() }
 }
 
 /**
@@ -119,7 +146,7 @@ private fun Module.dbDeps() {
  *
  * Consists of all repositories.
  */
-private fun Module.repositoryLayerDeps() {
+fun Module.repositoryLayerDeps() {
     singleOf(::ProjectTableRepo) { bind<IProjectTableRepo>() }
     singleOf(::CriterionTableRepo) { bind<ICriterionTableRepo>() }
     singleOf(::UserTableRepo) { bind<IUserTableRepo>() }
@@ -139,7 +166,7 @@ private fun Module.repositoryLayerDeps() {
  *
  * Consists of the [Mailer] and the [Template]s used for sending mails.
  */
-private fun Module.mailServiceDeps() {
+fun Module.mailServiceDeps() {
     single<Mailer> { createMailer(get()) }
     single<EmailTemplateManager> { EmailTemplateManager() }
 }
@@ -147,7 +174,7 @@ private fun Module.mailServiceDeps() {
 /**
  * Creates the Mailer instance based on the environment configuration.
  */
-fun createMailer(envReader: EnvReader): Mailer {
+private fun createMailer(envReader: EnvReader): Mailer {
     val env = envReader.env
 
     // Enable debug logging if the log level is DEBUG or TRACE
@@ -171,26 +198,41 @@ fun createMailer(envReader: EnvReader): Mailer {
  * Consists of all dependencies that are used by the core service layer.
  */
 private fun Module.customServicesDeps() {
-    singleOf(::JwtManager) {
-        createdAtStart()
-        bind<IJwtManager>()
-    }
-    singleOf(::FetcherManager)
+    singleOf(::JwtManager) { bind<IJwtManager>() }
+    single<IFetcherManager> { PythonPluginFetcherManager(get()) }
     singleOf(::CookieManager) { bind<ICookieManager>() }
-    singleOf(::EmailManager) {
-        createdAtStart()
-        bind<IEmailManager>()
-    }
+    singleOf(::EmailManager) { bind<IEmailManager>() }
     singleOf(::AuthenticationManager) { bind<IAuthenticationManager>() }
+    single<IPaperMatcher> { PaperMatcher(PaperMatcher.defaultConfig) }
+    single<IFetcherOrchestrator> {
+        FetcherOrchestrator(
+            fetcherManager = get(),
+            projectRepo = get(),
+            paperRepo = get(),
+            citationRepo = get(),
+            projectPaperRepo = get(),
+            paperMatcher = get(),
+        )
+    }
+}
+
+/**
+ * Module declaration of all access checkers.
+ */
+fun Module.accessCheckerDeps() {
+    singleOf(::ProjectAccessChecker) { bind<IProjectAccessChecker>() }
+    singleOf(::UserAccessChecker) { bind<IUserAccessChecker>() }
+    singleOf(::CriterionAccessChecker) { bind<ICriterionAccessChecker>() }
+    singleOf(::ReviewAccessChecker) { bind<IReviewAccessChecker>() }
+    singleOf(::ProjectMemberAccessChecker) { bind<IProjectMemberAccessChecker>() }
+    singleOf(::ProjectPaperAccessChecker) { bind<IProjectPaperAccessChecker>() }
+    singleOf(::InvitationAccessChecker) { bind<IInvitationAccessChecker>() }
 }
 
 /**
  * Module declaration of the core service layer.
- *
- * Consists of the [MainService] and all its direct service dependencies.
  */
 fun Module.serviceLayerDeps() {
-    // All services that are directly used by the MainService
     singleOf(::ProjectService) { bind<IProjectService>() }
     singleOf(::CriterionService) { bind<ICriterionService>() }
     singleOf(::UserService) { bind<IUserService>() }
@@ -202,6 +244,5 @@ fun Module.serviceLayerDeps() {
     singleOf(::AuthenticationService) { bind<IAuthenticationService>() }
     singleOf(::InvitationService) { bind<IInvitationService>() }
     singleOf(::ProjectMemberService) { bind<IProjectMemberService>() }
-    // The main service comes last
-    singleOf(::MainService) { bind<IMainService>() }
+    singleOf(::ExportService) { bind<IExportService>() }
 }

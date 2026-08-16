@@ -1,0 +1,53 @@
+name: Use Case
+description: Describe a use case for this backend project
+title: "[Use Case]: <title>"
+labels: ["use case"]
+projects: ["SE-UUlm/2"]
+
+body:
+    - type: checkboxes
+      id: existing-issue
+      attributes:
+          label: Is there an existing issue for this?
+          description: Please check whether this use case has already been reported.
+          options:
+              - label: I have searched the existing issues
+                required: true
+
+    - type: input
+      id: actor
+      attributes:
+          label: Who is the primary actor?
+          description: The person or system interacting with the backend to achieve a goal.
+          placeholder: e.g. "Authenticated API client"
+      validations:
+          required: true
+
+    - type: textarea
+      id: description
+      attributes:
+          label: Describe the use case
+          description: A clear description of what the actor wants to achieve.
+          placeholder: e.g. "As a client, I want to retrieve all items created in the last 24 hours."
+      validations:
+          required: true
+
+    - type: textarea
+      id: acceptance-criteria
+      attributes:
+          label: Acceptance criteria
+          description: How will we know the use case is correctly implemented?
+          placeholder: e.g. "When I call the endpoint with query X, I get result Y."
+      validations:
+          required: true
+
+    - type: textarea
+      id: additional-context
+      attributes:
+          label: Anything else?
+          description: |
+              Links, diagrams, or other information that helps us understand the use case.
+
+              Tip: You can drag and drop files here.
+      validations:
+          required: false

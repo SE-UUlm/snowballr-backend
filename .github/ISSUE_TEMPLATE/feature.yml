@@ -1,0 +1,60 @@
+name: Feature request
+description: Suggest a feature or improvement for the backend
+title: "[Feature]: <title>"
+labels: ["enhancement"]
+projects: ["SE-UUlm/2"]
+
+body:
+    - type: checkboxes
+      id: existing-issue
+      attributes:
+          label: Is there an existing issue for this?
+          description: Please check whether this feature request has already been reported.
+          options:
+              - label: I have searched the existing issues
+                required: true
+
+    - type: input
+      id: use-case
+      attributes:
+          label: Which use case does this feature request relate to?
+          placeholder: "#1"
+      validations:
+          required: false
+
+    - type: textarea
+      id: description
+      attributes:
+          label: Is your request related to a problem? Please describe.
+          description: A clear description of what problem you're trying to solve.
+          placeholder: I'm frustrated when I can't [...]
+      validations:
+          required: true
+
+    - type: textarea
+      id: solution
+      attributes:
+          label: Describe the solution you'd like
+          description: What should the backend do or support?
+          placeholder: I want the backend to provide an endpoint that [...]
+      validations:
+          required: true
+
+    - type: textarea
+      id: alternatives
+      attributes:
+          label: Describe alternatives you've considered
+          description: Any other solutions or workarounds you've thought about.
+      validations:
+          required: false
+
+    - type: textarea
+      id: additional-context
+      attributes:
+          label: Anything else?
+          description: |
+              Any extra context, mockups, or examples that help us understand your request.
+
+              Tip: You can drag and drop files here.
+      validations:
+          required: false

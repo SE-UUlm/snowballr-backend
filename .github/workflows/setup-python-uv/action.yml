@@ -1,0 +1,14 @@
+name: Setup Python and uv
+description: Setup Python and uv for fetcher-related tasks
+runs:
+    using: composite
+    steps:
+        - name: Setup Python
+          uses: actions/setup-python@v6
+          with:
+              python-version: "3.13"
+
+        - name: Setup uv
+          uses: astral-sh/setup-uv@v8.1.0
+          with:
+              enable-cache: true

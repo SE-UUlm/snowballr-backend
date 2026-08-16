@@ -1,0 +1,53 @@
+name: Refactoring request
+description: Suggest a refactoring for this project
+title: "[Refactor]: <title>"
+labels: ["refactor"]
+projects: ["SE-UUlm/2"]
+
+body:
+    - type: checkboxes
+      id: existing-issue
+      attributes:
+          label: Is there an existing issue for this?
+          description: Please check whether this refactoring request has already been reported.
+          options:
+              - label: I have searched the existing issues
+                required: true
+
+    - type: textarea
+      id: description
+      attributes:
+          label: What do you think needs to change? Please describe.
+          description: A clear and concise description of what should be refactored.
+          placeholder: The service [...] should [...] instead of [...]
+      validations:
+          required: true
+
+    - type: textarea
+      id: reason
+      attributes:
+          label: Why should this be refactored?
+          description: Describe why the current state should be improved.
+          placeholder: This would improve maintainability and reduce duplication in [...]
+      validations:
+          required: true
+
+    - type: textarea
+      id: expected-outcome
+      attributes:
+          label: What outcome do you expect?
+          description: Describe the expected result after the refactoring.
+          placeholder: The logic should be easier to understand and reused across [...]
+      validations:
+          required: true
+
+    - type: textarea
+      id: additional-context
+      attributes:
+          label: Anything else?
+          description: |
+              Links, references, or other context that helps us understand this refactoring.
+
+              Tip: You can drag and drop files here.
+      validations:
+          required: false

@@ -1,36 +1,40 @@
 package se.uulm.snowballr.backend.repository.association
 
-import org.jetbrains.exposed.sql.JoinType
-import org.jetbrains.exposed.sql.ResultRow
-import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.or
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.update
+import org.jetbrains.exposed.v1.core.JoinType
+import org.jetbrains.exposed.v1.core.ResultRow
+import org.jetbrains.exposed.v1.core.SortOrder
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.greater
+import org.jetbrains.exposed.v1.core.less
+import org.jetbrains.exposed.v1.core.or
+import org.jetbrains.exposed.v1.core.vendors.ForUpdateOption
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.update
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.PaperNavigationDirection
-import se.uulm.snowballr.backend.model.SnowballRException.FailedPreconditionException
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
-import se.uulm.snowballr.backend.model.SnowballRException.ProjectPaperNotFoundException
-import se.uulm.snowballr.backend.model.dto.ProjectPaper
-import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
-import se.uulm.snowballr.backend.model.parseUUID
+import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
+import se.uulm.snowballr.backend.model.dto.projectpaper.ProjectPaper
+import se.uulm.snowballr.backend.model.dto.projectpaper.ProjectPaperWithPaper
+import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
+import se.uulm.snowballr.backend.model.exception.NotFoundException
+import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectPaperNotFoundException
 import se.uulm.snowballr.backend.repository.doesEntityExist
 import se.uulm.snowballr.backend.repository.getEntities
 import se.uulm.snowballr.backend.repository.getEntityByIdOrNull
 import se.uulm.snowballr.backend.repository.getEntityByKeyAsResult
 import se.uulm.snowballr.backend.repository.getEntityOrNull
 import se.uulm.snowballr.backend.repository.insertAndGet
+import se.uulm.snowballr.backend.repository.joinPaperHasExternalId
+import se.uulm.snowballr.backend.repository.toProjectPaperWithExternalIds
+import se.uulm.snowballr.backend.repository.wrapAsResult
 import se.uulm.snowballr.backend.table.PaperTable
+import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.table.association.toProjectPaper
-import se.uulm.snowballr.backend.table.association.toProjectPaperWithPaper
-import snowballr.ProjectOuterClass.PaperDecision
+import java.sql.Connection
 import java.util.UUID
-import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
 /**
  * Defines an interface for repository operations related to the [ProjectPaperTable].
@@ -58,7 +62,7 @@ interface IProjectPaperTableRepo {
      * @param relativeId The local paper ID of the project paper in the project.
      * @return The [ProjectPaper] matching the given project ID and relative ID.
      */
-    suspend fun getProjectPaperByRelativeId(projectId: UUID, relativeId: Long): Result<ProjectPaper>
+    suspend fun getProjectPaperByRelativeId(projectId: UUID, relativeId: Int): Result<ProjectPaper>
 
     /**
      * Checks if a project paper exists in a project, based on the provided paper ID.
@@ -89,7 +93,7 @@ interface IProjectPaperTableRepo {
      */
     suspend fun getAdjacentPaper(
         projectId: UUID,
-        localPaperId: Long,
+        localPaperId: Int,
         direction: PaperNavigationDirection,
     ): Result<ProjectPaper>
 
@@ -113,13 +117,14 @@ interface IProjectPaperTableRepo {
      * entry, linking the provided paper and project. The local paper ID of the new [ProjectPaper] gets increased by 1,
      * depending on the maximum local paper ID of the current papers in the project.
      *
-     * @param request The request object containing the information necessary to add the paper
-     *                to the project, such as the paper and project IDs.
+     * @param projectId The ID of the project to which the paper should be added
+     * @param paperId The ID of the paper to be added to the project
+     * @param stage The stage to which the paper should be added
      * @param userId The unique identifier of the user performing the operation.
      * @return The created [ProjectPaper] object representing the association between the paper
      *         and the project.
      */
-    suspend fun addPaperToProject(request: GrpcProjectPaper.Add, userId: UUID): ProjectPaper
+    suspend fun addPaperToProject(projectId: UUID, paperId: UUID, stage: Int, userId: UUID): ProjectPaper
 
     /**
      * Calculates and returns the progress of a project as a float value between 0.0 and 1.0.
@@ -144,7 +149,7 @@ interface IProjectPaperTableRepo {
      * @param stage The stage of the papers that should be considered when retrieving later project papers.
      * @return A list of subsequent [ProjectPaper] instances meeting the specified criteria.
      */
-    suspend fun getSubsequentProjectPapers(projectId: UUID, localPaperId: Long, stage: Long): List<ProjectPaper>
+    suspend fun getSubsequentProjectPapers(projectId: UUID, localPaperId: Int, stage: Int): List<ProjectPaper>
 
     /**
      * Updates the decision of a project paper.
@@ -165,7 +170,6 @@ interface IProjectPaperTableRepo {
  *
  * @param db The database abstraction used for executing queries within a transaction.
  */
-@Suppress("TooManyFunctions")
 class ProjectPaperTableRepo(
     private val db: IDatabase,
 ) : IProjectPaperTableRepo {
@@ -178,20 +182,18 @@ class ProjectPaperTableRepo(
      * returns 0.
      *
      * @param projectId The unique identifier of the project for which the next local paper ID is to be generated.
-     * @return The next available local paper ID as a [Long].
+     * @return The next available local paper ID as a [Int].
      */
-    private suspend fun getNextLocalIdForProject(projectId: UUID): Long = db.query {
-        ProjectPaperTable
-            .selectAll()
-            .where { ProjectPaperTable.projectId eq projectId }
-            .maxOfOrNull { it[ProjectPaperTable.localPaperId] }
-            ?.plus(1)
-            ?: 0L
-    }
+    private fun getNextLocalIdForProject(projectId: UUID): Int = ProjectPaperTable
+        .selectAll()
+        .where { ProjectPaperTable.projectId eq projectId }
+        .maxOfOrNull { it[ProjectPaperTable.localPaperId] }
+        ?.plus(1)
+        ?: 0
 
     override suspend fun getAdjacentPaper(
         projectId: UUID,
-        localPaperId: Long,
+        localPaperId: Int,
         direction: PaperNavigationDirection,
     ): Result<ProjectPaper> = db.query {
         val isNext = direction == PaperNavigationDirection.NEXT
@@ -211,33 +213,20 @@ class ProjectPaperTableRepo(
             .map { it.toProjectPaper() }
             .firstOrNull()
 
-        if (paperId != null) {
-            Result.success(paperId)
-        } else {
-            Result.failure(
-                FailedPreconditionException(
-                    "There is no $direction project paper " +
-                        "in the project.",
-                ),
-            )
-        }
+        wrapAsResult(paperId, FailedPreconditionException("There is no $direction project paper in the project."))
     }
 
     override suspend fun getProjectPaperById(id: UUID): Result<ProjectPaper> = db.query {
         getEntityByKeyAsResult(::getProjectPaperByIdOrNull, EntityType.PROJECT_PAPER, id)
     }
 
-    override suspend fun getProjectPaperByRelativeId(projectId: UUID, relativeId: Long): Result<ProjectPaper> =
+    override suspend fun getProjectPaperByRelativeId(projectId: UUID, relativeId: Int): Result<ProjectPaper> =
         db.query {
             val projectPaper = ProjectPaperTable.getEntityOrNull(ResultRow::toProjectPaper) {
                 (ProjectPaperTable.projectId eq projectId) and (ProjectPaperTable.localPaperId eq relativeId)
             }
 
-            if (projectPaper != null) {
-                Result.success(projectPaper)
-            } else {
-                Result.failure(ProjectPaperNotFoundException(relativeId.toString(), projectId.toString()))
-            }
+            wrapAsResult(projectPaper, ProjectPaperNotFoundException(relativeId, projectId))
         }
 
     override suspend fun doesProjectPaperExist(projectId: UUID, paperId: UUID): Boolean = db.query {
@@ -251,33 +240,47 @@ class ProjectPaperTableRepo(
     }
 
     override suspend fun getAllProjectPapersWithPapers(projectId: UUID): List<ProjectPaperWithPaper> = db.query {
-        ProjectPaperTable
+        PaperTable
             .join(
-                PaperTable,
+                ProjectPaperTable,
                 JoinType.INNER,
-                onColumn = ProjectPaperTable.paperId,
-                otherColumn = PaperTable.id,
+                onColumn = PaperTable.id,
+                otherColumn = ProjectPaperTable.paperId,
             )
+            .joinPaperHasExternalId()
             .selectAll()
             .where { ProjectPaperTable.projectId eq projectId }
-            .map { it.toProjectPaperWithPaper() }
+            .groupBy { it[PaperTable.id].value }
+            .values
+            .map { it.toProjectPaperWithExternalIds() }
     }
 
-    override suspend fun addPaperToProject(request: GrpcProjectPaper.Add, userId: UUID): ProjectPaper = db.query {
-        val paperId = parseUUID(request.paperId, EntityType.PAPER)
-        val projectId = parseUUID(request.projectId, EntityType.PROJECT)
-        val localPaperId = getNextLocalIdForProject(projectId)
+    /**
+     * Uses [Connection.TRANSACTION_READ_COMMITTED] so that transactions don't get aborted after next paper is added
+     * with a higher local paper ID. The second transaction unblocks after lock is removed and then sees fresh snapshot
+     * from first transaction.
+     */
+    override suspend fun addPaperToProject(projectId: UUID, paperId: UUID, stage: Int, userId: UUID): ProjectPaper =
+        db.query(transactionIsolation = Connection.TRANSACTION_READ_COMMITTED) {
+            // Lock the project row so that concurrent calls for the same project block here and then re-read MAX with a
+            // fresh snapshot after the previous transaction commits.
+            ProjectTable.selectAll()
+                .where { ProjectTable.id eq projectId }
+                .forUpdate(ForUpdateOption.ForUpdate)
+                .single()
 
-        ProjectPaperTable
-            .insertAndGet(ResultRow::toProjectPaper, EntityType.PROJECT_PAPER) {
-                it[ProjectPaperTable.paperId] = paperId
-                it[ProjectPaperTable.projectId] = projectId
-                it[ProjectPaperTable.localPaperId] = localPaperId
-                it[stage] = request.stage
-                it[decision] = PaperDecision.PAPER_DECISION_UNREVIEWED
-                it[createdBy] = userId
-            }
-    }
+            val localPaperId = getNextLocalIdForProject(projectId)
+
+            ProjectPaperTable
+                .insertAndGet(ResultRow::toProjectPaper) {
+                    it[ProjectPaperTable.paperId] = paperId
+                    it[ProjectPaperTable.projectId] = projectId
+                    it[ProjectPaperTable.localPaperId] = localPaperId
+                    it[ProjectPaperTable.stage] = stage
+                    it[decision] = PaperDecision.UNREVIEWED
+                    it[createdBy] = userId
+                }
+        }
 
     override suspend fun getProjectProgress(projectId: UUID): Float = db.query {
         val allPapersCount =
@@ -287,8 +290,8 @@ class ProjectPaperTableRepo(
         } else {
             val fullyReviewedPapersCount = ProjectPaperTable.selectAll().where {
                 val paperReviewedOp =
-                    (ProjectPaperTable.decision eq PaperDecision.PAPER_DECISION_ACCEPTED) or
-                        (ProjectPaperTable.decision eq PaperDecision.PAPER_DECISION_DECLINED)
+                    (ProjectPaperTable.decision eq PaperDecision.ACCEPTED) or
+                        (ProjectPaperTable.decision eq PaperDecision.DECLINED)
 
                 paperReviewedOp and (ProjectPaperTable.projectId eq projectId)
             }.count()
@@ -305,8 +308,8 @@ class ProjectPaperTableRepo(
 
     override suspend fun getSubsequentProjectPapers(
         projectId: UUID,
-        localPaperId: Long,
-        stage: Long,
+        localPaperId: Int,
+        stage: Int,
     ): List<ProjectPaper> = db.query {
         val sameStageButGreaterLocalIdOp =
             (ProjectPaperTable.stage eq stage) and (ProjectPaperTable.localPaperId greater localPaperId)

@@ -8,6 +8,7 @@ import `in`.rcard.assertj.arrowcore.EitherAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertInstanceOf
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
@@ -15,29 +16,30 @@ import se.uulm.snowballr.backend.model.BlankField
 import se.uulm.snowballr.backend.model.CompositeIssue
 import se.uulm.snowballr.backend.model.InvalidFieldMask
 import se.uulm.snowballr.backend.model.InvalidId
+import se.uulm.snowballr.backend.model.MultipleOccurrences
 import se.uulm.snowballr.backend.model.OutOfRangeValue
 import se.uulm.snowballr.backend.model.TooLongField
 import se.uulm.snowballr.backend.model.TooLongList
 import se.uulm.snowballr.backend.model.ValidationIssue
+import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
 import se.uulm.snowballr.backend.validation.PaperValidator.ABSTRACT_MAX_LENGTH
-import se.uulm.snowballr.backend.validation.PaperValidator.EXTERNAL_ID_MAX_LENGTH
 import se.uulm.snowballr.backend.validation.PaperValidator.MAX_AUTHOR_COUNT
 import se.uulm.snowballr.backend.validation.PaperValidator.PUBLICATION_NAME_MAX_LENGTH
 import se.uulm.snowballr.backend.validation.PaperValidator.PUBLICATION_TYPE_MAX_LENGTH
 import se.uulm.snowballr.backend.validation.PaperValidator.PUBLISHER_MAX_LENGTH
 import se.uulm.snowballr.backend.validation.PaperValidator.TITLE_MAX_LENGTH
+import se.uulm.snowballr.backend.validation.PaperValidator.YEAR_MIN_VALUE
+import snowballr.PaperKt.externalId
 import snowballr.PaperOuterClass
 import snowballr.PaperOuterClass.Paper
 import snowballr.author
 import java.time.LocalDate
 import java.util.UUID
-import kotlin.test.assertIs
 
 class PaperValidatorTest {
     companion object {
         private val blankableTextFields =
             listOf(
-                Pair("external_id", EXTERNAL_ID_MAX_LENGTH),
                 Pair("abstrakt", ABSTRACT_MAX_LENGTH),
                 Pair("publisher", PUBLISHER_MAX_LENGTH),
                 Pair("publication_name", PUBLICATION_NAME_MAX_LENGTH),
@@ -68,7 +70,9 @@ class PaperValidatorTest {
 
         @JvmStatic
         fun blankFieldTestProviderWithFieldMask(): List<Arguments> {
-            val testName: (Any, Boolean) -> String = { fieldName, isFieldInMask ->
+            val testName: (Any?, Boolean) -> String = { fieldName, isFieldInMask ->
+                requireNotNull(fieldName) { "fieldName must not be null" }
+
                 if (isFieldInMask) {
                     "When a blank '$fieldName' field is validated and specified in the field mask, then the " +
                         "'BlankField' issue is returned"
@@ -80,12 +84,12 @@ class PaperValidatorTest {
 
             return blankFieldTestProvider()
                 .map { args -> args.get() }
-                .map { args ->
+                .flatMap { args ->
                     listOf(
                         Arguments.of(args[0], false, testName(args[0], false)),
                         Arguments.of(args[0], true, testName(args[0], true)),
                     )
-                }.flatten()
+                }
         }
 
         @JvmStatic
@@ -100,7 +104,10 @@ class PaperValidatorTest {
 
         @JvmStatic
         fun tooLongFieldTestProviderWithFieldMask(): List<Arguments> {
-            val testName: (Any, Any, Boolean) -> String = { fieldName, maxLength, isFieldInMask ->
+            val testName: (Any?, Any?, Boolean) -> String = { fieldName, maxLength, isFieldInMask ->
+                requireNotNull(fieldName) { "fieldName must not be null" }
+                requireNotNull(maxLength) { "maxLength must not be null" }
+
                 if (isFieldInMask) {
                     "When a too long field '$fieldName' ($maxLength chars) is validated and specified in the " +
                         "field mask, then the 'TooLongField' issue is returned"
@@ -112,18 +119,25 @@ class PaperValidatorTest {
 
             return tooLongFieldTestProvider()
                 .map { args -> args.get() }
-                .map { args ->
+                .flatMap { args ->
                     listOf(
                         Arguments.of(args[0], args[1], false, testName(args[0], args[1], false)),
                         Arguments.of(args[0], args[1], true, testName(args[0], args[1], true)),
                     )
-                }.flatten()
+                }
         }
     }
 
     private val validPaperBuilder: Paper.Builder = Paper.newBuilder()
         .setId(UUID.randomUUID().toString())
-        .setExternalId("some-doi")
+        .addAllExternalIds(
+            ExternalIdType.entries.map {
+                externalId {
+                    type = it.name
+                    value = "${it.name}-value"
+                }
+            },
+        )
         .setTitle("This is a paper title")
         .setAbstrakt("This is the abstract of a paper")
         .setYear(LocalDate.now().year)
@@ -227,7 +241,7 @@ class PaperValidatorTest {
         }
 
         @Test
-        fun `When authors are invalid, then the issues are returned`() {
+        fun `When the authors are invalid, then the issues are returned`() {
             val authors = listOf(
                 author {
                     firstName = ""
@@ -238,7 +252,60 @@ class PaperValidatorTest {
 
             val result = validateRequest(request)
 
-            EitherAssert.assertThat(result).isLeft()
+            assertInstanceOf<Either.Left<NonEmptyList<ValidationIssue>>>(result)
+            val issues = result.value.toList()
+            assertThat(issues).hasSize(1)
+            val compositeIssue = issues[0]
+            assertInstanceOf<CompositeIssue>(compositeIssue)
+            assertThat("$compositeIssue").startsWith("Issues of author at index 0")
+        }
+
+        @Test
+        fun `When the externalIds list has multiple occurrences of the same external ID type, then a 'MultipleOccurrences' issue is returned`() {
+            val externalIds = listOf(
+                externalId {
+                    type = "DOI"
+                    value = "1234"
+                },
+                externalId {
+                    type = "DOI"
+                    value = "5678"
+                },
+            )
+            val request = validPaperBuilder.clearExternalIds().addAllExternalIds(externalIds).build()
+
+            val result = validateRequest(request)
+
+            assertInvalidResult<MultipleOccurrences>(result)
+        }
+
+        @Test
+        fun `When the externalIds list is empty, then no issue is returned`() {
+            val request = validPaperBuilder.clearExternalIds().build()
+
+            val result = validateRequest(request)
+
+            EitherAssert.assertThat(result).isRight()
+        }
+
+        @Test
+        fun `When the externalIds are invalid, then the issues are returned`() {
+            val externalIds = listOf(
+                externalId {
+                    type = "UNKNOWN"
+                    value = "1234"
+                },
+            )
+            val request = validPaperBuilder.clearExternalIds().addAllExternalIds(externalIds).build()
+
+            val result = validateRequest(request)
+
+            assertInstanceOf<Either.Left<NonEmptyList<ValidationIssue>>>(result)
+            val issues = result.value.toList()
+            assertThat(issues).hasSize(1)
+            val compositeIssue = issues[0]
+            assertInstanceOf<CompositeIssue>(compositeIssue)
+            assertThat("$compositeIssue").startsWith("Issues of external ID at index 0")
         }
     }
 
@@ -247,7 +314,7 @@ class PaperValidatorTest {
         private val validFieldMask: FieldMask = FieldMaskUtil
             .fromStringList(
                 listOf(
-                    "paper.external_id",
+                    "paper.external_ids",
                     "paper.title",
                     "paper.abstrakt",
                     "paper.year",
@@ -348,7 +415,7 @@ class PaperValidatorTest {
 
         @Test
         fun `When a too low year field is validated, then an 'OutOfRangeValue' issue is returned`() {
-            val paper = validPaperBuilder.setYear(-1).build()
+            val paper = validPaperBuilder.setYear(YEAR_MIN_VALUE - 1).build()
             val request = getExampleRequest(paper, listOf("paper.year"))
             val result = validateRequest(request)
 
@@ -395,7 +462,7 @@ class PaperValidatorTest {
         }
 
         @Test
-        fun `When authors are invalid, then the issues are returned`() {
+        fun `When the authors are invalid, then the issues are returned`() {
             val authors = listOf(
                 author {
                     firstName = ""
@@ -407,18 +474,38 @@ class PaperValidatorTest {
 
             val result = validateRequest(request)
 
-            assertIs<Either.Left<NonEmptyList<ValidationIssue>>>(result)
+            assertInstanceOf<Either.Left<NonEmptyList<ValidationIssue>>>(result)
             val issues = result.value.toList()
             assertThat(issues).hasSize(1)
             val compositeIssue = issues[0]
-            assertIs<CompositeIssue>(compositeIssue)
-            assertThat(compositeIssue.toString()).startsWith("Issues of author at index 0")
+            assertInstanceOf<CompositeIssue>(compositeIssue)
+            assertThat("$compositeIssue").startsWith("Issues of author at index 0")
         }
 
         @Test
-        fun `When the externalId is empty, then no issue is returned`() {
-            val paper = validPaperBuilder.setExternalId("").build()
-            val request = getExampleRequest(paper, listOf("paper.external_id"))
+        fun `When the externalIds list has multiple occurrences of the same external ID type, then a 'MultipleOccurrences' issue is returned`() {
+            val externalIds = listOf(
+                externalId {
+                    type = "DOI"
+                    value = "1234"
+                },
+                externalId {
+                    type = "DOI"
+                    value = "5678"
+                },
+            )
+            val paper = validPaperBuilder.clearExternalIds().addAllExternalIds(externalIds).build()
+            val request = getExampleRequest(paper, listOf("paper.external_ids"))
+
+            val result = validateRequest(request)
+
+            assertInvalidResult<MultipleOccurrences>(result)
+        }
+
+        @Test
+        fun `When the externalIds list is empty, then no issue is returned`() {
+            val paper = validPaperBuilder.clearExternalIds().build()
+            val request = getExampleRequest(paper, listOf("paper.external_ids"))
 
             val result = validateRequest(request)
 
@@ -426,13 +513,24 @@ class PaperValidatorTest {
         }
 
         @Test
-        fun `When the externalId is blank, then a 'BlankField' issue is returned`() {
-            val paper = validPaperBuilder.setExternalId("   ").build()
-            val request = getExampleRequest(paper, listOf("paper.external_id"))
+        fun `When the externalIds are invalid, then the issues are returned`() {
+            val externalIds = listOf(
+                externalId {
+                    type = "UNKNOWN"
+                    value = "1234"
+                },
+            )
+            val paper = validPaperBuilder.clearExternalIds().addAllExternalIds(externalIds).build()
+            val request = getExampleRequest(paper, listOf("paper.external_ids"))
 
             val result = validateRequest(request)
 
-            assertInvalidResult<BlankField>(result)
+            assertInstanceOf<Either.Left<NonEmptyList<ValidationIssue>>>(result)
+            val issues = result.value.toList()
+            assertThat(issues).hasSize(1)
+            val compositeIssue = issues[0]
+            assertInstanceOf<CompositeIssue>(compositeIssue)
+            assertThat("$compositeIssue").startsWith("Issues of external ID at index 0")
         }
     }
 }

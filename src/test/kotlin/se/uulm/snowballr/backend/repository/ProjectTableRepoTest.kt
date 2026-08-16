@@ -1,8 +1,10 @@
 package se.uulm.snowballr.backend.repository
 
-import com.google.protobuf.util.FieldMaskUtil
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.jetbrains.exposed.v1.core.ReferenceOption
+import org.jetbrains.exposed.v1.core.dao.id.java.UUIDTable
+import org.jetbrains.exposed.v1.jdbc.insert
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
@@ -14,18 +16,26 @@ import org.junit.jupiter.api.assertNotNull
 import org.junit.jupiter.api.assertNull
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.Arguments
-import org.junit.jupiter.params.provider.MethodSource
+import org.junit.jupiter.params.provider.EnumSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.isBetweenWithDelta
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
-import se.uulm.snowballr.backend.model.dto.toGrpcProject
+import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPattern
+import se.uulm.snowballr.backend.model.dto.project.ProjectField
+import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
+import se.uulm.snowballr.backend.model.dto.project.SnowballingType
+import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
+import se.uulm.snowballr.backend.model.exception.NotFoundException
+import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
+import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
+import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectSettingRequest
 import se.uulm.snowballr.backend.repository.RepositoryHelper.assignUserToProject
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertPaperAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectPaperAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertReviewAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertUserAndGetId
+import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.ReviewTable
@@ -33,47 +43,50 @@ import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
-import snowballr.ProjectOuterClass.Project
-import snowballr.ProjectOuterClass.ProjectStatus
-import snowballr.ProjectOuterClass.ReviewDecisionMatrix
-import snowballr.ProjectOuterClass.SnowballingType
 import java.sql.SQLException
 import java.time.OffsetDateTime
 import java.util.UUID
 
-class ProjectTableRepoTest :
-    RepositoryTest(arrayOf(ProjectTable, ProjectMemberTable, ProjectPaperTable, PaperTable, ReviewTable), true) {
-    private val repo = ProjectTableRepo(db)
+private object ProjectDeleteBlockerTable : UUIDTable("project_delete_blocker") {
+    val projectId = reference("project_id", ProjectTable, ReferenceOption.RESTRICT, ReferenceOption.RESTRICT)
+}
 
-    companion object {
-        @JvmStatic
-        fun validFieldMasks(): List<Arguments> = listOf(
-            Arguments.of(listOf("project.name")),
-            Arguments.of(listOf("project.status")),
-            Arguments.of(listOf("project.settings.similarity_threshold")),
-            Arguments.of(listOf("project.settings.snowballing_type")),
-            Arguments.of(listOf("project.settings.review_maybe_allowed")),
-        )
-    }
+class ProjectTableRepoTest :
+    RepositoryTest(
+        arrayOf(
+            ProjectTable,
+            ProjectMemberTable,
+            ProjectPaperTable,
+            PaperTable,
+            ReviewTable,
+            CriterionTable,
+            ProjectDeleteBlockerTable,
+        ),
+        true,
+    ) {
+    private val repo = ProjectTableRepo(db)
+    private val criterionRepo = CriterionTableRepo(db)
+
+    private val defaultThresholdDate = OffsetDateTime.now().minusDays(30)
 
     @Nested
     inner class GetProjectById {
         @Test
         fun `When a project is found, then a successful result with the correct project is returned`() = runTest {
             val projectId =
-                insertProjectAndGetId("Test Project", ProjectStatus.PROJECT_STATUS_ACTIVE, createdBy = testUserId)
+                insertProjectAndGetId("Test Project", ProjectStatus.ACTIVE, createdBy = testUserId)
             val result = repo.getProjectById(projectId)
 
             val project = assertResultSuccess(result)
             assertEquals(projectId, project.id)
             assertEquals("Test Project", project.name)
-            assertEquals(ProjectStatus.PROJECT_STATUS_ACTIVE, project.status)
+            assertEquals(ProjectStatus.ACTIVE, project.status)
             assertEquals(0, project.currentStage)
             assertEquals(0, project.maxStage)
             assertEquals(0F, project.similarityThreshold)
-            assertEquals(SnowballingType.SNOWBALLING_TYPE_BOTH, project.snowballingType)
+            assertEquals(SnowballingType.BOTH, project.snowballingType)
             assertTrue(project.reviewMaybeAllowed)
-            assertEquals(ReviewDecisionMatrix.getDefaultInstance(), project.reviewDecisionMatrix)
+            assertEquals(ReviewDecisionMatrix(1, emptyList()), project.reviewDecisionMatrix)
             assertEquals(testUserId, project.createdBy)
         }
 
@@ -89,8 +102,7 @@ class ProjectTableRepoTest :
     inner class DoesProjectExistById {
         @Test
         fun `When a project with the given id exists, then true returned`() = runTest {
-            val projectId =
-                insertProjectAndGetId("Test Project", ProjectStatus.PROJECT_STATUS_ACTIVE, createdBy = testUserId)
+            val projectId = insertProjectAndGetId("Test Project", ProjectStatus.ACTIVE, createdBy = testUserId)
             val isProjectExistent = repo.doesProjectExistById(projectId)
 
             assertTrue(isProjectExistent)
@@ -110,35 +122,38 @@ class ProjectTableRepoTest :
         @Test
         fun `When a project is created, then the passed values are correctly assigned`() = runTest {
             val userSettings = DataBuilder.createExampleUserSettings()
-            val projectBuilder = Project.Create.newBuilder().setName("Test Project").build()
-            val project = repo.createProject(projectBuilder, testUserId, userSettings)
+            val request = CreateProjectRequest(name = "Test Project")
+
+            val project = repo.createProject(request, testUserId, userSettings)
 
             assertEquals("Test Project", project.name)
-            assertEquals(ProjectStatus.PROJECT_STATUS_ACTIVE, project.status)
+            assertEquals(ProjectStatus.ACTIVE, project.status)
             assertEquals(0, project.currentStage)
             assertEquals(0, project.maxStage)
             // Assert default settings from user
             assertEquals(0.5F, project.similarityThreshold)
-            assertEquals(SnowballingType.SNOWBALLING_TYPE_BOTH, project.snowballingType)
+            assertEquals(SnowballingType.BOTH, project.snowballingType)
             assertFalse(project.reviewMaybeAllowed)
-            assertEquals(ReviewDecisionMatrix.getDefaultInstance(), project.reviewDecisionMatrix)
+            assertEquals(ReviewDecisionMatrix(1, emptyList()), project.reviewDecisionMatrix)
             assertThat(project.fetchers).isEmpty()
         }
 
         @Test
         fun `When two projects are created, then they have different IDs`() = runTest {
             val userSettings = DataBuilder.createExampleUserSettings()
-            val project = Project.Create.newBuilder().setName("Test Project 1").build()
-            val projectId1 = repo.createProject(project, testUserId, userSettings)
-            val projectId2 = repo.createProject(project, testUserId, userSettings)
+            val request = CreateProjectRequest(name = "Test Project 1")
+
+            val projectId1 = repo.createProject(request, testUserId, userSettings)
+            val projectId2 = repo.createProject(request, testUserId, userSettings)
             assertNotEquals(projectId2, projectId1)
         }
 
         @Test
         fun `When a project is created, but the assigned user doesn't exist, then an SQLException is thrown`() =
             runTest {
-                val request = Project.Create.newBuilder().setName("Test Project").build()
+                val request = CreateProjectRequest(name = "Test Project")
                 val userSettings = DataBuilder.createExampleUserSettings()
+
                 assertThrows<SQLException> { repo.createProject(request, UUID.randomUUID(), userSettings) }
             }
     }
@@ -147,14 +162,9 @@ class ProjectTableRepoTest :
     inner class GetAllProjects {
         @Test
         fun `When projects are found, then all projects are returned`() = runTest {
-            val project1Id =
-                insertProjectAndGetId("Test Project 1", ProjectStatus.PROJECT_STATUS_ACTIVE, createdBy = testUserId)
+            val project1Id = insertProjectAndGetId("Test Project 1", ProjectStatus.ACTIVE, createdBy = testUserId)
             val project2Id =
-                insertProjectAndGetId(
-                    "Test Project 2",
-                    ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED,
-                    createdBy = testUserId,
-                )
+                insertProjectAndGetId("Test Project 2", ProjectStatus.ACTIVE_LOCKED, createdBy = testUserId)
 
             val projects = repo.getAllProjects()
             assertThat(projects).hasSize(2)
@@ -166,12 +176,9 @@ class ProjectTableRepoTest :
 
         @Test
         fun `When archived and deleted projects exist, then they are not returned`() = runTest {
-            val project1Id =
-                insertProjectAndGetId("Test Project 1", ProjectStatus.PROJECT_STATUS_ACTIVE, createdBy = testUserId)
-            val project2Id =
-                insertProjectAndGetId("Test Project 2", ProjectStatus.PROJECT_STATUS_ARCHIVED, createdBy = testUserId)
-            val project3Id =
-                insertProjectAndGetId("Test Project 3", ProjectStatus.PROJECT_STATUS_DELETED, createdBy = testUserId)
+            val project1Id = insertProjectAndGetId("Test Project 1", ProjectStatus.ACTIVE, createdBy = testUserId)
+            val project2Id = insertProjectAndGetId("Test Project 2", ProjectStatus.ARCHIVED, createdBy = testUserId)
+            val project3Id = insertProjectAndGetId("Test Project 3", ProjectStatus.DELETED, createdBy = testUserId)
 
             val projects = repo.getAllProjects()
             assertThat(projects).hasSize(1)
@@ -186,60 +193,158 @@ class ProjectTableRepoTest :
 
     @Nested
     inner class UpdateProject {
-        @ParameterizedTest(name = "Update the fields {0}")
-        @MethodSource("se.uulm.snowballr.backend.repository.ProjectTableRepoTest#validFieldMasks")
-        fun `When a project is updated, then only the fields specified in the field mask are updated and the updated project is returned`(
-            fieldMask: List<String>,
-        ) = runTest {
-            val originalStatus = ProjectStatus.PROJECT_STATUS_ACTIVE
-            val projectId =
-                insertProjectAndGetId(name = "Test Project", originalStatus, createdBy = testUserId)
+        @ParameterizedTest(name = "Update the field {0}")
+        @EnumSource(ProjectField::class)
+        @Suppress("LongMethod", "CyclomaticComplexMethod")
+        fun `When a project is updated, then only the specified field is updated`(field: ProjectField) = runTest {
+            val originalStatus = ProjectStatus.ACTIVE
+            val projectId = insertProjectAndGetId(name = "Test Project", originalStatus, createdBy = testUserId)
+            val pattern = DecisionMatrixPattern(decision = PaperDecision.ACCEPTED, entries = emptyList())
+            val request = UpdateProjectRequest(
+                projectId = projectId,
+                name = "Updated Project",
+                status = ProjectStatus.ARCHIVED,
+                settings = UpdateProjectSettingRequest(
+                    similarityThreshold = 1F,
+                    snowballingType = SnowballingType.FORWARD,
+                    reviewMaybeAllowed = false,
+                    fetchers = mapOf(
+                        "test fetcher" to mapOf(
+                            "Opt1" to "Val1",
+                        ),
+                    ),
+                    decisionMatrix = ReviewDecisionMatrix(
+                        numberOfReviewers = 2,
+                        patterns = listOf(pattern),
+                    ),
+                ),
+            )
+
+            val start = OffsetDateTime.now()
+            val updatedProject = repo.updateProject(request, setOf(field))
+            val end = OffsetDateTime.now()
+
+            val fetchers = updatedProject.fetchers
+            val fetcher = fetchers["test fetcher"]
+            val excluded = ProjectField.entries.filter { field != it }
+
+            // Included
+            when (field) {
+                ProjectField.NAME -> assertEquals("Updated Project", updatedProject.name)
+                ProjectField.STATUS -> assertEquals(ProjectStatus.ARCHIVED, updatedProject.status)
+                ProjectField.SIMILARITY_THRESHOLD -> assertEquals(1F, updatedProject.similarityThreshold)
+                ProjectField.SNOWBALLING_TYPE -> assertEquals(SnowballingType.FORWARD, updatedProject.snowballingType)
+                ProjectField.REVIEW_MAYBE_ALLOWED -> assertFalse(updatedProject.reviewMaybeAllowed)
+                ProjectField.FETCHERS -> {
+                    assertEquals(1, fetchers.size)
+                    assertNotNull(fetcher)
+                    val fetcherOption1 = fetcher["Opt1"]
+                    assertEquals("Val1", fetcherOption1)
+                    val fetcherOption2 = fetcher["Opt2"]
+                    assertNull(fetcherOption2)
+                }
+                ProjectField.NUMBER_OF_REVIEWERS ->
+                    assertEquals(2, updatedProject.reviewDecisionMatrix.numberOfReviewers)
+                ProjectField.DECISION_MATRIX_PATTERNS -> {
+                    assertEquals(1, updatedProject.reviewDecisionMatrix.patterns.size)
+                    assertThat(updatedProject.reviewDecisionMatrix.patterns).containsOnly(pattern)
+                }
+            }
+
+            // Excluded
+            for (excludedField in excluded) {
+                when (excludedField) {
+                    ProjectField.NAME -> assertEquals("Test Project", updatedProject.name)
+                    ProjectField.STATUS -> assertEquals(originalStatus, updatedProject.status)
+                    ProjectField.SIMILARITY_THRESHOLD -> assertEquals(0F, updatedProject.similarityThreshold)
+                    ProjectField.SNOWBALLING_TYPE -> assertEquals(SnowballingType.BOTH, updatedProject.snowballingType)
+                    ProjectField.REVIEW_MAYBE_ALLOWED -> assertTrue(updatedProject.reviewMaybeAllowed)
+                    ProjectField.FETCHERS -> {
+                        assertEquals(0, fetchers.size)
+                        assertNull(fetcher)
+                    }
+                    ProjectField.NUMBER_OF_REVIEWERS ->
+                        assertEquals(1, updatedProject.reviewDecisionMatrix.numberOfReviewers)
+                    ProjectField.DECISION_MATRIX_PATTERNS ->
+                        assertEquals(0, updatedProject.reviewDecisionMatrix.patterns.size)
+                }
+            }
+
+            assertThat(updatedProject.modifiedAt).isBetweenWithDelta(start, end)
+        }
+
+        @Test
+        fun `When only decision matrix patterns are updated, then number of reviewers remains unchanged`() = runTest {
+            val initialDecisionMatrix = ReviewDecisionMatrix(
+                numberOfReviewers = 3,
+                patterns = listOf(DecisionMatrixPattern(PaperDecision.ACCEPTED, emptyList())),
+            )
+            val projectId = insertProjectAndGetId(
+                name = "Decision Matrix Project",
+                status = ProjectStatus.ACTIVE,
+                reviewDecisionMatrix = initialDecisionMatrix,
+                createdBy = testUserId,
+            )
             val originalProject = repo.getProjectById(projectId).getOrThrow()
 
-            val updatedProjectDetails = originalProject.toGrpcProject().toBuilder()
-                .setName("Updated Project")
-                .setStatus(ProjectStatus.PROJECT_STATUS_ARCHIVED)
-                .setSettings(
-                    Project.Settings.newBuilder()
-                        .setSimilarityThreshold(1F)
-                        .setSnowballingType(SnowballingType.SNOWBALLING_TYPE_FORWARD)
-                        .setReviewMaybeAllowed(false)
-                        .build(),
+            val updatedDecisionMatrix = ReviewDecisionMatrix(
+                numberOfReviewers = 9,
+                patterns = listOf(DecisionMatrixPattern(PaperDecision.DECLINED, emptyList())),
+            )
+            val request = UpdateProjectRequest(
+                projectId = originalProject.id,
+                name = originalProject.name,
+                status = originalProject.status,
+                settings = UpdateProjectSettingRequest(
+                    similarityThreshold = originalProject.similarityThreshold,
+                    snowballingType = originalProject.snowballingType,
+                    reviewMaybeAllowed = originalProject.reviewMaybeAllowed,
+                    fetchers = originalProject.fetchers,
+                    decisionMatrix = updatedDecisionMatrix,
+                ),
+            )
+
+            val updatedProject = repo.updateProject(request, setOf(ProjectField.DECISION_MATRIX_PATTERNS))
+
+            assertEquals(3, updatedProject.reviewDecisionMatrix.numberOfReviewers)
+            assertEquals(1, updatedProject.reviewDecisionMatrix.patterns.size)
+            assertEquals(PaperDecision.DECLINED, updatedProject.reviewDecisionMatrix.patterns.first().decision)
+        }
+
+        @Test
+        fun `When updating decision matrix on a non existing project, then NoSuchElementException is thrown`() =
+            runTest {
+                val request = UpdateProjectRequest(
+                    projectId = UUID.randomUUID(),
+                    name = "Missing Project",
+                    status = ProjectStatus.ACTIVE,
+                    settings = UpdateProjectSettingRequest(
+                        similarityThreshold = 1F,
+                        snowballingType = SnowballingType.BOTH,
+                        reviewMaybeAllowed = false,
+                        fetchers = emptyMap(),
+                        decisionMatrix = ReviewDecisionMatrix(
+                            numberOfReviewers = 2,
+                            patterns = emptyList(),
+                        ),
+                    ),
                 )
-                .build()
 
-            val request = Project.Update.newBuilder()
-                .setProject(updatedProjectDetails)
-                .setMask(FieldMaskUtil.fromStringList(fieldMask))
-                .build()
+                assertThrows<NoSuchElementException> {
+                    repo.updateProject(request, setOf(ProjectField.NUMBER_OF_REVIEWERS))
+                }
+            }
 
-            val updatedProject = repo.updateProject(request)
+        @Test
+        fun `When a project is updated without any specified fields, then nothing is updated`() = runTest {
+            val projectId = insertProjectAndGetId(createdBy = testUserId)
+            val project = repo.getProjectById(projectId).getOrThrow()
+            val request = UpdateProjectRequest.fromProject(project)
 
-            if ("project.name" in fieldMask) {
-                assertEquals("Updated Project", updatedProject.name)
-            } else {
-                assertEquals("Test Project", updatedProject.name)
-            }
-            if ("project.status" in fieldMask) {
-                assertEquals(ProjectStatus.PROJECT_STATUS_ARCHIVED, updatedProject.status)
-            } else {
-                assertEquals(originalStatus, updatedProject.status)
-            }
-            if ("project.settings.similarity_threshold" in fieldMask) {
-                assertEquals(1F, updatedProject.similarityThreshold)
-            } else {
-                assertEquals(0F, updatedProject.similarityThreshold)
-            }
-            if ("project.settings.snowballing_type" in fieldMask) {
-                assertEquals(SnowballingType.SNOWBALLING_TYPE_FORWARD, updatedProject.snowballingType)
-            } else {
-                assertEquals(SnowballingType.SNOWBALLING_TYPE_BOTH, updatedProject.snowballingType)
-            }
-            if ("project.settings.review_maybe_allowed" in fieldMask) {
-                assertFalse(updatedProject.reviewMaybeAllowed)
-            } else {
-                assertTrue(updatedProject.reviewMaybeAllowed)
-            }
+            val updatedProject = repo.updateProject(request, emptySet())
+
+            assertEquals(project, updatedProject)
+            assertNull(updatedProject.modifiedAt)
         }
     }
 
@@ -249,21 +354,20 @@ class ProjectTableRepoTest :
         fun `When active projects are found where the user is member of, then all (and only these) active projects are returned`() =
             runTest {
                 val project1Id =
-                    insertProjectAndGetId("Test Project 1", ProjectStatus.PROJECT_STATUS_ACTIVE, createdBy = testUserId)
+                    insertProjectAndGetId("Test Project 1", ProjectStatus.ACTIVE, createdBy = testUserId)
                 val project2Id =
                     insertProjectAndGetId(
                         "Test Project 2",
-                        ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED,
+                        ProjectStatus.ACTIVE_LOCKED,
                         createdBy = testUserId,
                     )
                 val project3Id =
                     insertProjectAndGetId(
                         "Test Project 3",
-                        ProjectStatus.PROJECT_STATUS_ARCHIVED,
+                        ProjectStatus.ARCHIVED,
                         createdBy = testUserId,
                     )
-                val project4Id =
-                    insertProjectAndGetId("Test Project 4", ProjectStatus.PROJECT_STATUS_ACTIVE, createdBy = testUserId)
+                val project4Id = insertProjectAndGetId("Test Project 4", ProjectStatus.ACTIVE, createdBy = testUserId)
 
                 val userId = insertUserAndGetId("userWithActiveProjects@example.com")
 
@@ -284,23 +388,23 @@ class ProjectTableRepoTest :
         fun `When archived projects are found where the user is member of, then all (and only these) archived projects are returned`() =
             runTest {
                 val project1Id =
-                    insertProjectAndGetId("Test Project 1", ProjectStatus.PROJECT_STATUS_ACTIVE, createdBy = testUserId)
+                    insertProjectAndGetId("Test Project 1", ProjectStatus.ACTIVE, createdBy = testUserId)
                 val project2Id =
                     insertProjectAndGetId(
                         "Test Project 2",
-                        ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED,
+                        ProjectStatus.ACTIVE_LOCKED,
                         createdBy = testUserId,
                     )
                 val project3Id =
                     insertProjectAndGetId(
                         "Test Project 3",
-                        ProjectStatus.PROJECT_STATUS_ARCHIVED,
+                        ProjectStatus.ARCHIVED,
                         createdBy = testUserId,
                     )
                 val project4Id =
                     insertProjectAndGetId(
                         "Test Project 4",
-                        ProjectStatus.PROJECT_STATUS_ARCHIVED,
+                        ProjectStatus.ARCHIVED,
                         createdBy = testUserId,
                     )
 
@@ -310,7 +414,7 @@ class ProjectTableRepoTest :
                 assignUserToProject(userId, project2Id)
                 assignUserToProject(userId, project3Id)
 
-                val archivedUserProjects = repo.getUserProjects(userId, setOf(ProjectStatus.PROJECT_STATUS_ARCHIVED))
+                val archivedUserProjects = repo.getUserProjects(userId, setOf(ProjectStatus.ARCHIVED))
                 assertThat(archivedUserProjects).hasSize(1)
 
                 assertNull(archivedUserProjects.find { it.id == project1Id })
@@ -323,23 +427,23 @@ class ProjectTableRepoTest :
         fun `When deleted projects are found where the user is member of, then all (and only these) deleted projects are returned`() =
             runTest {
                 val project1Id =
-                    insertProjectAndGetId("Test Project 1", ProjectStatus.PROJECT_STATUS_ACTIVE, createdBy = testUserId)
+                    insertProjectAndGetId("Test Project 1", ProjectStatus.ACTIVE, createdBy = testUserId)
                 val project2Id =
                     insertProjectAndGetId(
                         "Test Project 2",
-                        ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED,
+                        ProjectStatus.ACTIVE_LOCKED,
                         createdBy = testUserId,
                     )
                 val project3Id =
                     insertProjectAndGetId(
                         "Test Project 3",
-                        ProjectStatus.PROJECT_STATUS_DELETED,
+                        ProjectStatus.DELETED,
                         createdBy = testUserId,
                     )
                 val project4Id =
                     insertProjectAndGetId(
                         "Test Project 4",
-                        ProjectStatus.PROJECT_STATUS_DELETED,
+                        ProjectStatus.DELETED,
                         createdBy = testUserId,
                     )
 
@@ -349,7 +453,7 @@ class ProjectTableRepoTest :
                 assignUserToProject(userId, project2Id)
                 assignUserToProject(userId, project3Id)
 
-                val deletedUserProjects = repo.getUserProjects(userId, setOf(ProjectStatus.PROJECT_STATUS_DELETED))
+                val deletedUserProjects = repo.getUserProjects(userId, setOf(ProjectStatus.DELETED))
                 assertThat(deletedUserProjects).hasSize(1)
 
                 assertNull(deletedUserProjects.find { it.id == project1Id })
@@ -360,17 +464,15 @@ class ProjectTableRepoTest :
 
         @Test
         fun `When no projects are found where the user is member of, then no projects are returned`() = runTest {
-            val project1Id =
-                insertProjectAndGetId("Test Project 1", ProjectStatus.PROJECT_STATUS_ARCHIVED, createdBy = testUserId)
-            val project2Id =
-                insertProjectAndGetId("Test Project 2", ProjectStatus.PROJECT_STATUS_DELETED, createdBy = testUserId)
+            val project1Id = insertProjectAndGetId("Test Project 1", ProjectStatus.ARCHIVED, createdBy = testUserId)
+            val project2Id = insertProjectAndGetId("Test Project 2", ProjectStatus.DELETED, createdBy = testUserId)
 
             val userId = insertUserAndGetId("userWithActiveProjects@example.com")
 
             assignUserToProject(userId, project1Id)
             assignUserToProject(userId, project2Id)
 
-            val activeUserProjects = repo.getUserProjects(userId, setOf(ProjectStatus.PROJECT_STATUS_ACTIVE))
+            val activeUserProjects = repo.getUserProjects(userId, setOf(ProjectStatus.ACTIVE))
             assertThat(activeUserProjects).hasSize(0)
 
             assertNull(activeUserProjects.find { it.id == project1Id })
@@ -378,15 +480,12 @@ class ProjectTableRepoTest :
         }
 
         @Test
-        fun `When an invalid project status is used to filter user projects, then an IllegalArgumentException is thrown`() =
+        fun `When an no project status is used to filter user projects, then an IllegalArgumentException is thrown`() =
             runTest {
                 val userId = insertUserAndGetId("userWithActiveProjects@example.com")
 
                 assertThrows<IllegalArgumentException> {
-                    repo.getUserProjects(
-                        userId,
-                        setOf(ProjectStatus.PROJECT_STATUS_UNSPECIFIED),
-                    )
+                    repo.getUserProjects(userId, emptySet())
                 }
             }
     }
@@ -395,16 +494,14 @@ class ProjectTableRepoTest :
     inner class IsProjectLocked {
         @Test
         fun `When a project has no project papers, then the project is not locked`() = runTest {
-            val projectId =
-                insertProjectAndGetId(status = ProjectStatus.PROJECT_STATUS_ACTIVE, createdBy = testUserId)
+            val projectId = insertProjectAndGetId(status = ProjectStatus.ACTIVE, createdBy = testUserId)
 
             assertFalse(repo.isProjectLocked(projectId))
         }
 
         @Test
         fun `When a project has project papers without reviews, then the project is not locked`() = runTest {
-            val projectId =
-                insertProjectAndGetId(status = ProjectStatus.PROJECT_STATUS_ACTIVE, createdBy = testUserId)
+            val projectId = insertProjectAndGetId(status = ProjectStatus.ACTIVE, createdBy = testUserId)
             val paperId = insertPaperAndGetId()
             insertProjectPaperAndGetId(paperId = paperId, projectId = projectId, createdBy = testUserId)
 
@@ -413,8 +510,7 @@ class ProjectTableRepoTest :
 
         @Test
         fun `When a project has project papers with reviews, then the project is locked`() = runTest {
-            val projectId =
-                insertProjectAndGetId(status = ProjectStatus.PROJECT_STATUS_ACTIVE, createdBy = testUserId)
+            val projectId = insertProjectAndGetId(status = ProjectStatus.ACTIVE, createdBy = testUserId)
             val paperId = insertPaperAndGetId()
             val projectPaperId =
                 insertProjectPaperAndGetId(paperId = paperId, projectId = projectId, createdBy = testUserId)
@@ -427,9 +523,8 @@ class ProjectTableRepoTest :
     @Nested
     inner class SoftDeleteProject {
         @Test
-        fun `When a project is soft deleted, then it is marked as deleted`() = runTest {
-            val projectId =
-                insertProjectAndGetId(status = ProjectStatus.PROJECT_STATUS_ACTIVE, createdBy = testUserId)
+        fun `When a project is soft-deleted, then it is marked as deleted`() = runTest {
+            val projectId = insertProjectAndGetId(status = ProjectStatus.ACTIVE, createdBy = testUserId)
 
             val before = OffsetDateTime.now()
             repo.softDeleteProject(projectId)
@@ -437,15 +532,186 @@ class ProjectTableRepoTest :
 
             val deletedProject = repo.getProjectById(projectId).getOrThrow()
 
-            assertTrue(deletedProject.status == ProjectStatus.PROJECT_STATUS_DELETED)
+            assertTrue(deletedProject.status == ProjectStatus.DELETED)
             assertThat(deletedProject.deletedAt).isBetweenWithDelta(before, after)
         }
 
         @Test
-        fun `When the project to be soft deleted is not found, then nothing happens`() = runTest {
+        fun `When the project to be soft-deleted is not found, then no exception is thrown`() = runTest {
             val projectId = UUID.randomUUID()
 
             assertDoesNotThrow { repo.softDeleteProject(projectId) }
+        }
+    }
+
+    @Nested
+    inner class ClearSoftDeletedProjects {
+        @Test
+        fun `When no soft-deleted projects exist, then no project are cleared`() = runTest {
+            val projectId = insertProjectAndGetId(status = ProjectStatus.ACTIVE, createdBy = testUserId)
+
+            repo.clearSoftDeletedProjects(defaultThresholdDate)
+
+            val project = assertResultSuccess(repo.getProjectById(projectId))
+            assertEquals(ProjectStatus.ACTIVE, project.status)
+            assertNull(project.deletedAt)
+        }
+
+        @Test
+        fun `When soft-deleted projects exist but their threshold date is not reached, then no projects are cleared`() =
+            runTest {
+                val projectId = insertProjectAndGetId(status = ProjectStatus.ACTIVE, createdBy = testUserId)
+                repo.softDeleteProject(projectId)
+
+                repo.clearSoftDeletedProjects(defaultThresholdDate)
+
+                val project = assertResultSuccess(repo.getProjectById(projectId))
+                assertEquals(ProjectStatus.DELETED, project.status)
+                assertNotNull(project.deletedAt)
+                assertThat(project.deletedAt).isAfter(defaultThresholdDate)
+                assertThat(project.name).isNotEmpty()
+            }
+
+        @Test
+        fun `When soft-deleted projects exist and their threshold date is reached, then all soft-deleted projects are cleared`() =
+            runTest {
+                // Manually "soft-delete" project to set the `deletedAt` date
+                val projectId1 = insertProjectAndGetId(
+                    name = "Project 1",
+                    status = ProjectStatus.DELETED,
+                    deletedAt = defaultThresholdDate.minusDays(1),
+                    createdBy = testUserId,
+                )
+                val projectId2 = insertProjectAndGetId(
+                    name = "Project 2",
+                    status = ProjectStatus.ACTIVE,
+                    createdBy = testUserId,
+                )
+
+                repo.clearSoftDeletedProjects(defaultThresholdDate)
+
+                val project1 = assertResultSuccess(repo.getProjectById(projectId1))
+                assertEquals(ProjectStatus.CLEARED, project1.status)
+                assertNotNull(project1.deletedAt)
+                assertThat(project1.deletedAt).isBefore(defaultThresholdDate)
+                assertThat(project1.name).isEmpty()
+
+                val project2 = assertResultSuccess(repo.getProjectById(projectId2))
+                assertEquals(ProjectStatus.ACTIVE, project2.status)
+                assertNull(project2.deletedAt)
+                assertThat(project2.name).isNotEmpty()
+            }
+    }
+
+    @Nested
+    inner class HardDeleteClearedProjects {
+        @Test
+        fun `When no cleared projects exist that have reached their threshold date to be cleared, then no projects are hard-deleted`() =
+            runTest {
+                val projectId1 = insertProjectAndGetId(name = "Project1", createdBy = testUserId)
+                val projectId2 = insertProjectAndGetId(name = "Project2", createdBy = testUserId)
+                repo.softDeleteProject(projectId1)
+
+                repo.hardDeleteClearedProjects()
+
+                val project1 = assertResultSuccess(repo.getProjectById(projectId1))
+                assertEquals(ProjectStatus.DELETED, project1.status)
+                assertNotNull(project1.deletedAt)
+                assertThat(project1.name).isNotEmpty()
+
+                val project2 = assertResultSuccess(repo.getProjectById(projectId2))
+                assertEquals(ProjectStatus.ACTIVE, project2.status)
+                assertNull(project2.deletedAt)
+                assertThat(project2.name).isNotEmpty()
+            }
+
+        @Test
+        fun `When cleared projects exist that have reached their threshold date to be cleared, then they are hard-deleted`() =
+            runTest {
+                // Manually "soft-delete" project to set the `deletedAt` date
+                val projectId1 = insertProjectAndGetId(
+                    name = "Project 1",
+                    status = ProjectStatus.DELETED,
+                    deletedAt = defaultThresholdDate.minusDays(1),
+                    createdBy = testUserId,
+                )
+                val projectId2 = insertProjectAndGetId(name = "Project2", createdBy = testUserId)
+                val criterionId1 = RepositoryHelper.insertCriterionAndGetId(
+                    projectId = projectId1,
+                    createdBy = testUserId,
+                )
+                val criterionId2 = RepositoryHelper.insertCriterionAndGetId(
+                    projectId = projectId2,
+                    createdBy = testUserId,
+                )
+                repo.clearSoftDeletedProjects(defaultThresholdDate)
+
+                repo.hardDeleteClearedProjects()
+
+                assertResultFailure<NotFoundException>(repo.getProjectById(projectId1))
+                assertResultFailure<NotFoundException>(criterionRepo.getCriterionById(criterionId1))
+
+                val project2 = assertResultSuccess(repo.getProjectById(projectId2))
+                assertEquals(ProjectStatus.ACTIVE, project2.status)
+                assertNull(project2.deletedAt)
+                assertThat(project2.name).isNotEmpty()
+                assertResultSuccess(criterionRepo.getCriterionById(criterionId2))
+            }
+
+        @Test
+        fun `When a cleared project is still referenced by a restrict foreign key, then hard delete is skipped`() =
+            runTest {
+                val projectId = insertProjectAndGetId(
+                    name = "Blocked Project",
+                    status = ProjectStatus.DELETED,
+                    deletedAt = defaultThresholdDate.minusDays(1),
+                    createdBy = testUserId,
+                )
+                repo.clearSoftDeletedProjects(defaultThresholdDate)
+
+                db.query {
+                    ProjectDeleteBlockerTable.insert {
+                        it[ProjectDeleteBlockerTable.projectId] = projectId
+                    }
+                }
+
+                repo.hardDeleteClearedProjects()
+
+                val project = assertResultSuccess(repo.getProjectById(projectId))
+                assertEquals(ProjectStatus.CLEARED, project.status)
+            }
+    }
+
+    @Nested
+    inner class UpdateMaxStageIfExceeded {
+        @Test
+        fun `When the max stage is updated to a lower value, then the max stage stays the same`() = runTest {
+            val projectId = insertProjectAndGetId(createdBy = testUserId, maxStage = 12)
+
+            repo.updateMaxStageIfExceeded(projectId, 9)
+            val project = repo.getProjectById(projectId).getOrThrow()
+
+            assertEquals(12, project.maxStage)
+        }
+
+        @Test
+        fun `When the max stage is updated to a greater value, then the value is updated`() = runTest {
+            val projectId = insertProjectAndGetId(createdBy = testUserId, maxStage = 42)
+
+            repo.updateMaxStageIfExceeded(projectId, 43)
+            val project = repo.getProjectById(projectId).getOrThrow()
+
+            assertEquals(43, project.maxStage)
+        }
+
+        @Test
+        fun `When the max stage is updated to the equal value, then the max stage stays the same`() = runTest {
+            val projectId = insertProjectAndGetId(createdBy = testUserId, maxStage = 3)
+
+            repo.updateMaxStageIfExceeded(projectId, 3)
+            val project = repo.getProjectById(projectId).getOrThrow()
+
+            assertEquals(3, project.maxStage)
         }
     }
 }

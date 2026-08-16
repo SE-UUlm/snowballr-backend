@@ -1,3 +1,36 @@
+<div align="center">
+    <picture>
+        <img alt="SnowballR Logo" src="images/snowballr-logo-with-text.png" width="700"/>
+    </picture>
+</div>
+
+<div align="center">
+    <a href="https://github.com/SE-UUlm/snowballr-backend/releases/latest">
+        <img alt="Version" src="https://img.shields.io/github/v/release/SE-UUlm/snowballr-backend?label=Version&color=light-green">
+    </a>
+    <a href="https://github.com/SE-UUlm/snowballr-backend/actions/workflows/code_quality_checks.yml">
+        <img alt="Code Quality Workflow Status" src="https://img.shields.io/github/actions/workflow/status/SE-UUlm/snowballr-backend/code_quality_checks.yml?logo=github&label=Code%20Quality">
+    </a>
+    <a href="https://snowballr.informatik.uni-ulm.de">
+        <img alt="Production Website" src="https://custom-icon-badges.demolab.com/badge/Production_Website-gray?logo=snowballr">
+    </a>
+    <a href="https://snowballr-dev.informatik.uni-ulm.de">
+        <img alt="Development Website" src="https://custom-icon-badges.demolab.com/badge/Development_Website-gray?logo=snowballr">
+    </a>
+    <a href="https://github.com/SE-UUlm/snowballr-backend/pkgs/container/snowballr-backend">
+        <img alt="Docker" src="https://img.shields.io/badge/Docker-ghcr.io-blue">
+    </a>
+    <a href="https://github.com/SE-UUlm/snowballr-backend/wiki">
+        <img alt="GitHub Wiki" src="https://img.shields.io/badge/Wiki-grey?logo=github">
+    </a>
+    <a href="https://deepwiki.com/SE-UUlm/snowballr-backend">
+        <img alt="Ask DeepWiki" src="https://deepwiki.com/badge.svg">
+    </a>
+    <a href="https://github.com/SE-UUlm/snowballr-backend/blob/main/LICENSE">
+        <img alt="License" src="https://img.shields.io/github/license/SE-UUlm/snowballr-backend?label=License">
+    </a>
+</div>
+
 # SnowballR Backend
 
 This repository contains the backend of the SnowballR application.

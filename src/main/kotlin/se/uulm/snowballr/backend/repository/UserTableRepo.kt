@@ -1,27 +1,39 @@
 package se.uulm.snowballr.backend.repository
 
-import com.google.protobuf.util.FieldMaskUtil
-import org.jetbrains.exposed.sql.ResultRow
-import org.jetbrains.exposed.sql.TextColumnType
-import org.jetbrains.exposed.sql.statements.StatementType
-import org.jetbrains.exposed.sql.update
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.ResultRow
+import org.jetbrains.exposed.v1.core.TextColumnType
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.inList
+import org.jetbrains.exposed.v1.core.isNotNull
+import org.jetbrains.exposed.v1.core.lessEq
+import org.jetbrains.exposed.v1.core.neq
+import org.jetbrains.exposed.v1.core.statements.StatementType
+import org.jetbrains.exposed.v1.exceptions.ExposedSQLException
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.statements.jdbc.JdbcResult
+import org.jetbrains.exposed.v1.jdbc.update
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.IdentifierType
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
-import se.uulm.snowballr.backend.model.dto.User
-import se.uulm.snowballr.backend.model.dto.UserSettings
-import se.uulm.snowballr.backend.model.parseUUID
+import se.uulm.snowballr.backend.model.dto.user.User
+import se.uulm.snowballr.backend.model.dto.user.UserField
+import se.uulm.snowballr.backend.model.dto.user.UserRole
+import se.uulm.snowballr.backend.model.dto.user.UserSettings
+import se.uulm.snowballr.backend.model.dto.user.UserStatus
+import se.uulm.snowballr.backend.model.exception.NotFoundException
+import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
+import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.toUser
 import se.uulm.snowballr.backend.table.toUserSettings
-import snowballr.Authentication
-import snowballr.UserOuterClass.UserRole
-import snowballr.UserOuterClass.UserStatus
-import java.sql.ResultSet
 import java.time.OffsetDateTime
 import java.util.UUID
-import snowballr.UserOuterClass.User as GrpcUser
+
+private val logger = KotlinLogging.logger { }
 
 /**
  * Defines an interface for repository operations related to the [UserTable].
@@ -75,10 +87,10 @@ interface IUserTableRepo {
      * their similarity to the search query.
      *
      * @param searchQuery The query against which the firstnames, lastnames, and emails of the users are checked.
-     * @param excludedUsers A list of user ids to be excluded from the results.
+     * @param excludedUsers A list of user emails to be excluded from the results.
      * @return A list of up to 10 matching users.
      */
-    suspend fun getUsersMatchingSearchQuery(searchQuery: String, excludedUsers: Set<UUID>): List<User>
+    suspend fun getUsersMatchingSearchQuery(searchQuery: String, excludedUsers: Set<String>): List<User>
 
     /**
      * Creates a new user in the database with the provided registration request and password hash.
@@ -87,26 +99,43 @@ interface IUserTableRepo {
      * @param passwordHash The hashed password for the user.
      * @return The created [User] object representing the newly registered user.
      */
-    suspend fun createUser(request: Authentication.RegisterRequest, passwordHash: String): User
+    suspend fun createUser(request: RegisterRequest, passwordHash: String): User
 
     /**
      * Updates an existent user in the database with the provided new information.
-     * The following fields can be updated:
-     * - first name
-     * - last name
-     * - email
-     * - role
      *
-     * @param request The update request containing the new user details, such as the new first name.
+     * @param request The update request containing the new user details.
+     * @param fields The fields that should be updated.
      * @return The updated [User] object reflecting the changes from the [request].
      */
-    suspend fun updateUser(request: GrpcUser.Update): User
+    suspend fun updateUser(request: UpdateUserRequest, fields: Set<UserField>): User
 
     /**
-     * Performs a soft delete meaning the user with the given [id] is not removed from the database, but only the
-     * status is set to [UserStatus.USER_STATUS_DELETED].
+     * Performs a soft-delete meaning the user with the given [id] is not removed from the database, but only the
+     * status is set to [UserStatus.DELETED].
      */
     suspend fun softDeleteUser(id: UUID)
+
+    /**
+     * Clears all soft-deleted users whose deletion date is older than the given [thresholdDate].
+     *
+     * @param thresholdDate The date up to which soft-deleted users are to be cleared.
+     */
+    suspend fun clearSoftDeletedUsers(thresholdDate: OffsetDateTime)
+
+    /**
+     * Retrieves a list of user IDs that are eligible for hard deletion.
+     *
+     * @return A list of user IDs that are eligible for hard deletion.
+     */
+    suspend fun getUserIdsToDelete(): List<UUID>
+
+    /**
+     * Tries to hard-delete the users in the given [userIdsToDelete] list.
+     *
+     * @param userIdsToDelete The list of user IDs to be hard-deleted.
+     */
+    suspend fun hardDeleteClearedUsers(userIdsToDelete: List<UUID>)
 
     /**
      * Returns a [Result] containing the password hash for a user by their email address or a [NotFoundException] if the
@@ -116,6 +145,11 @@ interface IUserTableRepo {
      * @return The password hash as a [String] for the user with the specified email.
      */
     suspend fun getPasswordHashByEmail(email: String): Result<String>
+
+    /**
+     * Updates the password hash of the user with the given [userId].
+     */
+    suspend fun updatePasswordHash(userId: UUID, passwordHash: String)
 
     /**
      * Returns a [Result] containing the settings of the user with the passed [id] or a [NotFoundException] if the user
@@ -141,20 +175,8 @@ class UserTableRepo(
     private val db: IDatabase,
 ) : IUserTableRepo {
     companion object {
-        const val MAXIMUM_NUMBER_OF_INVITE_CANDIDATES = 10
-    }
-
-    private fun extractUserRows(result: ResultSet): List<User> {
-        return generateSequence {
-            if (result.next()) {
-                ResultRow.create(
-                    result,
-                    UserTable.fields.withIndex().associate { it.value to it.index },
-                )
-            } else {
-                null
-            }
-        }.map { it.toUser() }.toList()
+        private const val MAXIMUM_NUMBER_OF_INVITE_CANDIDATES = 10
+        private const val MINIMUM_SIMILARITY_SCORE = 0.2
     }
 
     private fun getUserByIdOrNull(id: UUID): User? = UserTable.getEntityByIdOrNull(id, ResultRow::toUser)
@@ -169,6 +191,36 @@ class UserTableRepo(
 
     private fun getUserSettingsByUserIdOrNull(userId: UUID): UserSettings? =
         UserTable.getEntityByIdOrNull(userId, ResultRow::toUserSettings)
+
+    /**
+     * Retrieves a list of user IDs that are eligible for clearing sensitive data.
+     *
+     * @param thresholdDate The date up to which users are to be cleared.
+     * @return A list of user IDs that are eligible for clearing sensitive data.
+     */
+    private suspend fun getUserIdsToClear(thresholdDate: OffsetDateTime): List<UUID> = db.query {
+        UserTable.selectAll()
+            .where {
+                (UserTable.status eq UserStatus.DELETED).and(UserTable.deletedAt lessEq thresholdDate)
+            }
+            .map { it[UserTable.id].value }
+    }
+
+    /**
+     * Attempts to delete a single user by their ID.
+     *
+     * @param userId The ID of the user to be deleted.
+     * @return `true` if the user was successfully deleted, `false` otherwise.
+     */
+    private suspend fun attemptToDeleteUser(userId: UUID): Boolean = db.query {
+        try {
+            val deletedRows = UserTable.deleteWhere { UserTable.id eq userId }
+            deletedRows > 0
+        } catch (e: ExposedSQLException) {
+            logger.debug(e) { "Failed to hard-delete user $userId, likely due to existing references." }
+            false
+        }
+    }
 
     override suspend fun getUserById(id: UUID): Result<User> = db.query {
         getEntityByKeyAsResult(::getUserByIdOrNull, EntityType.USER, id)
@@ -191,17 +243,16 @@ class UserTableRepo(
     }
 
     @Suppress("MagicNumber")
-    override suspend fun getUsersMatchingSearchQuery(searchQuery: String, excludedUsers: Set<UUID>): List<User> =
+    override suspend fun getUsersMatchingSearchQuery(searchQuery: String, excludedUsers: Set<String>): List<User> =
         db.query {
             val userTable = "\"${UserTable.tableName}\""
-            val idCol = "$userTable.${UserTable.id.name}"
             val firstNameCol = "$userTable.${UserTable.firstName.name}"
             val lastNameCol = "$userTable.${UserTable.lastName.name}"
             val emailCol = "$userTable.${UserTable.email.name}"
             val statusCol = "$userTable.${UserTable.status.name}"
 
             val excludeUsersClause = if (excludedUsers.isNotEmpty()) {
-                "AND $idCol NOT IN (${excludedUsers.joinToString(",") { "'$it'" }})"
+                "AND $emailCol NOT IN (${excludedUsers.joinToString(",") { "'$it'" }})"
             } else {
                 ""
             }
@@ -214,12 +265,12 @@ class UserTableRepo(
                         similarity($lastNameCol, ?) AS sim_last_name,
                         similarity($emailCol, ?) AS sim_email
                     FROM $userTable
-                    WHERE $statusCol IN (${UserStatus.USER_STATUS_ACTIVE.ordinal}, ${UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED.ordinal})
+                    WHERE $statusCol IN (${UserStatus.ACTIVE.ordinal}, ${UserStatus.ACTIVE_UNCONFIRMED.ordinal})
                       $excludeUsersClause
                 )
                 SELECT *
                 FROM users_with_similarity_scores
-                WHERE GREATEST(sim_first_name, sim_last_name, sim_email) > 0.2
+                WHERE GREATEST(sim_first_name, sim_last_name, sim_email) > $MINIMUM_SIMILARITY_SCORE
                 ORDER BY GREATEST(sim_first_name, sim_last_name, sim_email) DESC
                 LIMIT $MAXIMUM_NUMBER_OF_INVITE_CANDIDATES
                 """.trimIndent()
@@ -228,35 +279,36 @@ class UserTableRepo(
                 stmt = rawSqlQuery,
                 args = List(3) { TextColumnType() to searchQuery },
                 explicitStatementType = StatementType.SELECT,
-                transform = ::extractUserRows,
+                transform = { extractUserRows(JdbcResult(it)) },
             )
 
             matchingUsers.orEmpty()
         }
 
-    override suspend fun createUser(request: Authentication.RegisterRequest, passwordHash: String): User = db.query {
-        UserTable.insertAndGet(ResultRow::toUser, EntityType.USER) {
+    override suspend fun createUser(request: RegisterRequest, passwordHash: String): User = db.query {
+        UserTable.insertAndGet(ResultRow::toUser) {
             it[email] = request.email
             it[firstName] = request.firstName
             it[lastName] = request.lastName
             it[UserTable.passwordHash] = passwordHash
-            it[role] = UserRole.USER_ROLE_DEFAULT
-            it[status] = UserStatus.USER_STATUS_ACTIVE_UNCONFIRMED
+            it[role] = UserRole.DEFAULT
+            it[status] = UserStatus.ACTIVE_UNCONFIRMED
         }
     }
 
-    override suspend fun updateUser(request: GrpcUser.Update): User = db.query {
-        val userId = parseUUID(request.user.id, EntityType.USER)
-        val fieldMask = FieldMaskUtil.normalize(request.mask)
+    override suspend fun updateUser(request: UpdateUserRequest, fields: Set<UserField>): User = db.query {
+        if (fields.isEmpty()) {
+            return@query getUserById(request.userId).getOrThrow()
+        }
 
-        UserTable.updateByIdAndGet(userId, ResultRow::toUser, EntityType.USER) {
-            for (field in fieldMask.pathsList) {
+        UserTable.updateByIdAndGet(request.userId, ResultRow::toUser) {
+            for (field in fields) {
                 when (field) {
-                    "user.email" -> it[email] = request.user.email
-                    "user.first_name" -> it[firstName] = request.user.firstName
-                    "user.last_name" -> it[lastName] = request.user.lastName
-                    "user.role" -> it[role] = request.user.role
-                    "user.status" -> it[status] = request.user.status
+                    UserField.EMAIL -> it[email] = request.email
+                    UserField.FIRST_NAME -> it[firstName] = request.firstName
+                    UserField.LAST_NAME -> it[lastName] = request.lastName
+                    UserField.ROLE -> it[role] = request.role
+                    UserField.STATUS -> it[status] = request.status
                 }
             }
 
@@ -267,9 +319,55 @@ class UserTableRepo(
     override suspend fun softDeleteUser(id: UUID) {
         db.query {
             UserTable.update({ UserTable.id eq id }) {
-                it[status] = UserStatus.USER_STATUS_DELETED
+                it[status] = UserStatus.DELETED
                 it[deletedAt] = OffsetDateTime.now()
             }
+        }
+    }
+
+    override suspend fun clearSoftDeletedUsers(thresholdDate: OffsetDateTime) = db.query {
+        val usersToBeCleared = getUserIdsToClear(thresholdDate)
+
+        val clearedUsers = UserTable.update(
+            {
+                UserTable.id inList usersToBeCleared
+            },
+        ) {
+            it[email] = ""
+            it[firstName] = ""
+            it[lastName] = ""
+            it[passwordHash] = ""
+            it[role] = UserRole.DEFAULT
+            it[status] = UserStatus.CLEARED
+            it[criteriaIds] = emptyList()
+            it[fetchers] = emptyMap()
+            it[modifiedAt] = OffsetDateTime.now()
+        }
+
+        logger.info { "Cleared $clearedUsers soft-deleted users older than $thresholdDate." }
+    }
+
+    override suspend fun getUserIdsToDelete(): List<UUID> = db.query {
+        UserTable
+            .selectAll()
+            .where {
+                (UserTable.status eq UserStatus.CLEARED).and(UserTable.deletedAt.isNotNull())
+            }
+            .map { it[UserTable.id].value }
+    }
+
+    override suspend fun hardDeleteClearedUsers(userIdsToDelete: List<UUID>) {
+        if (userIdsToDelete.isEmpty()) {
+            logger.info { "No users to hard-delete." }
+            return
+        }
+
+        val (successfulDeletedIds, failedToDeleteIds) = userIdsToDelete.partition { userId ->
+            attemptToDeleteUser(userId)
+        }
+
+        logger.info {
+            "Hard-deleted ${successfulDeletedIds.size} users, failed to delete ${failedToDeleteIds.size} users."
         }
     }
 
@@ -277,7 +375,24 @@ class UserTableRepo(
         getEntityByKeyAsResult(::getPasswordHashByUserMailOrNull, EntityType.USER, email, IdentifierType.EMAIL)
     }
 
+    override suspend fun updatePasswordHash(userId: UUID, passwordHash: String) {
+        db.query {
+            UserTable.update({ UserTable.id eq userId }) {
+                it[UserTable.passwordHash] = passwordHash
+                it[modifiedAt] = OffsetDateTime.now()
+            }
+        }
+    }
+
     override suspend fun getUserSettings(id: UUID): Result<UserSettings> = db.query {
         getEntityByKeyAsResult(::getUserSettingsByUserIdOrNull, EntityType.USER, id)
     }
+
+    /**
+     * Extracts and converts rows from a [JdbcResult] to a list of [User] objects.
+     *
+     * @param result The [JdbcResult] containing user data.
+     * @return A list of [User] objects extracted from the result set.
+     */
+    private fun extractUserRows(result: JdbcResult): List<User> = extractTableRows(result, UserTable, ResultRow::toUser)
 }

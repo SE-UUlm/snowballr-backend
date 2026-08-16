@@ -1,7 +1,7 @@
 package se.uulm.snowballr.backend.table.association
 
-import org.jetbrains.exposed.dao.id.CompositeIdTable
-import org.jetbrains.exposed.sql.ReferenceOption
+import org.jetbrains.exposed.v1.core.ReferenceOption
+import org.jetbrains.exposed.v1.core.dao.id.CompositeIdTable
 import se.uulm.snowballr.backend.table.PaperTable
 
 /**

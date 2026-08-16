@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>You're Invited to a Project</title>
+    <title>{{inviterName}} invited you to {{projectName}}</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
@@ -58,23 +58,19 @@
             color: #666666;
             word-break: break-all;
         }
-
-        .footer {
-            margin-top: 20px;
-            font-size: 14px;
-            color: #888888;
-        }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1 class="header">You've Been Invited!</h1>
+    <h1 class="header">{{inviterName}} invited you to <span class="project-name">{{projectName}}</span></h1>
 
     <div class="content">
-        <p>Hello {{firstName}},</p>
+        <p>Hello {{inviteeFirstName}},</p>
 
-        <p>You have been invited to join the project <span class="project-name">{{projectName}}</span> on SnowballR.
-            Please click the button below to accept your invitation and start collaborating.</p>
+        <p>{{inviterName}} invited you to join the project <span class="project-name">{{projectName}}</span> on
+            SnowballR. Please click the button below to accept the invitation and start collaborating.</p>
+
+        This invitation will expire {{expirationTime}}.
 
         <div class="button-container">
             <a href="{{{acceptanceLink}}}" class="button">Accept Invitation</a>
@@ -89,11 +85,6 @@
             <a href="{{{acceptanceLink}}}">{{{acceptanceLink}}}</a>
         </p>
     </div>
-
-    <p class="footer">
-        Best regards,<br>
-        The SnowballR Team
-    </p>
 </div>
 </body>
 </html>

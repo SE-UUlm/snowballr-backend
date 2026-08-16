@@ -4,16 +4,16 @@ package se.uulm.snowballr.backend.model
  * Represents the type of access being attempted on an entity.
  */
 enum class AccessType(val description: String) {
-    /** Attempt to read or access an entity */
+    /** Attempt to read or access an entity. */
     READ("read"),
 
-    /** Attempt to create a new entity */
+    /** Attempt to create a new entity. */
     CREATE("create"),
 
-    /** Attempt to update an existent entity */
+    /** Attempt to update an existent entity. */
     UPDATE("update"),
 
-    /** Attempt to delete an entity */
+    /** Attempt to delete an entity. */
     DELETE("delete"),
     ;
 

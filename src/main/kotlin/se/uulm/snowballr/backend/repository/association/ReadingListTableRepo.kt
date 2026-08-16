@@ -1,16 +1,18 @@
 package se.uulm.snowballr.backend.repository.association
 
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.v1.core.JoinType
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
-import se.uulm.snowballr.backend.model.dto.Paper
+import se.uulm.snowballr.backend.model.dto.paper.Paper
 import se.uulm.snowballr.backend.repository.doesEntityExist
+import se.uulm.snowballr.backend.repository.joinPaperHasExternalId
+import se.uulm.snowballr.backend.repository.toPaperWithExternalIds
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.association.ReadingListTable
-import se.uulm.snowballr.backend.table.toPaper
 import java.util.UUID
 
 /**
@@ -81,9 +83,18 @@ class ReadingListTableRepo(
     }
 
     override suspend fun getAllReadingListEntries(userId: UUID): List<Paper> = db.query {
-        (ReadingListTable innerJoin PaperTable)
+        PaperTable
+            .join(
+                ReadingListTable,
+                JoinType.INNER,
+                onColumn = PaperTable.id,
+                otherColumn = ReadingListTable.paperId,
+            )
+            .joinPaperHasExternalId()
             .selectAll()
             .where { ReadingListTable.userId eq userId }
-            .map { it.toPaper() }
+            .groupBy { it[PaperTable.id].value }
+            .values
+            .map { it.toPaperWithExternalIds() }
     }
 }

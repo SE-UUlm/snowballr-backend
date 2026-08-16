@@ -9,13 +9,11 @@ page.
 
 The fastest way to get started is to use the provided Docker setup.
 
-1. Clone the repository and its submodule:
+1. Clone the repository:
 
     ```bash
     git clone git@github.com:SE-UUlm/snowballr-backend.git
     cd snowballr-backend
-    git submodule update --init --recursive
-    docker compose up
     ```
 
 2. Set up your environment variables by copying the example file:
@@ -30,6 +28,12 @@ The fastest way to get started is to use the provided Docker setup.
     docker compose up
     ```
 
+> [!INFO]
+> If you encounter a permission-denied error regarding the plugin directory not
+> being writable, make sure to execute `chmod o+wr plugins` on the created
+> directory once. In some cases, Docker's created volumes aren't writable for
+> the user within the container.
+
 The proxy is used to enable gRPC-Web support for the backend. It listens on the port specified by the `WEB_PORT`
 environment variable (default: `8081`).
 
@@ -41,21 +45,19 @@ the backend with the desired profile.
 - **\<no-arguments\>**: Starts the backend, its proxy and the database.
 - **`db-only`**: Only starts the database (for local development)
 - **`registry`**: Starts the published backend image with the specified tag, its proxy and the database (use the
-  BACKEND_TAG
-  env variable).
+  `BACKEND_TAG` env variable).
 - **`proxy-only`**: Only starts the proxy (for local development)
+- **`backend-only`**: Only starts the backend service (for local development)
 
 ## Building from Source
 
 To build the project from source, run the following commands:
 
-1. Clone the repository and its submodule:
+1. Clone the repository:
 
     ```bash
     git clone git@github.com:SE-UUlm/snowballr-backend.git
     cd snowballr-backend
-    git submodule update --init --recursive
-    ./gradlew shadowJar
     ```
 
 2. Build the project using the Gradle wrapper. This will create a JAR file.
@@ -66,18 +68,24 @@ To build the project from source, run the following commands:
 
    The built JAR file can be found in the `build/libs` directory, named `snowballr-backend-<version>.jar`.
 
-   > [!NOTE] API Code Generation
-   >
-   > In comparison to the frontend repository, we don't have to manually generate the API code, as it is done
-   > automatically. You can find the generated API code in the `build/generated` directory.*
+3. Setup Python dependencies for the plugin system using [uv](https://docs.astral.sh/uv/):
 
-3. Run the application:
+    ```bash
+    uv venv .venv
+    uv pip install --python .venv/bin/python3 -r requirements.txt
+    ```
+
+4. Run the application:
 
     ```bash
     java -jar build/libs/snowballr-backend-<version>.jar
     ```
 
    Remember to provide the environment variables either via a `.env` file or by writing them in front of the command.
+
+> [!IMPORTANT]
+> Always ensure that the server is running in a python environment providing the required dependencies specified in the
+`requirements.txt`.
 
 ### Running in an IDE
 
@@ -88,5 +96,13 @@ can run Gradle commands directly from the project root directory. For example, t
 ./gradlew run
 ```
 
+This command automatically prepares `.venv` and synchronizes `requirements.txt` with `uv` before startup.
+
 If you're using IntelliJ IDEA, you can use the provided run configuration "Run Backend", which does the same as
 executing `./gradlew run`.
+
+#### Trouble Shooting
+
+- If running the project or its tests works in the command line, but not via the IDE, it might be caused by the IDE not
+  having the same `PATH` env variable as configured in your shell. To solve this, you can either start the IDE using the
+  command line or set the `UV_EXECUTABLE` env variable pointing to the path of the `uv` executable.

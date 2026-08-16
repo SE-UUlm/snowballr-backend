@@ -1,18 +1,23 @@
 package se.uulm.snowballr.backend.repository.association
 
-import org.jetbrains.exposed.sql.JoinType
-import org.jetbrains.exposed.sql.ResultRow
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.alias
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.andWhere
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.v1.core.JoinType
+import org.jetbrains.exposed.v1.core.ResultRow
+import org.jetbrains.exposed.v1.core.alias
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.neq
+import org.jetbrains.exposed.v1.core.notInList
+import org.jetbrains.exposed.v1.jdbc.andWhere
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
-import se.uulm.snowballr.backend.model.dto.ProjectMember
-import se.uulm.snowballr.backend.model.dto.ProjectMemberWithUser
+import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
+import se.uulm.snowballr.backend.model.dto.projectmember.ProjectMember
+import se.uulm.snowballr.backend.model.dto.projectmember.ProjectMemberWithUser
+import se.uulm.snowballr.backend.model.dto.user.UserStatus
+import se.uulm.snowballr.backend.model.exception.NotFoundException
+import se.uulm.snowballr.backend.repository.doesEntityExist
 import se.uulm.snowballr.backend.repository.getEntities
 import se.uulm.snowballr.backend.repository.getEntityByKeysAsResult
 import se.uulm.snowballr.backend.repository.getEntityOrNull
@@ -23,8 +28,6 @@ import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.association.toProjectMember
 import se.uulm.snowballr.backend.table.association.toProjectMemberWithUser
 import se.uulm.snowballr.backend.table.toUser
-import snowballr.ProjectOuterClass.MemberRole
-import snowballr.UserOuterClass.UserStatus
 import java.util.UUID
 
 /**
@@ -93,6 +96,15 @@ interface IProjectMemberTableRepo {
      * @param userId The unique identifier of the user, who should be removed.
      */
     suspend fun removeProjectMember(projectId: UUID, userId: UUID)
+
+    /**
+     * Checks whether the user with the given [userId] is a member of the project with the given [projectId].
+     *
+     * @param projectId The unique identifier of the project.
+     * @param userId The unique identifier of the user.
+     * @return `true` if the user is a member of the project, `false` otherwise.
+     */
+    suspend fun isProjectMember(projectId: UUID, userId: UUID): Boolean
 }
 
 /**
@@ -115,7 +127,7 @@ class ProjectMemberTableRepo(
      * @return A list of UUIDs representing users that are soft-deleted.
      */
     private fun getSoftDeletedUserIds(): List<UUID> = UserTable
-        .getEntities(ResultRow::toUser) { UserTable.status eq UserStatus.USER_STATUS_DELETED }
+        .getEntities(ResultRow::toUser) { UserTable.status eq UserStatus.DELETED }
         .map { it.id }
 
     /**
@@ -144,10 +156,10 @@ class ProjectMemberTableRepo(
             return@query existentMember
         }
 
-        ProjectMemberTable.insertAndGet(ResultRow::toProjectMember, EntityType.PROJECT_MEMBER) {
+        ProjectMemberTable.insertAndGet(ResultRow::toProjectMember) {
             it[this.userId] = userId
             it[this.projectId] = projectId
-            it[role] = MemberRole.MEMBER_ROLE_DEFAULT
+            it[role] = MemberRole.DEFAULT
         }
     }
 
@@ -180,7 +192,7 @@ class ProjectMemberTableRepo(
     override suspend fun getAllProjectAdmins(projectId: UUID): List<ProjectMember> = db.query {
         ProjectMemberTable.getEntities(ResultRow::toProjectMember) {
             (ProjectMemberTable.projectId eq projectId) and
-                (ProjectMemberTable.role eq MemberRole.MEMBER_ROLE_ADMIN) and
+                (ProjectMemberTable.role eq MemberRole.ADMIN) and
                 (ProjectMemberTable.userId notInList getSoftDeletedUserIds())
         }
     }
@@ -189,8 +201,6 @@ class ProjectMemberTableRepo(
         db.query {
             ProjectMemberTable.updateAndGet(
                 mapper = ResultRow::toProjectMember,
-                entityType = EntityType.PROJECT_MEMBER,
-                id = projectId.toString(),
                 where = {
                     (ProjectMemberTable.projectId eq projectId) and (ProjectMemberTable.userId eq userId)
                 },
@@ -203,7 +213,7 @@ class ProjectMemberTableRepo(
         (ProjectMemberTable innerJoin UserTable)
             .selectAll()
             .where { ProjectMemberTable.projectId eq projectId }
-            .andWhere { UserTable.status neq UserStatus.USER_STATUS_DELETED }
+            .andWhere { UserTable.status neq UserStatus.DELETED }
             .map { it.toProjectMemberWithUser() }
     }
 
@@ -211,6 +221,14 @@ class ProjectMemberTableRepo(
         db.query {
             ProjectMemberTable
                 .deleteWhere { (ProjectMemberTable.projectId eq projectId) and (ProjectMemberTable.userId eq userId) }
+        }
+    }
+
+    override suspend fun isProjectMember(projectId: UUID, userId: UUID): Boolean = db.query {
+        ProjectMemberTable.doesEntityExist {
+            (ProjectMemberTable.projectId eq projectId) and
+                (ProjectMemberTable.userId eq userId) and
+                (ProjectMemberTable.userId notInList getSoftDeletedUserIds())
         }
     }
 }

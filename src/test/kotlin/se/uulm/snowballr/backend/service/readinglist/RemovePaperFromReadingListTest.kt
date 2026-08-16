@@ -1,42 +1,42 @@
 package se.uulm.snowballr.backend.service.readinglist
 
+import io.mockk.Runs
 import io.mockk.coEvery
+import io.mockk.coJustRun
 import io.mockk.coVerify
+import io.mockk.just
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
-import se.uulm.snowballr.backend.DataBuilder.toGrpcId
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
-import se.uulm.snowballr.backend.service.MainServiceTest
+import se.uulm.snowballr.backend.model.exception.notfound.entity.PaperNotFoundException
 import java.util.UUID
 
-class RemovePaperFromReadingListTest : MainServiceTest() {
+class RemovePaperFromReadingListTest : ReadingListServiceTest() {
     @Test
-    fun `When the user removes a paper from their reading list, then the request is forwarded correctly`() = runTest {
+    fun `When a user removes a paper from their reading list, then the request is forwarded correctly`() = runTest {
         val user = DataBuilder.createExampleUser()
         val paperId = UUID.randomUUID()
 
         mockCurrentUser(user)
-        coEvery { paperRepoMock.doesPaperExistById(paperId) } returns true
-        coEvery { readingListRepoMock.removeReadingListEntry(user.id, paperId) } returns Unit
+        coEvery { paperRepoMock.ensurePaperExists(paperId) } just Runs
+        coJustRun { readingListRepoMock.removeReadingListEntry(user.id, paperId) }
 
-        assertDoesNotThrow { mainService.removePaperFromReadingList(paperId.toGrpcId()) }
+        service.removePaperFromReadingList(paperId)
         coVerify(exactly = 1) { readingListRepoMock.removeReadingListEntry(user.id, paperId) }
     }
 
     @Test
-    fun `When the user removes a non-existent paper on their reading list, then a NotFoundException is thrown`() =
+    fun `When a user removes a non-existent paper on their reading list, then a PaperNotFoundException is thrown`() =
         runTest {
             val user = DataBuilder.createExampleUser()
             val paperId = UUID.randomUUID()
 
             mockCurrentUser(user)
-            coEvery { paperRepoMock.doesPaperExistById(paperId) } returns false
+            coEvery { paperRepoMock.ensurePaperExists(paperId) } throws PaperNotFoundException(paperId)
 
-            assertThrows<NotFoundException> {
-                mainService.removePaperFromReadingList(paperId.toGrpcId())
+            assertThrows<PaperNotFoundException> {
+                service.removePaperFromReadingList(paperId)
             }
         }
 }

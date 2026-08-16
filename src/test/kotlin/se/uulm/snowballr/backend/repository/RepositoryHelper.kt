@@ -1,11 +1,24 @@
+@file:Suppress("LongParameterList")
+
 package se.uulm.snowballr.backend.repository
 
-import org.jetbrains.exposed.sql.ResultRow
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.insertAndGetId
+import org.jetbrains.exposed.v1.core.ResultRow
+import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import se.uulm.snowballr.backend.db.IDatabase
-import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.dto.Author
+import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
+import se.uulm.snowballr.backend.model.dto.paper.Author
+import se.uulm.snowballr.backend.model.dto.paper.ExternalId
+import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
+import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
+import se.uulm.snowballr.backend.model.dto.project.SnowballingType
+import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
+import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
+import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
+import se.uulm.snowballr.backend.model.dto.user.UserRole
+import se.uulm.snowballr.backend.model.dto.user.UserStatus
+import se.uulm.snowballr.backend.model.fetcher.FetcherMap
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.InvitationTokenTable
 import se.uulm.snowballr.backend.table.PaperTable
@@ -13,19 +26,11 @@ import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.ReviewTable
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.VerificationTokenTable
+import se.uulm.snowballr.backend.table.association.PaperHasExternalIdTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.table.association.ReviewHasCriterionTable
 import se.uulm.snowballr.backend.table.association.toProjectMember
-import snowballr.CriterionOuterClass.CriterionCategory
-import snowballr.ProjectOuterClass.MemberRole
-import snowballr.ProjectOuterClass.PaperDecision
-import snowballr.ProjectOuterClass.ProjectStatus
-import snowballr.ProjectOuterClass.ReviewDecisionMatrix
-import snowballr.ProjectOuterClass.SnowballingType
-import snowballr.ReviewOuterClass.ReviewDecision
-import snowballr.UserOuterClass.UserRole
-import snowballr.UserOuterClass.UserStatus
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -40,14 +45,14 @@ object RepositoryHelper {
      *
      * @return The UUID of the created user.
      */
-    @Suppress("LongParameterList")
     suspend fun insertUserAndGetId(
         email: String = "test.user@example.com",
         firstName: String = "Test",
         lastName: String = "User",
         passwordHash: String = "passwordHash",
-        role: UserRole = UserRole.USER_ROLE_DEFAULT,
-        status: UserStatus = UserStatus.USER_STATUS_ACTIVE,
+        role: UserRole = UserRole.DEFAULT,
+        status: UserStatus = UserStatus.ACTIVE,
+        deletedAt: OffsetDateTime? = null,
     ) = db.query {
         UserTable
             .insertAndGetId {
@@ -57,6 +62,7 @@ object RepositoryHelper {
                 it[UserTable.passwordHash] = passwordHash
                 it[UserTable.role] = role
                 it[UserTable.status] = status
+                it[UserTable.deletedAt] = deletedAt
             }.value
     }
 
@@ -68,10 +74,10 @@ object RepositoryHelper {
      * @return The created project member entity.
      */
     suspend fun assignUserToProject(userId: UUID, projectId: UUID) = db.query {
-        ProjectMemberTable.insertAndGet(ResultRow::toProjectMember, EntityType.PROJECT_MEMBER) {
+        ProjectMemberTable.insertAndGet(ResultRow::toProjectMember) {
             it[ProjectMemberTable.userId] = userId
             it[ProjectMemberTable.projectId] = projectId
-            it[role] = MemberRole.MEMBER_ROLE_DEFAULT
+            it[role] = MemberRole.DEFAULT
         }
     }
 
@@ -91,10 +97,8 @@ object RepositoryHelper {
      *
      * @return The UUID of the created paper.
      */
-    @Suppress("LongParameterList")
     suspend fun insertPaperAndGetId(
         title: String = "Title",
-        externalId: String = UUID.randomUUID().toString(),
         abstract: String = "Abstract",
         year: Int = 2025,
         publisher: String = "Publisher",
@@ -105,7 +109,6 @@ object RepositoryHelper {
     ): UUID = db.query {
         PaperTable.insertAndGetId {
             it[PaperTable.title] = title
-            it[PaperTable.externalId] = externalId
             it[PaperTable.abstract] = abstract
             it[PaperTable.year] = year
             it[PaperTable.publisher] = publisher
@@ -117,22 +120,43 @@ object RepositoryHelper {
     }
 
     /**
+     * Creates an example external ID in the database with the specified properties.
+     */
+    suspend fun insertExternalId(
+        paperId: UUID,
+        type: ExternalIdType = ExternalIdType.DOI,
+        value: String = "10.1234/5678",
+    ): ExternalId {
+        val externalId = ExternalId(type, value)
+
+        db.query {
+            PaperHasExternalIdTable.insert {
+                it[PaperHasExternalIdTable.paperId] = paperId
+                it[PaperHasExternalIdTable.type] = type
+                it[PaperHasExternalIdTable.value] = value
+            }
+        }
+
+        return externalId
+    }
+
+    /**
      * Creates an example project in the database with the specified properties.
      *
      * @return The UUID of the created project.
      */
-    @Suppress("LongParameterList")
     suspend fun insertProjectAndGetId(
         name: String = "Test Project",
-        status: ProjectStatus = ProjectStatus.PROJECT_STATUS_ACTIVE,
-        currentStage: Long = 0,
-        maxStage: Long = 0,
+        status: ProjectStatus = ProjectStatus.ACTIVE,
+        currentStage: Int = 0,
+        maxStage: Int = 0,
         similarityThreshold: Float = 0F,
-        snowballingType: SnowballingType = SnowballingType.SNOWBALLING_TYPE_BOTH,
+        snowballingType: SnowballingType = SnowballingType.BOTH,
         reviewMaybeAllowed: Boolean = true,
-        reviewDecisionMatrix: ReviewDecisionMatrix = ReviewDecisionMatrix.getDefaultInstance(),
-        fetcherApis: Map<String, Map<String, String>> = emptyMap(),
+        reviewDecisionMatrix: ReviewDecisionMatrix = ReviewDecisionMatrix(1, emptyList()),
+        fetcherApis: FetcherMap = emptyMap(),
         createdBy: UUID,
+        deletedAt: OffsetDateTime? = null,
     ): UUID = db.query {
         ProjectTable
             .insertAndGetId {
@@ -146,6 +170,7 @@ object RepositoryHelper {
                 it[ProjectTable.reviewDecisionMatrixBinary] = reviewDecisionMatrix.toByteArray()
                 it[ProjectTable.fetchers] = fetcherApis
                 it[ProjectTable.createdBy] = createdBy
+                it[ProjectTable.deletedAt] = deletedAt
             }.value
     }
 
@@ -154,13 +179,12 @@ object RepositoryHelper {
      *
      * @return The UUID of the created project paper.
      */
-    @Suppress("LongParameterList")
     suspend fun insertProjectPaperAndGetId(
         paperId: UUID,
         projectId: UUID,
-        localPaperId: Long = 0,
-        stage: Long = 0,
-        decision: PaperDecision = PaperDecision.PAPER_DECISION_ACCEPTED,
+        localPaperId: Int = 0,
+        stage: Int = 0,
+        decision: PaperDecision = PaperDecision.ACCEPTED,
         createdBy: UUID,
     ): UUID = db.query {
         ProjectPaperTable.insertAndGetId {
@@ -178,11 +202,10 @@ object RepositoryHelper {
      *
      * @return The UUID of the created review.
      */
-    @Suppress("LongParameterList")
     suspend fun insertReviewAndGetId(
         projectPaperId: UUID,
         userId: UUID,
-        decision: ReviewDecision = ReviewDecision.REVIEW_DECISION_ACCEPTED,
+        decision: ReviewDecision = ReviewDecision.ACCEPTED,
     ): UUID = db.query {
         ReviewTable.insertAndGetId {
             it[ReviewTable.projectPaperId] = projectPaperId
@@ -196,13 +219,12 @@ object RepositoryHelper {
      *
      * @return The UUID of the created criterion.
      */
-    @Suppress("LongParameterList")
     suspend fun insertCriterionAndGetId(
         tag: String = "Test Tag",
         name: String = "Test Criterion",
         description: String = "Test Description",
-        category: CriterionCategory = CriterionCategory.CRITERION_CATEGORY_EXCLUSION,
-        projectId: UUID,
+        category: CriterionCategory = CriterionCategory.EXCLUSION,
+        projectId: UUID? = null,
         createdBy: UUID,
     ): UUID = db.query {
         CriterionTable.insertAndGetId {
@@ -229,22 +251,28 @@ object RepositoryHelper {
     }
 
     /**
-     * Creates a test verification token (default "secure-random-token-123") in the database for the specified user.
+     * Creates a test verification token (default "secure-random-invitation-token-123") in the database
+     * for the specified user.
      */
-    suspend fun insertTestVerificationToken(userId: UUID, token: String = "secure-random-token-123") {
+    suspend fun insertTestVerificationToken(
+        userId: UUID,
+        token: String = "secure-random-invitation-token-123",
+        expiresAt: OffsetDateTime = OffsetDateTime.now().plusDays(1),
+    ) {
         db.query {
             VerificationTokenTable.insert {
                 it[VerificationTokenTable.userId] = userId
                 it[VerificationTokenTable.token] = token
+                it[VerificationTokenTable.expiresAt] = expiresAt
             }
         }
     }
 
     /**
      * Creates a test invitation token (default "secure-random-invitation-token-123") in the database
-     * with the specified properties.
+     * for the specified properties.
      */
-    suspend fun insertTestToken(
+    suspend fun insertTestInvitationToken(
         email: String,
         projectId: UUID,
         token: String = "secure-random-invitation-token-123",

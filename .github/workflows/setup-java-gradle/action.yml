@@ -1,0 +1,16 @@
+name: Setup Java and Gradle
+description: Setup Java and Gradle for Backend CI/CD pipeline
+runs:
+    using: composite
+    steps:
+        - name: Setup Java
+          uses: actions/setup-java@v5
+          with:
+              java-version: 25
+              distribution: microsoft
+
+        - name: Setup Gradle
+          uses: gradle/actions/setup-gradle@v6
+          with:
+              # Only write to cache on main or develop branch
+              cache-read-only: ${{ github.ref_name != 'main' && github.ref_name != 'develop' }}

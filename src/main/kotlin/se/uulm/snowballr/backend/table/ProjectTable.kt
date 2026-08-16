@@ -1,17 +1,18 @@
 package se.uulm.snowballr.backend.table
 
 import kotlinx.serialization.json.Json
-import org.jetbrains.exposed.dao.id.UUIDTable
-import org.jetbrains.exposed.sql.ReferenceOption
-import org.jetbrains.exposed.sql.ResultRow
-import org.jetbrains.exposed.sql.json.json
-import org.jetbrains.exposed.sql.kotlin.datetime.timestampWithTimeZone
-import se.uulm.snowballr.backend.model.dto.Project
-import snowballr.ProjectOuterClass.PaperDecision
-import snowballr.ProjectOuterClass.ProjectStatus
-import snowballr.ProjectOuterClass.ReviewDecisionMatrix
-import snowballr.ProjectOuterClass.SnowballingType
-import snowballr.ReviewOuterClass.ReviewDecision
+import org.jetbrains.exposed.v1.core.ReferenceOption
+import org.jetbrains.exposed.v1.core.ResultRow
+import org.jetbrains.exposed.v1.core.dao.id.java.UUIDTable
+import org.jetbrains.exposed.v1.datetime.timestampWithTimeZone
+import se.uulm.snowballr.backend.model.dto.project.Project
+import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
+import se.uulm.snowballr.backend.model.dto.project.SnowballingType
+import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
+import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
+import se.uulm.snowballr.backend.model.fetcher.FetcherMap
+import se.uulm.snowballr.backend.table.columntypes.obfuscatedJson
 import java.time.OffsetDateTime
 
 /**
@@ -25,11 +26,10 @@ import java.time.OffsetDateTime
  * - [similarityThreshold]: Represents the similarity threshold of the project as a [Float].
  * - [snowballingType]: Represents the type of snowballing used by the project as an enumeration value from
  * [SnowballingType].
- * - [reviewMaybeAllowed]: Represents whether the project allows reviews with a [ReviewDecision.REVIEW_DECISION_MAYBE]
- * as a [Boolean].
+ * - [reviewMaybeAllowed]: Represents whether the project allows reviews with a [ReviewDecision.MAYBE] as a [Boolean].
  * - [reviewDecisionMatrixBinary]: Represents the decision matrix on how the [PaperDecision] for a paper should be
  * determined as a [ByteArray].
- * - [fetchers]: Represents the fetchers used by the project as a json object mapping the fetcher names to their
+ * - [fetchers]: Represents the fetchers used by the project as a JSON object mapping the fetcher names to their
  * options.
  * - [currentStageStartedAt]: Represents the timestamp of when the current stage of the project was started as a
  * [OffsetDateTime].
@@ -45,13 +45,13 @@ import java.time.OffsetDateTime
 object ProjectTable : UUIDTable("project") {
     val name = text("name")
     val status = enumeration<ProjectStatus>("status")
-    val currentStage = long("current_stage")
-    val maxStage = long("max_stage")
+    val currentStage = integer("current_stage")
+    val maxStage = integer("max_stage")
     val similarityThreshold = float("similarity_threshold")
     val snowballingType = enumeration<SnowballingType>("snowballing_type")
     val reviewMaybeAllowed = bool("review_maybe_allowed")
-    val reviewDecisionMatrixBinary = binary("review_decision_matrix")
-    val fetchers = json<Map<String, Map<String, String>>>("fetchers", Json)
+    val reviewDecisionMatrixBinary = redactedBinary("review_decision_matrix")
+    val fetchers = obfuscatedJson<FetcherMap>("fetchers", Json)
     val currentStageStartedAt = timestampWithTimeZone("current_stage_started_at").clientDefault { OffsetDateTime.now() }
 
     // Metadata

@@ -9,7 +9,6 @@ import snowballr.ReviewOuterClass.Review.Create
 /**
  * A validator for [Review] related requests.
  */
-@Suppress("StringLiteralDuplication")
 object ReviewValidator {
     fun validateCreateRequest(request: Create): EitherNel<ValidationIssue, Unit> = either {
         ensureIdValidity("project_paper_id", request.projectPaperId)

@@ -1,40 +1,36 @@
 package se.uulm.snowballr.backend.service
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
-import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
-import se.uulm.snowballr.backend.model.dto.toGrpcPapers
-import se.uulm.snowballr.backend.model.parseUUID
+import se.uulm.snowballr.backend.model.outgoing.paper.PaperResponse
 import se.uulm.snowballr.backend.repository.IPaperTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import se.uulm.snowballr.backend.repository.association.IReadingListTableRepo
-import snowballr.Base
-import snowballr.boolValue
-import snowballr.nothing
 import java.util.UUID
-import snowballr.PaperOuterClass.Paper as GrpcPaper
+
+private val logger = KotlinLogging.logger {}
 
 interface IReadingListService {
     /**
      * Service implementation of [SnowballRService.getReadingList].
      */
-    suspend fun getReadingList(): GrpcPaper.List
+    suspend fun getReadingList(): List<PaperResponse>
 
     /**
      * Service implementation of [SnowballRService.isPaperOnReadingList].
      */
-    suspend fun isPaperOnReadingList(request: Base.Id): Base.BoolValue
+    suspend fun isPaperOnReadingList(paperId: UUID): Boolean
 
     /**
      * Service implementation of [SnowballRService.addPaperToReadingList].
      */
-    suspend fun addPaperToReadingList(request: Base.Id): Base.Nothing
+    suspend fun addPaperToReadingList(paperId: UUID)
 
     /**
      * Service implementation of [SnowballRService.removePaperFromReadingList].
      */
-    suspend fun removePaperFromReadingList(request: Base.Id): Base.Nothing
+    suspend fun removePaperFromReadingList(paperId: UUID)
 }
 
 /**
@@ -56,48 +52,27 @@ class ReadingListService(
     private val citationRepo: ICitationTableRepo,
     private val repo: IReadingListTableRepo,
 ) : IReadingListService {
-    /**
-     * Checks whether the paper with the given [id] exists.
-     *
-     * @throws [NotFoundException] If the paper doesn't exist.
-     */
-    private suspend fun ensurePaperExists(id: UUID) {
-        if (!paperRepo.doesPaperExistById(id)) {
-            throw NotFoundException(EntityType.PAPER, id.toString())
-        }
+    override suspend fun getReadingList(): List<PaperResponse> = withUser(userRepo) { currentUser ->
+        repo.getAllReadingListEntries(currentUser.id).map { it.toPaperResponse(citationRepo) }
     }
 
-    override suspend fun getReadingList(): GrpcPaper.List = withUser(userRepo) { currentUser ->
-        val papers = repo.getAllReadingListEntries(currentUser.id).map { paper ->
-            paper.toGrpcPaperWithAuthorsAndBackwardReferences(citationRepo)
-        }
+    override suspend fun isPaperOnReadingList(paperId: UUID): Boolean = withUser(userRepo) { currentUser ->
+        paperRepo.ensurePaperExists(paperId)
 
-        papers.toGrpcPapers()
+        repo.isPaperOnReadingList(currentUser.id, paperId)
     }
 
-    override suspend fun isPaperOnReadingList(request: Base.Id): Base.BoolValue = withUser(userRepo) { currentUser ->
-        val paperId = parseUUID(request.id, EntityType.PAPER)
-        ensurePaperExists(paperId)
-
-        boolValue { value = repo.isPaperOnReadingList(currentUser.id, paperId) }
-    }
-
-    override suspend fun addPaperToReadingList(request: Base.Id): Base.Nothing = withUser(userRepo) { currentUser ->
-        val paperId = parseUUID(request.id, EntityType.PAPER)
-        ensurePaperExists(paperId)
+    override suspend fun addPaperToReadingList(paperId: UUID) = withUser(userRepo) { currentUser ->
+        paperRepo.ensurePaperExists(paperId)
 
         repo.createReadingListEntry(currentUser.id, paperId)
-
-        nothing { }
+        logger.info { "Paper $paperId added to reading list" }
     }
 
-    override suspend fun removePaperFromReadingList(request: Base.Id): Base.Nothing =
-        withUser(userRepo) { currentUser ->
-            val paperId = parseUUID(request.id, EntityType.PAPER)
-            ensurePaperExists(paperId)
+    override suspend fun removePaperFromReadingList(paperId: UUID) = withUser(userRepo) { currentUser ->
+        paperRepo.ensurePaperExists(paperId)
 
-            repo.removeReadingListEntry(currentUser.id, paperId)
-
-            nothing { }
-        }
+        repo.removeReadingListEntry(currentUser.id, paperId)
+        logger.info { "Paper $paperId removed from reading list" }
+    }
 }

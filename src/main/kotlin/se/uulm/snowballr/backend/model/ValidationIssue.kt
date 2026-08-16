@@ -45,12 +45,15 @@ data class BlankField(
  *
  * @property name The name of the field that exceeded the maximum length.
  * @property maxLength The maximum allowed length for the field.
+ * @property actualLength The actual length of the field value.
  */
 data class TooLongField(
     val name: String,
     val maxLength: Int,
+    val actualLength: Int,
 ) : ValidationIssue {
-    override fun toString(): String = "The '$name' must not be longer than $maxLength characters."
+    override fun toString(): String =
+        "The '$name' must not be longer than $maxLength characters (actual: $actualLength)."
 }
 
 /**
@@ -143,11 +146,6 @@ data class InvalidFieldMask(val message: String) : ValidationIssue {
             val fieldsString = fields.joinToString(", ") { field -> "'$field'" }
             return InvalidFieldMask("One or more of the following fields are invalid: $fieldsString")
         }
-
-        fun createForContainsUnallowedFields(fields: List<String>): InvalidFieldMask {
-            val fieldsString = fields.joinToString(", ") { field -> "'$field'" }
-            return InvalidFieldMask("One or more of the following fields are not allowed: $fieldsString")
-        }
     }
 
     override fun toString(): String = message
@@ -174,4 +172,33 @@ data class TooLongList(val name: String, val maxLength: Int) : ValidationIssue {
  */
 data class CompositeIssue(val baseMessage: String, val issues: List<ValidationIssue>) : ValidationIssue {
     override fun toString(): String = "$baseMessage: ${issues.joinToString("; ")}"
+}
+
+/**
+ * Represents a validation issue where an unsupported export format is requested.
+ *
+ * @property format The unsupported export format.
+ */
+data class UnsupportedExportFormat(val format: String) : ValidationIssue {
+    override fun toString(): String = "The export format '$format' is not supported."
+}
+
+/**
+ * Represents a validation issue where a value for an enum doesn't exist in the enum definition.
+ *
+ * @property value The invalid enum value.
+ * @property enumName The name of the enum type.
+ */
+data class InvalidEnumValue(val value: String, val enumName: String) : ValidationIssue {
+    override fun toString(): String = "'$value' is not a valid $enumName."
+}
+
+/**
+ * Represents a validation issue where values have invalid multiple occurrences.
+ *
+ * @property name The name of the values.
+ * @property occurrences The values that have multiple occurrences as list of (name, occurrences) pairs
+ */
+data class MultipleOccurrences(val name: String, val occurrences: List<Pair<String, Int>>) : ValidationIssue {
+    override fun toString(): String = "The following $name have multiple occurrences: ${occurrences.joinToString("; ")}"
 }

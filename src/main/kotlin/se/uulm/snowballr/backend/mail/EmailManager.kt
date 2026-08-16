@@ -5,9 +5,9 @@ import org.simplejavamail.MailException
 import org.simplejavamail.api.mailer.Mailer
 import org.simplejavamail.email.EmailBuilder
 import se.uulm.snowballr.backend.env.EnvReader
-import se.uulm.snowballr.backend.model.SnowballRException.EmailException.MailSendFailed
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.email.EmailTemplate
+import se.uulm.snowballr.backend.model.exception.internal.email.MailSendFailedException
 
 private val logger = KotlinLogging.logger {}
 
@@ -17,7 +17,7 @@ interface IEmailManager {
      *
      * @param to The recipient's email address.
      * @param data The data model containing the user's data.
-     * @throws MailSendFailed if the email could not be sent.
+     * @throws MailSendFailedException if the email could not be sent.
      */
     fun sendVerificationEmail(to: String, data: EmailData.EmailVerification)
 
@@ -26,7 +26,7 @@ interface IEmailManager {
      *
      * @param to The recipient's email address.
      * @param data The data model containing the user's data.
-     * @throws MailSendFailed if the email could not be sent.
+     * @throws MailSendFailedException if the email could not be sent.
      */
     fun sendAcceptProjectInvitationEmail(to: String, data: EmailData.AcceptProjectInvitation)
 
@@ -55,7 +55,7 @@ interface IEmailManager {
  * The [EmailManager] class provides functionality to send emails using an SMTP mailer.
  *
  * This class implements the [IEmailManager] and is responsible for:
- * - Initializing the underlying SMTP mailer with configuration values from [se.uulm.snowballr.backend.env.EnvReader].
+ * - Initializing the underlying SMTP mailer with configuration values from [EnvReader].
  * - Sending invitation emails to new users.
  * - Sending account verification emails to registered users.
  *
@@ -93,7 +93,7 @@ class EmailManager(
                 .startingBlank()
                 .to(to)
                 .from(envReader.env.smtp.smtpSenderName, envReader.env.smtp.smtpSenderEmail)
-                .withSubject(template.subject)
+                .withSubject(data.subject)
                 .withHTMLText(htmlBody)
                 .buildEmailCompletedWithDefaultsAndOverrides()
 
@@ -101,7 +101,7 @@ class EmailManager(
             logger.info { "Successfully queued email for delivery to $to with template '${template.name}'" }
         } catch (e: MailException) {
             logger.error(e) { "Mailer failed to send email to $to with template '${template.name}'" }
-            throw MailSendFailed(to, e)
+            throw MailSendFailedException(to, e)
         }
     }
 

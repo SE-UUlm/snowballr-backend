@@ -1,10 +1,12 @@
 package se.uulm.snowballr.backend.table.association
 
-import org.jetbrains.exposed.dao.id.UUIDTable
-import org.jetbrains.exposed.sql.ReferenceOption
-import org.jetbrains.exposed.sql.ResultRow
-import se.uulm.snowballr.backend.model.dto.ProjectPaper
-import se.uulm.snowballr.backend.model.dto.ProjectPaperWithPaper
+import org.jetbrains.exposed.v1.core.ReferenceOption
+import org.jetbrains.exposed.v1.core.ResultRow
+import org.jetbrains.exposed.v1.core.dao.id.java.UUIDTable
+import se.uulm.snowballr.backend.model.dto.paper.ExternalId
+import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
+import se.uulm.snowballr.backend.model.dto.projectpaper.ProjectPaper
+import se.uulm.snowballr.backend.model.dto.projectpaper.ProjectPaperWithPaper
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.createdAt
@@ -12,7 +14,6 @@ import se.uulm.snowballr.backend.table.createdBy
 import se.uulm.snowballr.backend.table.modifiedAt
 import se.uulm.snowballr.backend.table.modifiedBy
 import se.uulm.snowballr.backend.table.toPaper
-import snowballr.ProjectOuterClass.PaperDecision
 import java.time.OffsetDateTime
 
 /**
@@ -54,8 +55,8 @@ object ProjectPaperTable : UUIDTable("project_paper") {
         uniqueIndex(paperId, projectId)
     }
 
-    val localPaperId = long("local_paper_id")
-    val stage = long("stage")
+    val localPaperId = integer("local_paper_id")
+    val stage = integer("stage")
     val decision = enumeration<PaperDecision>("decision")
 
     // Metadata
@@ -85,7 +86,7 @@ fun ResultRow.toProjectPaper() = ProjectPaper(
 /**
  * Creates a [ProjectPaperWithPaper] from this [ResultRow].
  */
-fun ResultRow.toProjectPaperWithPaper() = ProjectPaperWithPaper(
+fun ResultRow.toProjectPaperWithPaper(externalIds: List<ExternalId>) = ProjectPaperWithPaper(
     projectPaper = toProjectPaper(),
-    paper = toPaper(),
+    paper = toPaper(externalIds),
 )

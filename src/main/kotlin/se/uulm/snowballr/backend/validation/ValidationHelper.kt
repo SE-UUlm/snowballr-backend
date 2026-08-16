@@ -4,12 +4,12 @@ package se.uulm.snowballr.backend.validation
 
 import arrow.core.raise.Raise
 import arrow.core.raise.ensure
-import com.google.protobuf.Descriptors.Descriptor
 import com.google.protobuf.FieldMask
 import com.google.protobuf.util.FieldMaskUtil
 import se.uulm.snowballr.backend.model.BlankField
 import se.uulm.snowballr.backend.model.EnumUnspecified
 import se.uulm.snowballr.backend.model.InvalidEmail
+import se.uulm.snowballr.backend.model.InvalidEnumValue
 import se.uulm.snowballr.backend.model.InvalidFieldMask
 import se.uulm.snowballr.backend.model.InvalidId
 import se.uulm.snowballr.backend.model.OutOfRangeValue
@@ -41,13 +41,6 @@ fun Raise<ValidationIssue>.ensureFieldNonBlank(name: String, value: String) =
     ensure(value.isNotBlank()) { BlankField(name) }
 
 /**
- * Ensures that the given field value is either empty or non-blank (i.e., it contains at least one non-whitespace
- * character). If the value is non-empty and blank, a [BlankField] validation issue is raised.
- */
-fun Raise<ValidationIssue>.ensureFieldEmptyOrNonBlank(name: String, value: String) =
-    ensure(value.isEmpty() || value.isNotBlank()) { BlankField(name) }
-
-/**
  * Ensures that the given field value does not exceed the specified maximum length.
  * If the value exceeds the maximum length, a [TooLongField] validation issue is raised.
  *
@@ -56,7 +49,7 @@ fun Raise<ValidationIssue>.ensureFieldEmptyOrNonBlank(name: String, value: Strin
  * @param maxLength The maximum allowed length for the field value.
  */
 fun Raise<ValidationIssue>.ensureFieldLength(name: String, value: String, maxLength: Int) =
-    ensure(value.length <= maxLength) { TooLongField(name, maxLength) }
+    ensure(value.length <= maxLength) { TooLongField(name, maxLength, value.length) }
 
 /**
  * Ensures that the given text field value is valid.
@@ -142,27 +135,26 @@ fun Raise<ValidationIssue>.ensureLastNameValidity(lastName: String) =
     ensureTextFieldValidity("last_name", lastName, LAST_NAME_MAX_LENGTH)
 
 /**
- * Ensures that the provided field mask is non-blank and contains only fields that are valid and allowed for the given
- * object type.
+ * Ensures that the provided field mask is not empty (except `allowEmpty` is true) and it only contains allowed paths.
+ *
  * If the field mask is not valid, a [InvalidFieldMask] validation issue is raised.
  *
  * @param fieldMask The [FieldMask] to validate.
- * @param descriptor The object descriptor to validate against.
- * @param unallowedFields A list of paths that must not appear in the field mask.
+ * @param allowedPaths The paths that are allowed in the field mask.
  * @param allowEmpty Whether to allow an empty field mask. Defaults to false.
  */
 fun Raise<ValidationIssue>.ensureFieldMaskIsValid(
     fieldMask: FieldMask,
-    descriptor: Descriptor,
-    unallowedFields: List<String> = emptyList(),
+    allowedPaths: List<String>,
     allowEmpty: Boolean = false,
 ) {
-    ensure(allowEmpty || fieldMask.pathsList.isNotEmpty()) { InvalidFieldMask.createForBlankFieldMask() }
-    ensure(FieldMaskUtil.isValid(descriptor, fieldMask)) {
-        InvalidFieldMask.createForContainsInvalidFields(fieldMask.pathsList)
-    }
-    ensure(fieldMask.pathsList.toSet().none { unallowedFields.contains(it) }) {
-        InvalidFieldMask.createForContainsUnallowedFields(unallowedFields)
+    val paths = FieldMaskUtil.normalize(fieldMask).pathsList
+
+    ensure(allowEmpty || paths.isNotEmpty()) { InvalidFieldMask.createForBlankFieldMask() }
+
+    val unknownPaths = paths.filterNot { it in allowedPaths }
+    ensure(unknownPaths.isEmpty()) {
+        InvalidFieldMask.createForContainsInvalidFields(unknownPaths)
     }
 }
 
@@ -181,4 +173,8 @@ fun <T : Comparable<T>> Raise<ValidationIssue>.ensureNumberFieldInRange(name: St
     ensure(value in min..max) {
         OutOfRangeValue(name, value, min, max)
     }
+}
+
+inline fun <reified T : Enum<T>> Raise<ValidationIssue>.ensureValidEnumValue(value: String, name: String) {
+    ensure(runCatching { enumValueOf<T>(value) }.isSuccess) { InvalidEnumValue(value, name) }
 }

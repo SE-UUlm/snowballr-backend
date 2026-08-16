@@ -1,37 +1,48 @@
 package se.uulm.snowballr.backend.service
 
-import com.google.protobuf.FieldMask
-import se.uulm.snowballr.backend.auth.GrpcContext
+import io.github.oshai.kotlinlogging.KotlinLogging
 import se.uulm.snowballr.backend.auth.IJwtManager
 import se.uulm.snowballr.backend.auth.PasswordUtils
+import se.uulm.snowballr.backend.auth.setAuthCookies
+import se.uulm.snowballr.backend.context.RequestContext
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
-import se.uulm.snowballr.backend.model.SnowballRException.UnauthenticatedException
-import se.uulm.snowballr.backend.model.SnowballRException.VerificationTokenNotFoundException
-import se.uulm.snowballr.backend.model.dto.toGrpcUser
+import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.dto.user.UserField
+import se.uulm.snowballr.backend.model.dto.user.UserStatus
+import se.uulm.snowballr.backend.model.exception.NotFoundException
+import se.uulm.snowballr.backend.model.exception.UnauthenticatedException
+import se.uulm.snowballr.backend.model.exception.failedprecondition.EntityNotActiveException
+import se.uulm.snowballr.backend.model.exception.invalidargument.IncorrectOldPasswordException
+import se.uulm.snowballr.backend.model.exception.notfound.VerificationTokenNotFoundException
+import se.uulm.snowballr.backend.model.incoming.authentication.ChangePasswordRequest
+import se.uulm.snowballr.backend.model.incoming.authentication.LoginRequest
+import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.IVerificationTokenTableRepo
-import snowballr.Authentication
-import snowballr.Base
-import snowballr.UserOuterClass.UserStatus
 import java.time.OffsetDateTime
-import snowballr.UserOuterClass.User as GrpcUser
+
+private val logger = KotlinLogging.logger {}
 
 interface IAuthenticationService {
     /**
      * Service implementation of [SnowballRService.verifyEmail].
      */
-    suspend fun verifyEmail(request: Authentication.VerifyEmailRequest): Base.Nothing
+    suspend fun verifyEmail(token: String)
 
     /**
      * Service implementation of [SnowballRService.logout].
      */
-    suspend fun logout(): Base.Nothing
+    suspend fun logout()
 
     /**
      * Service implementation of [SnowballRService.login].
      */
-    suspend fun login(request: Authentication.LoginRequest): Base.Nothing
+    suspend fun login(request: LoginRequest)
+
+    /**
+     * Service implementation of [SnowballRService.changePassword].
+     */
+    suspend fun changePassword(request: ChangePasswordRequest)
 }
 
 /**
@@ -51,12 +62,13 @@ class AuthenticationService(
     private val verificationTokenRepo: IVerificationTokenTableRepo,
     private val jwtManager: IJwtManager,
 ) : IAuthenticationService {
-    override suspend fun verifyEmail(request: Authentication.VerifyEmailRequest): Base.Nothing {
-        val verificationToken = verificationTokenRepo.getVerificationTokenByValue(request.token).getOrThrow()
+    override suspend fun verifyEmail(token: String) {
+        val verificationToken = verificationTokenRepo.getVerificationTokenByValue(token).getOrThrow()
 
         // Check if the token has expired
         if (OffsetDateTime.now().isAfter(verificationToken.expiresAt)) {
-            verificationTokenRepo.deleteVerificationToken(request.token)
+            logger.debug { "Email verification failed: token expired for user ${verificationToken.userId}" }
+            verificationTokenRepo.deleteVerificationToken(token)
             throw VerificationTokenNotFoundException()
         }
 
@@ -64,36 +76,41 @@ class AuthenticationService(
         val user = repo.getUserById(verificationToken.userId).getOrThrow()
 
         // Update the user's status to active
-        val updatedUser = user.copy(status = UserStatus.USER_STATUS_ACTIVE)
-        val userUpdate = GrpcUser.Update.newBuilder()
-            .setUser(updatedUser.toGrpcUser())
-            .setMask(FieldMask.newBuilder().addPaths("user.status").build())
-            .build()
-        repo.updateUser(userUpdate)
+        val updatedUser = user.copy(status = UserStatus.ACTIVE)
+        val userUpdate = UpdateUserRequest(
+            userId = updatedUser.id,
+            firstName = updatedUser.firstName,
+            lastName = updatedUser.lastName,
+            email = updatedUser.email,
+            role = updatedUser.role,
+            status = updatedUser.status,
+        )
+        repo.updateUser(userUpdate, setOf(UserField.STATUS))
 
         // Remove the verification token after successful verification
-        verificationTokenRepo.deleteVerificationToken(request.token)
-
-        return Base.Nothing.getDefaultInstance()
+        verificationTokenRepo.deleteVerificationToken(token)
+        logger.info { "Email verified for user ${user.id}" }
     }
 
-    override suspend fun logout(): Base.Nothing {
-        GrpcContext.setAuthCookiesInContext("", "")
-
-        return Base.Nothing.getDefaultInstance()
+    override suspend fun logout() {
+        val userId = RequestContext.current().userId
+        RequestContext.current().setAuthCookies("", "")
+        logger.info { "User ${userId ?: "<unknown>"} logged out" }
     }
 
-    override suspend fun login(request: Authentication.LoginRequest): Base.Nothing {
+    @Suppress("ThrowsCount")
+    override suspend fun login(request: LoginRequest) {
         // Check whether a user with the given email exists
         val user =
             try {
                 repo.getUserByEmail(request.email).getOrThrow()
             } catch (_: NotFoundException) {
+                logger.debug { "Login failed: no account found for email '${request.email}'" }
                 throw UnauthenticatedException()
             }
 
-        // Check whether the user is active (verified email)
-        if (user.status != UserStatus.USER_STATUS_ACTIVE) {
+        if (!user.isActiveAndConfirmed) {
+            logger.debug { "Login failed: user ${user.id} is not active or confirmed (status: ${user.status})" }
             throw UnauthenticatedException()
         }
 
@@ -101,17 +118,34 @@ class AuthenticationService(
         val storedPasswordHash = try {
             repo.getPasswordHashByEmail(request.email).getOrThrow()
         } catch (_: NotFoundException) {
+            logger.error { "Login failed: no password hash found for user ${user.id}" }
             throw UnauthenticatedException()
         }
 
         if (!PasswordUtils.verifyPassword(request.password, storedPasswordHash)) {
+            logger.debug { "Login failed: incorrect password for user ${user.id}" }
             throw UnauthenticatedException()
         }
 
         // Generate JWT tokens
         val (accessToken, refreshToken) = jwtManager.generateAuthTokens(user.id)
-        GrpcContext.setAuthCookiesInContext(accessToken, refreshToken)
+        RequestContext.current().setAuthCookies(accessToken, refreshToken)
+        logger.info { "User ${user.id} logged in" }
+    }
 
-        return Base.Nothing.getDefaultInstance()
+    override suspend fun changePassword(request: ChangePasswordRequest) = withUser(repo) { currentUser ->
+        if (!currentUser.isActiveAndConfirmed) {
+            throw EntityNotActiveException(EntityType.USER, currentUser.id)
+        }
+
+        val storedPasswordHash = repo.getPasswordHashByEmail(currentUser.email).getOrThrow()
+        if (!PasswordUtils.verifyPassword(request.oldPassword, storedPasswordHash)) {
+            logger.debug { "Password change failed: incorrect old password for user ${currentUser.id}" }
+            throw IncorrectOldPasswordException()
+        }
+
+        val newPasswordHash = PasswordUtils.hashPassword(request.newPassword)
+        repo.updatePasswordHash(currentUser.id, newPasswordHash)
+        logger.info { "Password changed for user ${currentUser.id}" }
     }
 }

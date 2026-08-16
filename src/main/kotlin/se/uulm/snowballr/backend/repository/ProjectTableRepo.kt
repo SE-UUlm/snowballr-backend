@@ -1,31 +1,42 @@
 package se.uulm.snowballr.backend.repository
 
-import com.google.protobuf.util.FieldMaskUtil
-import org.jetbrains.exposed.sql.JoinType
-import org.jetbrains.exposed.sql.ResultRow
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.andWhere
-import org.jetbrains.exposed.sql.or
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.statements.UpdateStatement
-import org.jetbrains.exposed.sql.update
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.JoinType
+import org.jetbrains.exposed.v1.core.ResultRow
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.isNotNull
+import org.jetbrains.exposed.v1.core.less
+import org.jetbrains.exposed.v1.core.lessEq
+import org.jetbrains.exposed.v1.core.or
+import org.jetbrains.exposed.v1.core.statements.UpdateStatement
+import org.jetbrains.exposed.v1.exceptions.ExposedSQLException
+import org.jetbrains.exposed.v1.jdbc.andWhere
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.update
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
-import se.uulm.snowballr.backend.model.SnowballRException.NotFoundException
-import se.uulm.snowballr.backend.model.dto.Project
-import se.uulm.snowballr.backend.model.dto.ProjectPaper
-import se.uulm.snowballr.backend.model.dto.Review
-import se.uulm.snowballr.backend.model.dto.UserSettings
-import se.uulm.snowballr.backend.model.parseUUID
+import se.uulm.snowballr.backend.model.dto.project.Project
+import se.uulm.snowballr.backend.model.dto.project.ProjectField
+import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.projectpaper.ProjectPaper
+import se.uulm.snowballr.backend.model.dto.review.Review
+import se.uulm.snowballr.backend.model.dto.user.UserSettings
+import se.uulm.snowballr.backend.model.exception.NotFoundException
+import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
+import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
+import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectSettingRequest
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.ReviewTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.table.toProject
-import snowballr.ProjectOuterClass.ProjectStatus
 import java.time.OffsetDateTime
 import java.util.UUID
-import snowballr.ProjectOuterClass.Project as GrpcProject
+
+private val logger = KotlinLogging.logger { }
 
 /**
  * Defines an interface for repository operations related to the [ProjectTable].
@@ -34,6 +45,7 @@ import snowballr.ProjectOuterClass.Project as GrpcProject
  * abstraction over the underlying database implementation. By using this interface, the logic
  * for creating and managing projects can remain decoupled from the specifics of the database layer.
  */
+@Suppress("ComplexInterface")
 interface IProjectTableRepo {
     /**
      * Returns a [Result] containing the project by its ID or a [NotFoundException] if the project with the passed [id]
@@ -55,7 +67,7 @@ interface IProjectTableRepo {
      * relevant preferences.
      * @return The created [Project] object representing the newly created project.
      */
-    suspend fun createProject(request: GrpcProject.Create, userId: UUID, userSettings: UserSettings): Project
+    suspend fun createProject(request: CreateProjectRequest, userId: UUID, userSettings: UserSettings): Project
 
     /**
      * Returns all active projects stored in the database.
@@ -70,34 +82,29 @@ interface IProjectTableRepo {
      *
      * @param userId The unique identifier of the user whose associated projects are to be fetched.
      * @param statusFilters (optional) Set of filters to specify which project status the fetched projects should have.
-     * By default, [ProjectStatus.PROJECT_STATUS_ACTIVE] and [ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED] are used,
-     * which includes both active and active-locked projects, i.e., projects where settings cannot be changed anymore.
-     * If set to another value (e.g., [ProjectStatus.PROJECT_STATUS_DELETED]), only projects
-     * matching one of the statuses (e.g., deleted) will be returned.
+     * By default, [ProjectStatus.ACTIVE] and [ProjectStatus.ACTIVE_LOCKED] are used, which includes both active and
+     * active-locked projects, i.e., projects where settings cannot be changed anymore.
+     * If set to another value (e.g., [ProjectStatus.DELETED]), only projects matching one of the statuses
+     * (e.g., deleted) will be returned.
      *
      * @return A list of [Project] objects matching the specified filters where the given user is member of.
      */
     suspend fun getUserProjects(
         userId: UUID,
         statusFilters: Set<ProjectStatus> = setOf(
-            ProjectStatus.PROJECT_STATUS_ACTIVE,
-            ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED,
+            ProjectStatus.ACTIVE,
+            ProjectStatus.ACTIVE_LOCKED,
         ),
     ): List<Project>
 
     /**
      * Updates an existent project in the database with the provided new information.
-     * The following fields can be updated:
-     * - name
-     * - status
-     * - similarity_threshold
-     * - snowballing_type
-     * - review_maybe_allowed
      *
-     * @param request The update request containing the new project details, such as the new name.
+     * @param request The update request containing the new project details.
+     * @param fields The fields that should be updated.
      * @return The updated [Project] object reflecting the changes from the [request].
      */
-    suspend fun updateProject(request: GrpcProject.Update): Project
+    suspend fun updateProject(request: UpdateProjectRequest, fields: Set<ProjectField>): Project
 
     /**
      * Checks if the project with the given [projectId] is locked.
@@ -106,8 +113,8 @@ interface IProjectTableRepo {
      * is associated with this project.
      *
      * **Note:** This functions returns `true` or `false` regardless of the project's current state.
-     * However, the result is only meaningful if the project is in an active state
-     * (i.e., [ProjectStatus.PROJECT_STATUS_ACTIVE] or [ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED]).
+     * However, the result is only meaningful if the project is in an active state (i.e., [ProjectStatus.ACTIVE] or
+     * [ProjectStatus.ACTIVE_LOCKED]).
      *
      * @param projectId The ID of the project to check for locked status.
      * @return `true` if the project is locked, `false` otherwise.
@@ -115,10 +122,31 @@ interface IProjectTableRepo {
     suspend fun isProjectLocked(projectId: UUID): Boolean
 
     /**
-     * Performs a soft delete of the project with the given [projectId], i.e., does not remove the
-     * project from the database but marks it as deleted by setting the status to [ProjectStatus.PROJECT_STATUS_DELETED].
+     * Performs a soft-delete of the project with the given [projectId], i.e., does not remove the
+     * project from the database but marks it as deleted by setting the status to [ProjectStatus.DELETED].
      */
     suspend fun softDeleteProject(projectId: UUID)
+
+    /**
+     * Clears all soft-deleted projects whose deletion date is older than the given [thresholdDate].
+     *
+     * @param thresholdDate The date up to which soft-deleted projects are to be cleared.
+     */
+    suspend fun clearSoftDeletedProjects(thresholdDate: OffsetDateTime)
+
+    /**
+     * Tries to hard-delete all projects that were soft-deleted, cleared, and are no longer referenced by any other
+     * entity.
+     */
+    suspend fun hardDeleteClearedProjects()
+
+    /**
+     * Ensures that the max stage of the project is greater than or equal to the passed [stage].
+     *
+     * If the max stage of the project is lower than [stage] then the project value is updated; otherwise nothing
+     * happens.
+     */
+    suspend fun updateMaxStageIfExceeded(projectId: UUID, stage: Int)
 }
 
 /**
@@ -144,33 +172,33 @@ class ProjectTableRepo(
         ProjectTable.doesEntityExistById(id)
     }
 
-    override suspend fun createProject(request: GrpcProject.Create, userId: UUID, userSettings: UserSettings): Project =
-        db.query {
-            ProjectTable.insertAndGet(ResultRow::toProject, EntityType.PROJECT) {
-                it[name] = request.name
-                it[status] = ProjectStatus.PROJECT_STATUS_ACTIVE
-                it[currentStage] = 0
-                it[maxStage] = 0
-                it[similarityThreshold] = userSettings.similarityThreshold
-                it[snowballingType] = userSettings.snowballingType
-                it[reviewMaybeAllowed] = userSettings.reviewMaybeAllowed
-                it[reviewDecisionMatrixBinary] = userSettings.decisionMatrix.toByteArray()
-                it[fetchers] = emptyMap()
-                it[createdBy] = userId
-            }
+    override suspend fun createProject(
+        request: CreateProjectRequest,
+        userId: UUID,
+        userSettings: UserSettings,
+    ): Project = db.query {
+        ProjectTable.insertAndGet(ResultRow::toProject) {
+            it[name] = request.name
+            it[status] = ProjectStatus.ACTIVE
+            it[currentStage] = 0
+            it[maxStage] = 0
+            it[similarityThreshold] = userSettings.similarityThreshold
+            it[snowballingType] = userSettings.snowballingType
+            it[reviewMaybeAllowed] = userSettings.reviewMaybeAllowed
+            it[reviewDecisionMatrixBinary] = userSettings.decisionMatrix.toByteArray()
+            it[fetchers] = emptyMap()
+            it[createdBy] = userId
         }
+    }
 
     override suspend fun getAllProjects(): List<Project> = db.query {
         ProjectTable.getEntities(ResultRow::toProject) {
-            (ProjectTable.status eq ProjectStatus.PROJECT_STATUS_ACTIVE) or
-                (ProjectTable.status eq ProjectStatus.PROJECT_STATUS_ACTIVE_LOCKED)
+            (ProjectTable.status eq ProjectStatus.ACTIVE) or (ProjectTable.status eq ProjectStatus.ACTIVE_LOCKED)
         }
     }
 
     override suspend fun getUserProjects(userId: UUID, statusFilters: Set<ProjectStatus>): List<Project> = db.query {
-        val excludedStatuses = listOf(ProjectStatus.PROJECT_STATUS_UNSPECIFIED)
         val projectFilter = statusFilters
-            .filterNot { it in excludedStatuses }
             .map { ProjectTable.status eq it }
             .reduceOrNull { acc, filter -> acc or filter }
 
@@ -185,14 +213,38 @@ class ProjectTableRepo(
             .map { it.toProject() }
     }
 
-    override suspend fun updateProject(request: GrpcProject.Update): Project = db.query {
-        val projectId = parseUUID(request.project.id, EntityType.PROJECT)
-        val fieldMaskPaths = FieldMaskUtil.normalize(request.mask).pathsList.toSet()
+    @Suppress("CognitiveComplexMethod")
+    override suspend fun updateProject(request: UpdateProjectRequest, fields: Set<ProjectField>): Project = db.query {
+        if (fields.isEmpty()) {
+            return@query getProjectById(request.projectId).getOrThrow()
+        }
 
-        ProjectTable.updateByIdAndGet(projectId, ResultRow::toProject, EntityType.PROJECT) {
-            it.applyProjectStatusUpdate(request.project, fieldMaskPaths)
-            it.applyProjectNameUpdate(request.project, fieldMaskPaths)
-            it.applySlrProjectUpdates(request.project.settings, fieldMaskPaths)
+        val isUpdatingDecisionMatrix = isUpdatingDecisionMatrix(fields)
+        val project = if (isUpdatingDecisionMatrix) getProjectByIdOrNull(request.projectId) else null
+
+        val settings = request.settings
+        ProjectTable.updateByIdAndGet(request.projectId, ResultRow::toProject) {
+            for (field in fields) {
+                when (field) {
+                    ProjectField.NAME -> it[ProjectTable.name] = request.name
+                    ProjectField.STATUS -> it[ProjectTable.status] = request.status
+                    ProjectField.SIMILARITY_THRESHOLD ->
+                        it[ProjectTable.similarityThreshold] = settings.similarityThreshold
+                    ProjectField.SNOWBALLING_TYPE -> it[ProjectTable.snowballingType] = settings.snowballingType
+                    ProjectField.REVIEW_MAYBE_ALLOWED ->
+                        it[ProjectTable.reviewMaybeAllowed] = settings.reviewMaybeAllowed
+                    ProjectField.FETCHERS -> it[ProjectTable.fetchers] = settings.fetchers
+
+                    ProjectField.NUMBER_OF_REVIEWERS,
+                    ProjectField.DECISION_MATRIX_PATTERNS,
+                    -> { /* decision matrix is handled below */ }
+                }
+            }
+
+            if (isUpdatingDecisionMatrix && project != null) {
+                it.applyDecisionMatrixUpdate(project, request.settings, fields)
+            }
+
             it[modifiedAt] = OffsetDateTime.now()
         }
     }
@@ -209,33 +261,102 @@ class ProjectTableRepo(
     override suspend fun softDeleteProject(projectId: UUID) {
         db.query {
             ProjectTable.update({ ProjectTable.id eq projectId }) {
-                it[status] = ProjectStatus.PROJECT_STATUS_DELETED
+                it[status] = ProjectStatus.DELETED
                 it[deletedAt] = OffsetDateTime.now()
             }
         }
     }
 
-    private fun UpdateStatement.applyProjectNameUpdate(project: GrpcProject, paths: Set<String>) {
-        if ("project.name" in paths) {
-            this[ProjectTable.name] = project.name
+    override suspend fun clearSoftDeletedProjects(thresholdDate: OffsetDateTime) = db.query {
+        val clearedProjects = ProjectTable.update(
+            {
+                (ProjectTable.status eq ProjectStatus.DELETED).and(ProjectTable.deletedAt lessEq thresholdDate)
+            },
+        ) {
+            it[name] = ""
+            it[status] = ProjectStatus.CLEARED
+            it[fetchers] = emptyMap()
+            it[similarityThreshold] = 0f
+            it[fetchers] = emptyMap()
+
+            it[modifiedBy] = null
+            it[modifiedAt] = OffsetDateTime.now()
+            it[deletedBy] = null
+            it[archivedBy] = null
+        }
+
+        logger.info { "Cleared $clearedProjects soft-deleted projects older than $thresholdDate." }
+    }
+
+    override suspend fun hardDeleteClearedProjects() {
+        val projectIdsToDelete = getProjectIdsToDelete()
+
+        if (projectIdsToDelete.isEmpty()) {
+            logger.info { "No projects to hard-delete." }
+            return
+        }
+
+        val (successfulDeletedIds, failedToDeleteIds) = projectIdsToDelete.partition { projectId ->
+            attemptToDeleteProject(projectId)
+        }
+
+        logger.info {
+            "Hard-deleted ${successfulDeletedIds.size} projects, failed to delete ${failedToDeleteIds.size} projects."
         }
     }
 
-    private fun UpdateStatement.applyProjectStatusUpdate(project: GrpcProject, paths: Set<String>) {
-        if ("project.status" in paths) {
-            this[ProjectTable.status] = project.status
+    override suspend fun updateMaxStageIfExceeded(projectId: UUID, stage: Int) {
+        db.query {
+            ProjectTable.update({ (ProjectTable.id eq projectId) and (ProjectTable.maxStage less stage) }) {
+                it[ProjectTable.maxStage] = stage
+            }
         }
     }
 
-    private fun UpdateStatement.applySlrProjectUpdates(settings: GrpcProject.Settings, paths: Set<String>) {
-        if ("project.settings.similarity_threshold" in paths) {
-            this[ProjectTable.similarityThreshold] = settings.similarityThreshold
+    /**
+     * Retrieves a list of project IDs that are eligible for hard deletion.
+     *
+     * @return A list of project IDs that are eligible for hard deletion.
+     */
+    private suspend fun getProjectIdsToDelete(): List<UUID> = db.query {
+        ProjectTable
+            .selectAll()
+            .where {
+                (ProjectTable.status eq ProjectStatus.CLEARED).and(ProjectTable.deletedAt.isNotNull())
+            }
+            .map { it[ProjectTable.id].value }
+    }
+
+    /**
+     * Attempts to delete a single project by its ID.
+     *
+     * @param projectId The ID of the project to be deleted.
+     * @return `true` if the project was successfully deleted, `false` otherwise.
+     */
+    private suspend fun attemptToDeleteProject(projectId: UUID): Boolean = db.query {
+        try {
+            val deletedRows = ProjectTable.deleteWhere { ProjectTable.id eq projectId }
+            deletedRows > 0
+        } catch (e: ExposedSQLException) {
+            logger.debug(e) { "Failed to hard-delete project $projectId, likely due to existing references." }
+            false
         }
-        if ("project.settings.snowballing_type" in paths) {
-            this[ProjectTable.snowballingType] = settings.snowballingType
+    }
+
+    private fun isUpdatingDecisionMatrix(fields: Set<ProjectField>) = fields.any { it.isDecisionMatrixField() }
+
+    private fun UpdateStatement.applyDecisionMatrixUpdate(
+        project: Project,
+        settings: UpdateProjectSettingRequest,
+        fields: Set<ProjectField>,
+    ) {
+        var decisionMatrix = project.reviewDecisionMatrix
+        if (ProjectField.NUMBER_OF_REVIEWERS in fields) {
+            decisionMatrix = decisionMatrix.copy(numberOfReviewers = settings.decisionMatrix.numberOfReviewers)
         }
-        if ("project.settings.review_maybe_allowed" in paths) {
-            this[ProjectTable.reviewMaybeAllowed] = settings.reviewMaybeAllowed
+        if (ProjectField.DECISION_MATRIX_PATTERNS in fields) {
+            decisionMatrix = decisionMatrix.copy(patterns = settings.decisionMatrix.patterns)
         }
+        this[ProjectTable.reviewDecisionMatrixBinary] = decisionMatrix.toByteArray()
     }
 }

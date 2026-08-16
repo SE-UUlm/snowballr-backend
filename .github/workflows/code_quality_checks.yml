@@ -8,57 +8,47 @@ on:
     pull_request:
     workflow_dispatch:
 
-env:
-    java_version: ${{ vars.JAVA_VERSION }}
-    java_distribution: ${{ vars.JAVA_DISTRIBUTION }}
-
 jobs:
     linting:
         name: Check for linting errors
         runs-on: ubuntu-latest
         steps:
             - name: Checkout repository
-              uses: actions/checkout@v5
+              uses: actions/checkout@v7
               with:
-                  submodules: "recursive"
+                  fetch-depth: 0
+                  fetch-tags: true
 
-            - name: Setup
-              uses: ./.github/workflows/setup/
-              with:
-                  java_version: ${{ env.java_version }}
-                  java_distribution: ${{ env.java_distribution }}
+            - name: Setup Java and Gradle
+              uses: ./.github/workflows/setup-java-gradle/
 
             - name: Check linting
               run: ./gradlew lint
 
-    testing:
-        name: Run tests
+    unit-testing:
+        name: Run unit tests
         runs-on: ubuntu-latest
         permissions:
             pull-requests: write
             contents: read
         steps:
             - name: Checkout repository
-              uses: actions/checkout@v5
+              uses: actions/checkout@v7
               with:
-                  submodules: "recursive"
+                  fetch-depth: 0
+                  fetch-tags: true
 
-            - name: Setup
-              uses: ./.github/workflows/setup/
-              with:
-                  java_version: ${{ env.java_version }}
-                  java_distribution: ${{ env.java_distribution }}
+            - name: Setup Application
+              uses: ./.github/workflows/setup-all/
 
             - name: Run tests and collect coverage
-              run: |
-                  ./gradlew test
-                  ./gradlew koverPrintCoverage
+              run: ./gradlew test
 
             - name: Upload report
               if: failure() || success()
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v7
               with:
-                  name: test-report
+                  name: unit-test-report
                   path: |
                       build/testReportHtml
                       build/coverageHtml
@@ -66,43 +56,157 @@ jobs:
 
             - name: Add coverage to PR
               if: failure() || success()
-              uses: madrapps/jacoco-report@v1.7.2
+              uses: madrapps/jacoco-report@v1.8.0
               with:
                   paths: ${{ github.workspace }}/build/coverageXml/report.xml
                   token: ${{ secrets.GITHUB_TOKEN }}
                   title: Code Coverage
                   update-comment: true
 
-            # We have to trigger this job on "pull_request" so that the coverage is commented in the PR,
-            # but Teamscale requires a revision. Therefore, we retrieve the latest commit and set the revision manually.
-            - name: Retrieve latest commit of PR
-              if: ${{ github.event_name == 'pull_request' }}
+            - name: Upload coverage report
+              uses: actions/upload-artifact@v7
+              with:
+                  name: coverage-report
+                  path: ${{ github.workspace }}/build/coverageXml/report.xml
+                  retention-days: 1
+                  if-no-files-found: error
+
+    integration-testing:
+        name: Run integration tests
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v7
+              with:
+                  fetch-depth: 0
+                  fetch-tags: true
+
+            - name: Setup Application
+              uses: ./.github/workflows/setup-all/
+
+            - name: Run integration tests
+              run: ./gradlew integrationTest
+
+            - name: Upload report
+              if: failure() || success()
+              uses: actions/upload-artifact@v7
+              with:
+                  name: integration-test-report
+                  path: build/integrationTestReportHtml
+                  if-no-files-found: error
+
+    changes:
+        name: Detect changed files
+        runs-on: ubuntu-latest
+        outputs:
+            python: ${{ steps.filter.outputs.python }}
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v7
+
+            - name: Check for Python file changes
+              id: filter
+              uses: dorny/paths-filter@v4
+              with:
+                  filters: |
+                      python:
+                        - 'tools/fetcher-cli/**/*.py'
+                        - 'src/main/resources/plugins/fetchers/**/*.py'
+                        - 'pyproject.toml'
+
+    python-code-quality:
+        name: Python code quality
+        runs-on: ubuntu-latest
+        needs: changes
+        if: needs.changes.outputs.python == 'true' || github.event_name == 'workflow_dispatch'
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v7
+
+            - name: Setup Python and uv
+              uses: ./.github/workflows/setup-python-uv/
+
+            - name: Create virtual environment
               run: |
-                  # Fetch commits of PR
-                  response=$(curl --request GET \
-                      --url 'https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/commits' \
-                      --header 'Accept: application/vnd.github.v3+json' \
-                      --header 'Content-Type: application/json')
-                  # Store response in JSON file and retrieve SHA of latest commit
-                  echo $response > response.json
-                  length=$(jq 'length' response.json)
-                  index=$(($length - 1))
-                  latest_commit=$(jq --argjson index $index '.[$index]' response.json)
-                  latest_commit_sha=$(echo "$latest_commit" | jq -r '.sha')
-                  echo "Latest Commit SHA: $latest_commit_sha"
-                  echo "LATEST_COMMIT_SHA=$latest_commit_sha" >> $GITHUB_ENV
+                  uv venv .venv
+                  uv pip install --python .venv/bin/python3 -r requirements.txt
+
+            - name: Check formatting
+              run: uvx ruff format --check .
+
+            - name: Check linting
+              run: uvx ruff check .
+
+            - name: Type checking
+              run: uvx ty check
+
+    teamscale-upload:
+        name: Teamscale Upload
+        runs-on: ubuntu-latest
+        needs: unit-testing
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v7
+              with:
+                  fetch-depth: 0
+
+            - name: Download coverage report
+              uses: actions/download-artifact@v8
+              with:
+                  name: coverage-report
+                  path: .
 
             - name: Teamscale Upload
-              if: github.actor != 'dependabot[bot]'
-              uses: cqse/teamscale-upload-action@v2.9.6
+              uses: SE-UUlm/snowballr-ci/src/teamscale-upload@v1
               with:
-                  server: "https://exia.informatik.uni-ulm.de/teamscale"
                   project: "29382a84-6015-4ecd-b7dd-7f578cae4040"
-                  user: "slartibartfass2"
-                  accesskey: ${{ secrets.TEAMSCALE_ACCESS_KEY }}
-                  partition: "Github Action > ${{ github.ref_name }} ${{ github.run_id }}"
+                  access-key: ${{ secrets.TEAMSCALE_ACCESS_KEY }}
                   format: JACOCO
-                  message: "Code coverage from GitHub Actions"
-                  files: ${{ github.workspace }}/build/coverageXml/report.xml
-                  # When the event is a PR, use the previously defined env variable; otherwise the `github.sha` is fine.
-                  revision: ${{ github.event_name == 'pull_request' && env.LATEST_COMMIT_SHA || github.sha }}
+                  files: ${{ github.workspace }}/report.xml
+
+    sonarqube:
+        name: SonarQube Analysis
+        if: github.ref_name == 'develop' && github.ref_type == 'branch'
+        runs-on: ubuntu-latest
+        needs: unit-testing
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v7
+              with:
+                  fetch-depth: 0
+                  fetch-tags: true
+
+            - name: Setup Java and Gradle
+              uses: ./.github/workflows/setup-java-gradle/
+
+            - name: Download coverage report
+              uses: actions/download-artifact@v8
+              with:
+                  name: coverage-report
+                  path: ${{ github.workspace }}/build/coverageXml
+
+            - name: SonarQube Scan
+              run: ./gradlew sonar -x test --stacktrace
+              env:
+                  SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+                  SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+    ensure-openapi-spec-consistency:
+        name: Ensure OpenAPI spec consistency
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v7
+              with:
+                  fetch-depth: 0
+                  fetch-tags: true
+
+            - name: Setup Application
+              uses: ./.github/workflows/setup-all/
+
+            - name: Create the API specification
+              run: ./gradlew createApiSpec
+
+            # Test whether a diff exists after recreating the api spec
+            - name: Test API spec consistency
+              run: git diff --exit-code
