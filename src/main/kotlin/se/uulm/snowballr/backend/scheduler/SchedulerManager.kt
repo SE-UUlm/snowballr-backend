@@ -10,6 +10,8 @@ import org.quartz.impl.StdSchedulerFactory
 private val logger = KotlinLogging.logger {}
 
 private const val MAINTENANCE = "maintenance"
+private const val EVERY_DAY_MIDNIGHT = "0 0 0 * * ?"
+private const val EVERY_MONTH_1ST_DAY_MIDNIGHT = "0 0 0 1 * ?"
 
 /**
  * Central manager for registering and controlling scheduled maintenance jobs.
@@ -47,7 +49,7 @@ class SchedulerManager {
 
         val trigger = TriggerBuilder.newTrigger()
             .withIdentity("cleanExpiredTokensTrigger", MAINTENANCE)
-            .withSchedule(CronScheduleBuilder.cronSchedule("0 0 0 * * ?"))
+            .withSchedule(CronScheduleBuilder.cronSchedule(EVERY_DAY_MIDNIGHT))
             .build()
 
         scheduler.scheduleJob(job, trigger)
@@ -65,7 +67,7 @@ class SchedulerManager {
 
         val trigger = TriggerBuilder.newTrigger()
             .withIdentity("clearSoftDeletedEntitiesTrigger", MAINTENANCE)
-            .withSchedule(CronScheduleBuilder.cronSchedule("0 0 0 * * ?"))
+            .withSchedule(CronScheduleBuilder.cronSchedule(EVERY_DAY_MIDNIGHT))
             .build()
 
         scheduler.scheduleJob(job, trigger)
@@ -83,7 +85,7 @@ class SchedulerManager {
 
         val trigger = TriggerBuilder.newTrigger()
             .withIdentity("hardDeleteSoftDeletedEntitiesTrigger", MAINTENANCE)
-            .withSchedule(CronScheduleBuilder.cronSchedule("0 0 0 1 * ?"))
+            .withSchedule(CronScheduleBuilder.cronSchedule(EVERY_MONTH_1ST_DAY_MIDNIGHT))
             .build()
 
         scheduler.scheduleJob(job, trigger)
