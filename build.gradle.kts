@@ -162,7 +162,7 @@ val fetcherVenvPython: String = if (isWindows) {
  */
 val uvExecutable: String by lazy {
     val executableName = if (isWindows) "uv.exe" else "uv"
-    val override = System.getenv("UV_EXECUTABLE")
+    val override = System.getenv("UV_EXECUTABLE")?.takeIf { it.isNotBlank() }
     val pathDirs = System.getenv("PATH").orEmpty().split(File.pathSeparatorChar)
     val homeDir = System.getProperty("user.home")
     val fallbackDirs = listOf(
@@ -176,7 +176,7 @@ val uvExecutable: String by lazy {
         ?: (pathDirs + fallbackDirs)
             .asSequence()
             .map { File(it, executableName) }
-            .firstOrNull { it.isFile }
+            .firstOrNull { it.isFile && it.canExecute() }
             ?.absolutePath
         ?: executableName
 }
