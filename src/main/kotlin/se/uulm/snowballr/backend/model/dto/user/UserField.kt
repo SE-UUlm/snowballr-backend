@@ -1,9 +1,9 @@
 package se.uulm.snowballr.backend.model.dto.user
 
-enum class UserField(val grpcPath: String) {
-    EMAIL("user.email"),
-    FIRST_NAME("user.first_name"),
-    LAST_NAME("user.last_name"),
-    ROLE("user.role"),
-    STATUS("user.status"),
+enum class UserField {
+    EMAIL,
+    FIRST_NAME,
+    LAST_NAME,
+    ROLE,
+    STATUS,
 }
