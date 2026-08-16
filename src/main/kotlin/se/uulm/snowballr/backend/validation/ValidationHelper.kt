@@ -151,11 +151,13 @@ fun Raise<ValidationIssue>.ensureFieldMaskIsValid(
     unallowedFields: List<String> = emptyList(),
     allowEmpty: Boolean = false,
 ) {
-    ensure(allowEmpty || fieldMask.pathsList.isNotEmpty()) { InvalidFieldMask.createForBlankFieldMask() }
+    val paths = FieldMaskUtil.normalize(fieldMask).pathsList
+
+    ensure(allowEmpty || paths.isNotEmpty()) { InvalidFieldMask.createForBlankFieldMask() }
     ensure(FieldMaskUtil.isValid(descriptor, fieldMask)) {
-        InvalidFieldMask.createForContainsInvalidFields(fieldMask.pathsList)
+        InvalidFieldMask.createForContainsInvalidFields(paths)
     }
-    ensure(fieldMask.pathsList.toSet().none { unallowedFields.contains(it) }) {
+    ensure(paths.none { unallowedFields.contains(it) }) {
         InvalidFieldMask.createForContainsUnallowedFields(unallowedFields)
     }
 }
