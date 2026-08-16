@@ -27,6 +27,7 @@ class ExternalIdTest {
             ExternalIdType.MEDLINE to "not-a-number",
             ExternalIdType.PUB_MED_CENTRAL to "1234567",
             ExternalIdType.SEMANTIC_SCHOLAR to "not-a-hash",
+            ExternalIdType.ACL to "not-an-acl-id",
         )
 
         @JvmStatic
@@ -41,6 +42,12 @@ class ExternalIdTest {
         fun validArxivIdOldStyle() = externalId {
             type = ExternalIdType.ARXIV.name
             value = "hep-th/9901001"
+        }
+
+        @JvmStatic
+        fun validAclIdNewStyle() = externalId {
+            type = ExternalIdType.ACL.name
+            value = "2021.acl-long.1"
         }
 
         @JvmStatic
@@ -83,6 +90,13 @@ class ExternalIdTest {
         EitherAssert.assertThat(result).isRight()
     }
 
+    @Test
+    fun `When an ACL ID uses the new-style format, then no issues are returned`() {
+        val result = validateExternalId(validAclIdNewStyle())
+
+        EitherAssert.assertThat(result).isRight()
+    }
+
     @ParameterizedTest
     @MethodSource("se.uulm.snowballr.backend.validation.ExternalIdTest#invalidExternalIdsTooLongValue")
     fun `When an external ID has a too long value, then a 'TooLongField' issue is returned`(externalId: ExternalId) {
@@ -107,18 +121,6 @@ class ExternalIdTest {
         val result = validateExternalId(externalId)
 
         assertInvalidResult<InvalidExternalIdFormat>(result)
-    }
-
-    @Test
-    fun `When an ACL external ID has a non-blank value of valid length, then no issues are returned regardless of format`() {
-        val externalId = externalId {
-            type = ExternalIdType.ACL.name
-            value = "this is not a real ACL anthology id but should still be accepted"
-        }
-
-        val result = validateExternalId(externalId)
-
-        EitherAssert.assertThat(result).isRight()
     }
 
     @Test

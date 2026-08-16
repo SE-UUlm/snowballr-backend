@@ -14,10 +14,12 @@ object ExternalIdValidator {
     const val EXTERNAL_ID_MAX_LENGTH = 100
 
     /**
-     * Matches a [DOI](https://www.doi.org/) of the form `10.<4-9 digit registrant code>/<suffix>`, e.g.
+     * Matches a [DOI](https://www.doi.org/) of the form `10.<4 digit registrant code>/<suffix>`, e.g.
      * `10.1000/xyz123`.
+     *
+     * [Scheme](https://www.doi.org/the-identifier/what-is-a-doi/).
      */
-    private val DOI_REGEX = Regex("""^10\.\d{4,9}/\S+$""")
+    private val DOI_REGEX = Regex("""^10\.\d{4}/\S+$""")
 
     /**
      * Matches the current [ArXiv](https://arxiv.org/) `YYMM.NNNNN` scheme introduced in 2007, e.g. `2101.00001`,
@@ -34,6 +36,8 @@ object ExternalIdValidator {
     /**
      * Matches an [ArXiv](https://arxiv.org/) identifier in either the [ARXIV_NEW_STYLE_REGEX] or the
      * [ARXIV_OLD_STYLE_REGEX] scheme.
+     *
+     * [Scheme](https://info.arxiv.org/help/arxiv_identifier.html).
      */
     private val ARXIV_REGEX = Regex("${ARXIV_NEW_STYLE_REGEX.pattern}|${ARXIV_OLD_STYLE_REGEX.pattern}")
 
@@ -56,6 +60,26 @@ object ExternalIdValidator {
      */
     private val SEMANTIC_SCHOLAR_REGEX = Regex("""^[a-f0-9]{40}$""")
 
+    /**
+     * Matches the current [ACL Anthology](https://aclanthology.org/) ID scheme introduced in 2020,
+     * `YYYY.<venue>-<volume>.<paper>`, e.g. `2021.acl-long.1`.
+     */
+    private val ACL_NEW_STYLE_REGEX = Regex("""^\d{4}\.[a-z0-9]+-[a-z0-9]+\.\d+$""")
+
+    /**
+     * Matches the legacy [ACL Anthology](https://aclanthology.org/) ID scheme used before 2020,
+     * `<collection letter><2 digit year>-<paper number>`, e.g. `P19-1007`.
+     */
+    private val ACL_OLD_STYLE_REGEX = Regex("""^[A-Z]\d{2}-\d{3,4}$""")
+
+    /**
+     * Matches an [ACL Anthology](https://aclanthology.org/) identifier in either the [ACL_NEW_STYLE_REGEX] or the
+     * [ACL_OLD_STYLE_REGEX] scheme.
+     *
+     * [Scheme](https://aclanthology.org/info/ids/).
+     */
+    private val ACL_REGEX = Regex("${ACL_NEW_STYLE_REGEX.pattern}|${ACL_OLD_STYLE_REGEX.pattern}")
+
     fun validateExternalId(externalId: ExternalId): EitherNel<ValidationIssue, Unit> = either {
         zipOrAccumulate(
             { ensureValidEnumValue<ExternalIdType>(externalId.type, "External ID Type") },
@@ -66,19 +90,16 @@ object ExternalIdValidator {
 
     /**
      * The expected value format for the given [ExternalIdType], or `null` if the type does not have a
-     * standardized-enough format to validate meaningfully ([ExternalIdType.ACL]'s Anthology ID scheme and
-     * [ExternalIdType.DBLP]'s key scheme have both changed shape too many times over the years), in which case
-     * only the generic blank/max-length checks apply.
+     * standardized-enough format to validate meaningfully ([ExternalIdType.DBLP]'s key scheme has changed shape
+     * too many times over the years), in which case only the generic blank/max-length checks apply.
      */
     private fun formatRegexFor(type: ExternalIdType): Regex? = when (type) {
         ExternalIdType.DOI -> DOI_REGEX
         ExternalIdType.ARXIV -> ARXIV_REGEX
-        ExternalIdType.MAG -> DIGITS_ONLY_REGEX
-        ExternalIdType.PUB_MED -> DIGITS_ONLY_REGEX
-        ExternalIdType.MEDLINE -> DIGITS_ONLY_REGEX
+        ExternalIdType.MAG, ExternalIdType.PUB_MED, ExternalIdType.MEDLINE -> DIGITS_ONLY_REGEX
         ExternalIdType.PUB_MED_CENTRAL -> PUB_MED_CENTRAL_REGEX
         ExternalIdType.SEMANTIC_SCHOLAR -> SEMANTIC_SCHOLAR_REGEX
-        ExternalIdType.ACL -> null
+        ExternalIdType.ACL -> ACL_REGEX
         ExternalIdType.DBLP -> null
     }
 
