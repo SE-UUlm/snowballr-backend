@@ -41,9 +41,7 @@ class RequestContextFilter(
                 response.sendError(HttpStatus.FORBIDDEN.value(), "Missing $REQUESTED_WITH_HEADER header")
                 return
             }
-            else -> {
-                authenticate(request, context)
-            }
+            else -> authenticate(request, context)
         }
 
         publishAuthentication(context)
