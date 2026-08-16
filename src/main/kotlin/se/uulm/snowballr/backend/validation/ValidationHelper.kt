@@ -4,7 +4,6 @@ package se.uulm.snowballr.backend.validation
 
 import arrow.core.raise.Raise
 import arrow.core.raise.ensure
-import com.google.protobuf.Descriptors.Descriptor
 import com.google.protobuf.FieldMask
 import com.google.protobuf.util.FieldMaskUtil
 import se.uulm.snowballr.backend.model.BlankField
@@ -136,29 +135,26 @@ fun Raise<ValidationIssue>.ensureLastNameValidity(lastName: String) =
     ensureTextFieldValidity("last_name", lastName, LAST_NAME_MAX_LENGTH)
 
 /**
- * Ensures that the provided field mask is non-blank and contains only fields that are valid and allowed for the given
- * object type.
+ * Ensures that the provided field mask is not empty (except `allowEmpty` is true) and it only contains allowed paths.
+ *
  * If the field mask is not valid, a [InvalidFieldMask] validation issue is raised.
  *
  * @param fieldMask The [FieldMask] to validate.
- * @param descriptor The object descriptor to validate against.
- * @param unallowedFields A list of paths that must not appear in the field mask.
+ * @param allowedPaths The paths that are allowed in the field mask.
  * @param allowEmpty Whether to allow an empty field mask. Defaults to false.
  */
 fun Raise<ValidationIssue>.ensureFieldMaskIsValid(
     fieldMask: FieldMask,
-    descriptor: Descriptor,
-    unallowedFields: List<String> = emptyList(),
+    allowedPaths: List<String>,
     allowEmpty: Boolean = false,
 ) {
     val paths = FieldMaskUtil.normalize(fieldMask).pathsList
 
     ensure(allowEmpty || paths.isNotEmpty()) { InvalidFieldMask.createForBlankFieldMask() }
-    ensure(FieldMaskUtil.isValid(descriptor, fieldMask)) {
-        InvalidFieldMask.createForContainsInvalidFields(paths)
-    }
-    ensure(paths.none { unallowedFields.contains(it) }) {
-        InvalidFieldMask.createForContainsUnallowedFields(unallowedFields)
+
+    val unknownPaths = paths.filterNot { it in allowedPaths }
+    ensure(unknownPaths.isEmpty()) {
+        InvalidFieldMask.createForContainsInvalidFields(unknownPaths)
     }
 }
 

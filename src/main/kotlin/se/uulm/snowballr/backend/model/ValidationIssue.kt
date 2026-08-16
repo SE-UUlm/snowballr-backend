@@ -146,11 +146,6 @@ data class InvalidFieldMask(val message: String) : ValidationIssue {
             val fieldsString = fields.joinToString(", ") { field -> "'$field'" }
             return InvalidFieldMask("One or more of the following fields are invalid: $fieldsString")
         }
-
-        fun createForContainsUnallowedFields(fields: List<String>): InvalidFieldMask {
-            val fieldsString = fields.joinToString(", ") { field -> "'$field'" }
-            return InvalidFieldMask("One or more of the following fields are not allowed: $fieldsString")
-        }
     }
 
     override fun toString(): String = message

@@ -4,7 +4,9 @@ import arrow.core.Either
 import arrow.core.EitherNel
 import arrow.core.raise.either
 import arrow.core.raise.zipOrAccumulate
+import se.uulm.snowballr.backend.grpc.getGrpcPathsForUserField
 import se.uulm.snowballr.backend.model.ValidationIssue
+import se.uulm.snowballr.backend.model.dto.user.UserField
 import snowballr.UserOuterClass.User
 
 /**
@@ -16,7 +18,10 @@ object UserValidator {
     fun validateUpdateRequest(request: User.Update): EitherNel<ValidationIssue, Unit> = either {
         // Validate the field mask
         val fieldMaskResult = either {
-            ensureFieldMaskIsValid(request.mask, User.Update.getDescriptor(), listOf("user.status"))
+            val allowedPaths = listOf("user.id") + UserField.entries
+                .map { getGrpcPathsForUserField(it) }
+                .filterNot { it == "user.status" }
+            ensureFieldMaskIsValid(request.mask, allowedPaths)
         }
 
         // If field mask validation fails, return early

@@ -10,10 +10,12 @@ import arrow.core.raise.either
 import arrow.core.raise.ensure
 import arrow.core.raise.zipOrAccumulate
 import com.google.protobuf.util.FieldMaskUtil
+import se.uulm.snowballr.backend.grpc.getGrpcPathsForPaperField
 import se.uulm.snowballr.backend.model.CompositeIssue
 import se.uulm.snowballr.backend.model.MultipleOccurrences
 import se.uulm.snowballr.backend.model.TooLongList
 import se.uulm.snowballr.backend.model.ValidationIssue
+import se.uulm.snowballr.backend.model.dto.paper.PaperField
 import snowballr.PaperOuterClass.Paper
 import java.time.LocalDate
 
@@ -27,7 +29,7 @@ object PaperValidator {
     const val PUBLICATION_TYPE_MAX_LENGTH = 200
     const val MAX_AUTHOR_COUNT = 500
 
-    private val UNALLOWED_UPDATE_MASK_FIELDS = listOf("paper.has_pdf")
+    private const val FIELD_PAPER_ID = "paper.id"
     private const val FIELD_PAPER_AUTHORS = "paper.authors"
     private const val FIELD_PAPER_PUBLICATION_TYPE = "paper.publication_type"
     private const val FIELD_PAPER_PUBLICATION_NAME = "paper.publication_name"
@@ -54,7 +56,8 @@ object PaperValidator {
     }
 
     private fun validateUpdateFieldMask(request: Paper.Update): EitherNel<ValidationIssue, Unit> = either {
-        ensureFieldMaskIsValid(request.mask, request.descriptorForType, UNALLOWED_UPDATE_MASK_FIELDS)
+        val allowedPaths = listOf(FIELD_PAPER_ID) + PaperField.entries.map { getGrpcPathsForPaperField(it) }
+        ensureFieldMaskIsValid(request.mask, allowedPaths)
     }.toEitherNel()
 
     private fun Raise<Nel<ValidationIssue>>.validatePaperProps(

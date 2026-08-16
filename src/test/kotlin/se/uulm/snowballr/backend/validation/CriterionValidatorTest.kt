@@ -116,6 +116,7 @@ class CriterionValidatorTest {
         private val validFieldMask: FieldMask = FieldMaskUtil
             .fromStringList(
                 listOf(
+                    "criterion.id",
                     "criterion.tag",
                     "criterion.name",
                     "criterion.description",

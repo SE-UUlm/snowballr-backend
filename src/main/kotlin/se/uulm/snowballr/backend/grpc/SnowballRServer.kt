@@ -286,7 +286,8 @@ class SnowballRServer(
             userService.getUserByEmail(request.email).toGrpc()
 
         override suspend fun updateUser(request: UserOuterClass.User.Update): UserOuterClass.User {
-            val fields = FieldMaskUtil.normalize(request.mask).pathsList.map { userFieldFromGrpc(it) }.toSet()
+            val paths = FieldMaskUtil.normalize(request.mask).pathsList.filterNot { it == "user.id" }
+            val fields = paths.map { userFieldFromGrpc(it) }.toSet()
 
             val hasUnspecifiedRole = request.user.role == UserOuterClass.UserRole.USER_ROLE_UNSPECIFIED
             val role = if (!fields.contains(UserField.ROLE) && hasUnspecifiedRole) {
@@ -414,7 +415,8 @@ class SnowballRServer(
             projectService.getProjectById(parseProjectId(request)).toGrpc()
 
         override suspend fun updateProject(request: ProjectOuterClass.Project.Update): ProjectOuterClass.Project {
-            val fields = FieldMaskUtil.normalize(request.mask).pathsList.map { projectFieldFromGrpc(it) }.toSet()
+            val paths = FieldMaskUtil.normalize(request.mask).pathsList.filterNot { it == "project.id" }
+            val fields = paths.map { projectFieldFromGrpc(it) }.toSet()
 
             val hasUnspecifiedStatus =
                 request.project.status == ProjectOuterClass.ProjectStatus.PROJECT_STATUS_UNSPECIFIED
@@ -517,16 +519,21 @@ class SnowballRServer(
 
         override suspend fun updateCriterion(
             request: CriterionOuterClass.Criterion.Update,
-        ): CriterionOuterClass.Criterion = criterionService.updateCriterion(
-            UpdateCriterionRequest(
-                criterionId = parseUUID(request.criterion.id, EntityType.CRITERION),
-                tag = request.criterion.tag,
-                name = request.criterion.name,
-                description = request.criterion.description,
-                category = criterionCategoryFromGrpc(request.criterion.category),
-            ),
-            FieldMaskUtil.normalize(request.mask).pathsList.map { criterionFieldFromGrpc(it) }.toSet(),
-        ).toGrpc()
+        ): CriterionOuterClass.Criterion {
+            val paths = FieldMaskUtil.normalize(request.mask).pathsList.filterNot { it == "criterion.id" }
+            val fields = paths.map { criterionFieldFromGrpc(it) }.toSet()
+
+            return criterionService.updateCriterion(
+                UpdateCriterionRequest(
+                    criterionId = parseUUID(request.criterion.id, EntityType.CRITERION),
+                    tag = request.criterion.tag,
+                    name = request.criterion.name,
+                    description = request.criterion.description,
+                    category = criterionCategoryFromGrpc(request.criterion.category),
+                ),
+                fields,
+            ).toGrpc()
+        }
 
         override suspend fun deleteCriterion(request: Base.Id): Base.Nothing = super.deleteCriterion(request)
 
@@ -612,8 +619,11 @@ class SnowballRServer(
                 ),
             ).toGrpc()
 
-        override suspend fun updatePaper(request: PaperOuterClass.Paper.Update): PaperOuterClass.Paper =
-            paperService.updatePaper(
+        override suspend fun updatePaper(request: PaperOuterClass.Paper.Update): PaperOuterClass.Paper {
+            val paths = FieldMaskUtil.normalize(request.mask).pathsList.filterNot { it == "paper.id" }
+            val fields = paths.map { paperFieldFromGrpc(it) }.toSet()
+
+            return paperService.updatePaper(
                 UpdatePaperRequest(
                     paperId = parseUUID(request.paper.id, EntityType.PAPER),
                     title = request.paper.title,
@@ -627,8 +637,9 @@ class SnowballRServer(
                     publicationType = request.paper.publicationType,
                     authors = request.paper.authorsList.map { Author(it.firstName, it.lastName) },
                 ),
-                FieldMaskUtil.normalize(request.mask).pathsList.map { paperFieldFromGrpc(it) }.toSet(),
+                fields,
             ).toGrpc()
+        }
 
         override suspend fun getForwardReferencedPapers(request: Base.Id): PaperOuterClass.Paper.List =
             paperService.getForwardReferencedPapers(parsePaperId(request)).toGrpc()
