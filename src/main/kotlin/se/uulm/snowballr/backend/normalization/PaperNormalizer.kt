@@ -22,7 +22,7 @@ import java.text.Normalizer
  * since they are identifiers rather than prose and must not be altered.
  */
 object PaperNormalizer {
-    private val WHITESPACE_REGEX = Regex("[\\s\\u00A0]+")
+    private val WHITESPACE_REGEX = Regex("[\\s\\p{Z}]+")
 
     private val PUNCTUATION_REPLACEMENTS = mapOf(
         '‘' to '\'', // left single quotation mark
@@ -50,7 +50,9 @@ object PaperNormalizer {
      */
     fun normalizeText(value: String): String {
         val composed = Normalizer.normalize(value, Normalizer.Form.NFC)
-        val withPlainPunctuation = composed.map { PUNCTUATION_REPLACEMENTS[it] ?: it }.joinToString("")
+        val withPlainPunctuation = buildString(composed.length) {
+            for (c in composed) append(PUNCTUATION_REPLACEMENTS[c] ?: c)
+        }
         return withPlainPunctuation.replace(WHITESPACE_REGEX, " ").trim()
     }
 

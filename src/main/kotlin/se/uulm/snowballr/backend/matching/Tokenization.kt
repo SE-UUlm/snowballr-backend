@@ -19,6 +19,7 @@ import java.text.Normalizer
  */
 object Tokenization {
     private val COMBINING_MARKS_REGEX = Regex("""\p{Mn}+""")
+    private val WHITESPACE_REGEX = Regex("""[\s\p{Z}]+""")
     private val NON_LETTER_OR_DIGIT_REGEX = Regex("""[^\p{L}\p{N}\s]""")
 
     /**
@@ -42,13 +43,16 @@ object Tokenization {
     fun authorTokens(author: Author): Set<String> {
         val fullName = "${author.firstName} ${author.lastName}".trim()
         val foldedAccents = Normalizer.normalize(fullName, Normalizer.Form.NFD).replace(COMBINING_MARKS_REGEX, "")
-        val cleaned = foldedAccents.lowercase().replace(NON_LETTER_OR_DIGIT_REGEX, "")
-        val tokens = cleaned.split(Regex("\\s+")).filter { it.isNotEmpty() }
+        val normalizedWhitespace = foldedAccents.replace(WHITESPACE_REGEX, " ")
+        val cleaned = normalizedWhitespace.lowercase().replace(NON_LETTER_OR_DIGIT_REGEX, "")
+        val tokens = cleaned.split(WHITESPACE_REGEX).filter { it.isNotEmpty() }
 
         val result = mutableSetOf<String>()
         for (token in tokens) {
             result.add(token)
-            if (token.length > 1) result.add(token[0].toString())
+            if (token.codePointCount(0, token.length) > 1) {
+                result.add(String(Character.toChars(token.codePointAt(0))))
+            }
         }
 
         return result
