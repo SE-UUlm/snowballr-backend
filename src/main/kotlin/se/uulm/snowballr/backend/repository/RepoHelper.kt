@@ -180,6 +180,13 @@ private fun List<ResultRow>.toExternalIds(): List<ExternalId> =
 fun similarity(left: Expression<String>, right: Expression<String>): CustomFunction<Float> =
     CustomFunction("similarity", FloatColumnType(), left, right)
 
+/**
+ * Largest value of the passed [expressions].
+ */
+@Suppress("SpreadOperator")
+fun greatest(vararg expressions: Expression<Float>): CustomFunction<Float> =
+    CustomFunction("GREATEST", FloatColumnType(), *expressions)
+
 fun ColumnSet.joinPaperHasExternalId() = this
     .join(
         PaperHasExternalIdTable,

@@ -2,19 +2,21 @@ package se.uulm.snowballr.backend.repository
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.exposed.v1.core.ResultRow
-import org.jetbrains.exposed.v1.core.TextColumnType
+import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.greaterEq
 import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.core.isNotNull
 import org.jetbrains.exposed.v1.core.lessEq
 import org.jetbrains.exposed.v1.core.neq
-import org.jetbrains.exposed.v1.core.statements.StatementType
+import org.jetbrains.exposed.v1.core.notInList
+import org.jetbrains.exposed.v1.core.stringParam
 import org.jetbrains.exposed.v1.exceptions.ExposedSQLException
+import org.jetbrains.exposed.v1.jdbc.andWhere
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
-import org.jetbrains.exposed.v1.jdbc.statements.jdbc.JdbcResult
 import org.jetbrains.exposed.v1.jdbc.update
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
@@ -176,7 +178,8 @@ class UserTableRepo(
 ) : IUserTableRepo {
     companion object {
         private const val MAXIMUM_NUMBER_OF_INVITE_CANDIDATES = 10
-        private const val MINIMUM_SIMILARITY_SCORE = 0.2
+        private const val MINIMUM_SIMILARITY_SCORE = 0.2f
+        private val INVITABLE_USER_STATUSES = setOf(UserStatus.ACTIVE, UserStatus.ACTIVE_UNCONFIRMED)
     }
 
     private fun getUserByIdOrNull(id: UUID): User? = UserTable.getEntityByIdOrNull(id, ResultRow::toUser)
@@ -242,47 +245,22 @@ class UserTableRepo(
         UserTable.getEntities(ResultRow::toUser) { UserTable.email neq "" }
     }
 
-    @Suppress("MagicNumber")
     override suspend fun getUsersMatchingSearchQuery(searchQuery: String, excludedUsers: Set<String>): List<User> =
         db.query {
-            val userTable = "\"${UserTable.tableName}\""
-            val firstNameCol = "$userTable.${UserTable.firstName.name}"
-            val lastNameCol = "$userTable.${UserTable.lastName.name}"
-            val emailCol = "$userTable.${UserTable.email.name}"
-            val statusCol = "$userTable.${UserTable.status.name}"
-
-            val excludeUsersClause = if (excludedUsers.isNotEmpty()) {
-                "AND $emailCol NOT IN (${excludedUsers.joinToString(",") { "'$it'" }})"
-            } else {
-                ""
-            }
-
-            val rawSqlQuery =
-                """
-                WITH users_with_similarity_scores AS (
-                    SELECT *,
-                        similarity($firstNameCol, ?) AS sim_first_name,
-                        similarity($lastNameCol, ?) AS sim_last_name,
-                        similarity($emailCol, ?) AS sim_email
-                    FROM $userTable
-                    WHERE $statusCol IN (${UserStatus.ACTIVE.ordinal}, ${UserStatus.ACTIVE_UNCONFIRMED.ordinal})
-                      $excludeUsersClause
-                )
-                SELECT *
-                FROM users_with_similarity_scores
-                WHERE GREATEST(sim_first_name, sim_last_name, sim_email) > $MINIMUM_SIMILARITY_SCORE
-                ORDER BY GREATEST(sim_first_name, sim_last_name, sim_email) DESC
-                LIMIT $MAXIMUM_NUMBER_OF_INVITE_CANDIDATES
-                """.trimIndent()
-
-            val matchingUsers = exec(
-                stmt = rawSqlQuery,
-                args = List(3) { TextColumnType() to searchQuery },
-                explicitStatementType = StatementType.SELECT,
-                transform = { extractUserRows(JdbcResult(it)) },
+            val bestSimilarity = greatest(
+                similarity(UserTable.firstName, stringParam(searchQuery)),
+                similarity(UserTable.lastName, stringParam(searchQuery)),
+                similarity(UserTable.email, stringParam(searchQuery)),
             )
 
-            matchingUsers.orEmpty()
+            UserTable
+                .selectAll()
+                .where { UserTable.status inList INVITABLE_USER_STATUSES }
+                .andWhere { UserTable.email notInList excludedUsers }
+                .andWhere { bestSimilarity greaterEq MINIMUM_SIMILARITY_SCORE }
+                .orderBy(bestSimilarity, SortOrder.DESC)
+                .limit(MAXIMUM_NUMBER_OF_INVITE_CANDIDATES)
+                .map(ResultRow::toUser)
         }
 
     override suspend fun createUser(request: RegisterRequest, passwordHash: String): User = db.query {
@@ -387,12 +365,4 @@ class UserTableRepo(
     override suspend fun getUserSettings(id: UUID): Result<UserSettings> = db.query {
         getEntityByKeyAsResult(::getUserSettingsByUserIdOrNull, EntityType.USER, id)
     }
-
-    /**
-     * Extracts and converts rows from a [JdbcResult] to a list of [User] objects.
-     *
-     * @param result The [JdbcResult] containing user data.
-     * @return A list of [User] objects extracted from the result set.
-     */
-    private fun extractUserRows(result: JdbcResult): List<User> = extractTableRows(result, UserTable, ResultRow::toUser)
 }
