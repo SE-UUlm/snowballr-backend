@@ -5,7 +5,6 @@ import dev.detekt.gradle.DetektCreateBaselineTask
 import kotlinx.kover.gradle.plugin.dsl.AggregationType
 import kotlinx.kover.gradle.plugin.dsl.CoverageUnit
 import kotlinx.kover.gradle.plugin.dsl.GroupingEntityType
-import java.io.File
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 
