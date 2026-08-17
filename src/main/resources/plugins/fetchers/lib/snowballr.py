@@ -120,6 +120,16 @@ def _apply_defaults(options: Options, schema: dict[str, FetcherOptionsSchema]) -
     return result
 
 
+def _resolve_single_paper(paper_arg: Paper | list[Paper]) -> Paper:
+    if isinstance(paper_arg, list):
+        if len(paper_arg) != 1:
+            msg = f"Expected exactly one paper, got {len(paper_arg)}."
+            print(msg, file=sys.stderr)
+            exit(1)
+        return paper_arg[0]
+    return paper_arg
+
+
 def fetcher_plugin(
     information: FetcherInformation,
     query: QueryFn,
@@ -159,7 +169,7 @@ def fetcher_plugin(
                 paper_arg: Paper = fromdict(Paper, payload["paper"])
                 options_arg: Options = payload.get("options", {})
             elif len(sys.argv) == 4:
-                paper_arg = Paper.from_json(sys.argv[2])
+                paper_arg = _resolve_single_paper(Paper.from_json(sys.argv[2]))
                 options_arg = json.loads(sys.argv[3])
             else:
                 msg = "The fetcher was called with an incorrect number of arguments."
@@ -176,7 +186,7 @@ def fetcher_plugin(
                 paper_arg: Paper = fromdict(Paper, payload["paper"])
                 options_arg: Options = payload.get("options", {})
             elif len(sys.argv) == 4:
-                paper_arg = Paper.from_json(sys.argv[2])
+                paper_arg = _resolve_single_paper(Paper.from_json(sys.argv[2]))
                 options_arg = json.loads(sys.argv[3])
             else:
                 msg = "The fetcher was called with an incorrect number of arguments."
