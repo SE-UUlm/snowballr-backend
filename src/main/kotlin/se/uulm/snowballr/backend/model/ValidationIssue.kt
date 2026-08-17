@@ -202,3 +202,17 @@ data class InvalidEnumValue(val value: String, val enumName: String) : Validatio
 data class MultipleOccurrences(val name: String, val occurrences: List<Pair<String, Int>>) : ValidationIssue {
     override fun toString(): String = "The following $name have multiple occurrences: ${occurrences.joinToString("; ")}"
 }
+
+/**
+ * Represents a validation issue where an external ID value does not match the format expected for its type.
+ *
+ * @property type The external ID type the value was validated against.
+ * @property value The invalid external ID value.
+ */
+data class InvalidExternalIdFormat(
+    val type: String,
+    val value: String,
+) : ValidationIssue {
+    override fun toString(): String =
+        "The value '$value' does not match the expected format for external ID type '$type'."
+}
