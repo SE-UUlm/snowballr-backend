@@ -132,6 +132,7 @@ class ExternalIdTest {
         val result = validateExternalId(externalId)
 
         assertInvalidResult<InvalidExternalIdFormat>(result)
+        assertThat((result as Either.Left).value).hasSize(1)
     }
 
     @Test
@@ -144,5 +145,6 @@ class ExternalIdTest {
         val result = validateExternalId(externalId)
 
         assertInvalidResult<InvalidEnumValue>(result)
+        assertThat((result as Either.Left).value).hasSize(1)
     }
 }
