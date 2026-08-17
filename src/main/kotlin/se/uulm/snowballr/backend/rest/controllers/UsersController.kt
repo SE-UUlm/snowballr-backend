@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import se.uulm.snowballr.backend.model.dto.user.User
+import se.uulm.snowballr.backend.model.dto.user.UserField
 import se.uulm.snowballr.backend.model.dto.user.UserSettingsWithCriteria
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
@@ -54,17 +55,11 @@ class UsersController(
 
     @PutMapping("/{id}")
     fun updateUser(@PathVariable id: UUID, @RequestBody request: UpdateUserRequest): User = onRequest {
-        userService.updateUser(request.copy(userId = id), FULL_UPDATE_PATHS)
+        userService.updateUser(request.copy(userId = id), UserField.entries.toSet())
     }
 
     @DeleteMapping("/{id}")
     fun deleteUser(@PathVariable id: UUID) {
         onRequest { userService.softDeleteUser(id) }
-    }
-
-    private companion object {
-        // Every field of UpdateUserRequest, so a REST PUT always behaves as a full replace
-        // instead of the partial field-mask updates the underlying service also supports.
-        val FULL_UPDATE_PATHS = listOf("user.email", "user.first_name", "user.last_name", "user.role", "user.status")
     }
 }
