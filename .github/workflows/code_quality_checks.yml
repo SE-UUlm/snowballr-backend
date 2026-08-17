@@ -113,6 +113,7 @@ jobs:
                         - 'tools/fetcher-cli/**/*.py'
                         - 'src/main/resources/plugins/fetchers/**/*.py'
                         - 'pyproject.toml'
+                        - 'requirements.txt'
 
     python-code-quality:
         name: Python code quality
