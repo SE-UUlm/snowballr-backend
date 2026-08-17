@@ -64,3 +64,6 @@ db-data
 
 ### AI ###
 .claude/worktrees/
+
+### Logs ###
+*.log
