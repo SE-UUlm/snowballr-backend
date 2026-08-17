@@ -3,7 +3,7 @@ package se.uulm.snowballr.backend.validation
 import arrow.core.Either
 import `in`.rcard.assertj.arrowcore.EitherAssert
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Test
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
@@ -146,5 +146,17 @@ class ExternalIdTest {
 
         assertInvalidResult<InvalidEnumValue>(result)
         assertThat((result as Either.Left).value).hasSize(1)
+    }
+
+    @Test
+    fun `When an external ID is validated, then the value is trimmed before validating`() {
+        val externalId = ExternalId.newBuilder()
+            .setType(ExternalIdType.DOI.name)
+            .setValue("   10.1000/xyz123    ")
+            .build()
+
+        val result = validateExternalId(externalId)
+
+        EitherAssert.assertThat(result).isRight()
     }
 }

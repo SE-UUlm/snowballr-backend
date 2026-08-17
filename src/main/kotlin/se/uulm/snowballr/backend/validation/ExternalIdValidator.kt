@@ -83,7 +83,7 @@ object ExternalIdValidator {
             { ensureValidEnumValue<ExternalIdType>(externalId.type, "External ID Type") },
             {
                 ensureTextFieldValidity("value", externalId.value, EXTERNAL_ID_MAX_LENGTH)
-                ensureExternalIdFormatValidity(externalId.type, externalId.value)
+                ensureExternalIdFormatValidity(externalId.type, externalId.value.trim())
             },
         ) { _, _ -> }
     }
