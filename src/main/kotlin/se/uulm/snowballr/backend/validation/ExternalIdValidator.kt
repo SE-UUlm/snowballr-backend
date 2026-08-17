@@ -76,7 +76,7 @@ object ExternalIdValidator {
      *
      * [Scheme](https://dblp.org/xml/docu/dblpxml.pdf).
      */
-    private val DBLP_REGEX = Regex("""^[a-z]+(/[A-Za-z0-9_-]+)+$""")
+    private val DBLP_REGEX = Regex("""^[a-z]+(/[A-Za-z0-9_-]+){2,}$""")
 
     fun validateExternalId(externalId: ExternalId): EitherNel<ValidationIssue, Unit> = either {
         zipOrAccumulate(
