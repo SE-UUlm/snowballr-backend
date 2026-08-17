@@ -2,7 +2,7 @@ package se.uulm.snowballr.backend.repository
 
 import org.jetbrains.exposed.v1.core.Op
 import org.jetbrains.exposed.v1.core.ResultRow
-import org.jetbrains.exposed.v1.core.TextColumnType
+import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.greaterEq
@@ -11,11 +11,11 @@ import org.jetbrains.exposed.v1.core.java.UUIDColumnType
 import org.jetbrains.exposed.v1.core.lessEq
 import org.jetbrains.exposed.v1.core.or
 import org.jetbrains.exposed.v1.core.statements.StatementType
+import org.jetbrains.exposed.v1.core.stringParam
 import org.jetbrains.exposed.v1.jdbc.batchInsert
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.selectAll
-import org.jetbrains.exposed.v1.jdbc.statements.jdbc.JdbcResult
 import org.jetbrains.exposed.v1.jdbc.update
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
@@ -120,7 +120,7 @@ class PaperTableRepo(
 ) : IPaperTableRepo {
     companion object {
         private const val MAXIMUM_NUMBER_OF_PAPER_CANDIDATES = 20
-        private const val MINIMUM_SIMILARITY_SCORE = 0.2
+        private const val MINIMUM_SIMILARITY_SCORE = 0.2f
     }
 
     private fun getPapersWhere(where: () -> Op<Boolean>) = PaperTable
@@ -216,28 +216,14 @@ class PaperTableRepo(
     }
 
     override suspend fun getPapersBySearchQuery(query: String): List<Paper> = db.query {
-        val paperTable = "\"${PaperTable.tableName}\""
-        val titleCol = "$paperTable.${PaperTable.title.name}"
+        val titleSimilarity = similarity(PaperTable.title, stringParam(query))
 
-        val rawSqlQuery =
-            """
-            WITH papers_with_similarity_scores AS (
-                SELECT *, similarity($titleCol, ?) AS sim_title
-                FROM $paperTable
-            )
-            SELECT *
-            FROM papers_with_similarity_scores
-            WHERE sim_title > $MINIMUM_SIMILARITY_SCORE
-            ORDER BY sim_title DESC
-            LIMIT $MAXIMUM_NUMBER_OF_PAPER_CANDIDATES
-            """.trimIndent()
-
-        val matchingPapers = exec(
-            stmt = rawSqlQuery,
-            args = listOf(TextColumnType() to query),
-            explicitStatementType = StatementType.SELECT,
-            transform = { extractPaperRows(JdbcResult(it)) },
-        ).orEmpty()
+        val matchingPapers = PaperTable
+            .selectAll()
+            .where { titleSimilarity greaterEq MINIMUM_SIMILARITY_SCORE }
+            .orderBy(titleSimilarity, SortOrder.DESC)
+            .limit(MAXIMUM_NUMBER_OF_PAPER_CANDIDATES)
+            .map { it.toPaper(emptyList()) }
 
         val paperIds = matchingPapers.map { it.id }
         val paperExternalIds = PaperHasExternalIdTable.selectAll()
@@ -266,26 +252,18 @@ class PaperTableRepo(
     override suspend fun mergeFetcherMetadata(id: UUID, metadata: FetcherMetadata): Unit = db.query {
         if (metadata.isEmpty()) return@query
 
-        val paperTable = "\"${PaperTable.tableName}\""
-        val metadataColumn = PaperTable.fetcherMetadata.name
+        val paperTable = identity(PaperTable)
+        val metadataColumn = identity(PaperTable.fetcherMetadata)
+        val idColumn = fullIdentity(PaperTable.id)
 
         // Use hstore concatenation operator to merge metadata key-value pairs.
         // The operator is right-biased, i.e., an existing value wins on conflict
         exec(
-            stmt = "UPDATE $paperTable SET $metadataColumn = ?::hstore || $metadataColumn WHERE $paperTable.id = ?",
+            stmt = "UPDATE $paperTable SET $metadataColumn = ?::hstore || $metadataColumn WHERE $idColumn = ?",
             args = listOf(HStoreColumnType() to metadata, UUIDColumnType() to id),
             explicitStatementType = StatementType.UPDATE,
         )
     }
-
-    /**
-     * Extracts and converts rows from a [JdbcResult] to a list of [Paper] objects.
-     *
-     * @param result The [JdbcResult] containing paper data.
-     * @return A list of [Paper] objects extracted from the result set.
-     */
-    private fun extractPaperRows(result: JdbcResult): List<Paper> =
-        extractTableRows(result, PaperTable) { it.toPaper(emptyList()) }
 
     private fun insertExternalIds(paperId: UUID, externalIds: List<ExternalId>) {
         PaperHasExternalIdTable.batchInsert(externalIds) {

@@ -585,5 +585,16 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
 
                 assertThat(matchingUsers).hasSize(0)
             }
+
+        @Test
+        fun `When an excluded email contains a quote, then it is matched as a value`() = runTest {
+            val quotedEmail = "\"john'doe\"@example.com"
+            insertUserAndGetId(email = quotedEmail, firstName = "johnathan")
+            val otherUserId = insertUserAndGetId(email = "john@example.com", firstName = "johnathan")
+
+            val matchingUsers = repo.getUsersMatchingSearchQuery("john", setOf(quotedEmail))
+
+            assertThat(matchingUsers.map { it.id }).containsExactly(otherUserId)
+        }
     }
 }
