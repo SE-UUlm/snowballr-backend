@@ -35,12 +35,12 @@ interface IPaperService {
     /**
      * Service implementation of [SnowballRService.updatePaper].
      */
-    suspend fun updatePaper(request: UpdatePaperRequest, fields: Set<PaperField>): PaperResponse
+    suspend fun updatePaper(requestRaw: UpdatePaperRequest, fields: Set<PaperField>): PaperResponse
 
     /**
      * Service implementation of [SnowballRService.createPaper].
      */
-    suspend fun createPaper(request: CreatePaperRequest): PaperResponse
+    suspend fun createPaper(requestRaw: CreatePaperRequest): PaperResponse
 }
 
 /**
@@ -65,34 +65,35 @@ class PaperService(
     override suspend fun getForwardReferencedPapers(paperId: UUID): List<PaperResponse> =
         getReferencePapers(paperId, citationRepo::getForwardReferencedPaperIdsOfPaperById)
 
-    override suspend fun updatePaper(request: UpdatePaperRequest, fields: Set<PaperField>): PaperResponse {
-        val normalizedRequest = request.normalized()
-        repo.ensurePaperExists(normalizedRequest.paperId)
+    override suspend fun updatePaper(requestRaw: UpdatePaperRequest, fields: Set<PaperField>): PaperResponse {
+        val request = requestRaw.normalized()
 
-        val isExternalIdChange = fields.contains(PaperField.EXTERNAL_IDS) && normalizedRequest.externalIds.isNotEmpty()
+        repo.ensurePaperExists(request.paperId)
+
+        val isExternalIdChange = fields.contains(PaperField.EXTERNAL_IDS) && request.externalIds.isNotEmpty()
         if (isExternalIdChange) {
-            val existingPapers = repo.getPapersByExternalIds(normalizedRequest.externalIds)
+            val existingPapers = repo.getPapersByExternalIds(request.externalIds)
 
-            if (existingPapers.any { it.id != normalizedRequest.paperId }) {
-                throw DuplicatePaperException(normalizedRequest.externalIds)
+            if (existingPapers.any { it.id != request.paperId }) {
+                throw DuplicatePaperException(request.externalIds)
             }
         }
 
-        val updatedPaper = repo.updatePaper(normalizedRequest, fields)
-        logger.info { "Paper ${normalizedRequest.paperId} updated: ${fields.joinToString()}" }
+        val updatedPaper = repo.updatePaper(request, fields)
+        logger.info { "Paper ${request.paperId} updated: ${fields.joinToString()}" }
         return updatedPaper.toPaperResponse()
     }
 
-    override suspend fun createPaper(request: CreatePaperRequest): PaperResponse {
-        val normalizedRequest = request.normalized()
+    override suspend fun createPaper(requestRaw: CreatePaperRequest): PaperResponse {
+        val request = requestRaw.normalized()
 
-        val hasExistingExternalIds = normalizedRequest.externalIds.isNotEmpty() &&
-            repo.doesPaperExistByExternalIds(normalizedRequest.externalIds)
+        val hasExistingExternalIds = request.externalIds.isNotEmpty() &&
+            repo.doesPaperExistByExternalIds(request.externalIds)
         if (hasExistingExternalIds) {
-            throw DuplicatePaperException(normalizedRequest.externalIds)
+            throw DuplicatePaperException(request.externalIds)
         }
 
-        val paper = repo.createPaper(normalizedRequest)
+        val paper = repo.createPaper(request)
         logger.info { "Paper ${paper.id} created ('${paper.title}')" }
         return paper.toPaperResponse()
     }
