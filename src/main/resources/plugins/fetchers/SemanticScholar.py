@@ -128,14 +128,17 @@ def _construct_paper_id(paper: Paper) -> Optional[str]:
         "PUB_MED": "PMID:",
         "MEDLINE": "PMID:",
         "PUB_MED_CENTRAL": "PMCID:",
-        "URL": "URL:",
         # DBLP is not available as paper ID
     }
 
     for ex_type, prefix in key_mapping.items():
         if ex_type in ext_id_map:
-            return f"{prefix}{ext_id_map[ex_type]}"
-
+            value = ext_id_map[ex_type]
+            if ex_type == "PUB_MED_CENTRAL":
+                # Our stored value carries the "PMC" prefix, but Semantic Scholar
+                # expects the bare digits.
+                value = value.removeprefix("PMC")
+            return f"{prefix}{value}"
     return None
 
 
@@ -192,21 +195,22 @@ def _author_from_response(res) -> Author:
 
 
 def _external_ids_from_response(res) -> list[ExternalId]:
-    # Map the response key to the target ExternalId type string
+    # Map the response key to the target ExternalId type string and the value prefix
+    # matching our validation.
     key_mapping = {
-        "DOI": "DOI",
-        "ArXiv": "ARXIV",
-        "MAG": "MAG",
-        "ACL": "ACL",
-        "PubMed": "PUB_MED",
-        "Medline": "MEDLINE",
-        "PubMedCentral": "PUB_MED_CENTRAL",
-        "DBLP": "DBLP",
+        "DOI": ("DOI", ""),
+        "ArXiv": ("ARXIV", ""),
+        "MAG": ("MAG", ""),
+        "ACL": ("ACL", ""),
+        "PubMed": ("PUB_MED", ""),
+        "Medline": ("MEDLINE", ""),
+        "PubMedCentral": ("PUB_MED_CENTRAL", "PMC"),  # PubMedCentral required 'PMC' prefix
+        "DBLP": ("DBLP", ""),
     }
 
     return [
-        ExternalId(id_type, res[key])
-        for key, id_type in key_mapping.items()
+        ExternalId(id_type, f"{value_prefix}{res[key]}")
+        for key, (id_type, value_prefix) in key_mapping.items()
         if key in res and res[key] is not None
     ]
 
