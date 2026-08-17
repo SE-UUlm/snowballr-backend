@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
+import se.uulm.snowballr.backend.model.dto.project.ProjectField
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
@@ -48,7 +49,7 @@ class ProjectsController(private val projectService: IProjectService) {
 
     @PutMapping("/{id}")
     fun updateProject(@PathVariable id: UUID, @RequestBody request: UpdateProjectRequest): ProjectResponse = onRequest {
-        projectService.updateProject(request.copy(projectId = id), FULL_UPDATE_PATHS)
+        projectService.updateProject(request.copy(projectId = id), ProjectField.entries.toSet())
     }
 
     @DeleteMapping("/{id}")
@@ -61,25 +62,10 @@ class ProjectsController(private val projectService: IProjectService) {
     @GetMapping("/{id}/information")
     fun getProjectInformation(@PathVariable id: UUID): ProjectInformation = onRequest {
         // Empty paths means "no mask", i.e. every field is included - see ProjectService.getProjectInformation.
-        projectService.getProjectInformation(id, emptyList())
+        projectService.getProjectInformation(id, emptySet())
     }
 
     @GetMapping("/{id}/stages/{stage}/decision-statistics")
     fun getDecisionStatisticsForStage(@PathVariable id: UUID, @PathVariable stage: Int): ProjectDecisionStatistics =
         onRequest { projectService.getDecisionStatisticsForStage(id, stage) }
-
-    private companion object {
-        // Every field of UpdateProjectRequest, so a REST PUT always behaves as a full replace
-        // instead of the partial field-mask updates the underlying service also supports.
-        val FULL_UPDATE_PATHS = setOf(
-            "project.name",
-            "project.status",
-            "project.settings.similarity_threshold",
-            "project.settings.snowballing_type",
-            "project.settings.review_maybe_allowed",
-            "project.settings.fetchers",
-            "project.settings.decision_matrix.number_of_reviewers",
-            "project.settings.decision_matrix.patterns",
-        )
-    }
 }

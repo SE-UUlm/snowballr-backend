@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
+import se.uulm.snowballr.backend.model.dto.paper.PaperField
 import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
 import se.uulm.snowballr.backend.model.incoming.paper.UpdatePaperRequest
 import se.uulm.snowballr.backend.model.outgoing.paper.PaperResponse
@@ -34,7 +35,7 @@ class PaperController(private val paperService: IPaperService) {
 
     @PutMapping("/{id}")
     fun updatePaper(@PathVariable id: UUID, @RequestBody request: UpdatePaperRequest): PaperResponse = onRequest {
-        paperService.updatePaper(request.copy(paperId = id), FULL_UPDATE_PATHS)
+        paperService.updatePaper(request.copy(paperId = id), PaperField.entries.toSet())
     }
 
     @GetMapping("/{id}/forward-references")
@@ -45,20 +46,5 @@ class PaperController(private val paperService: IPaperService) {
     @GetMapping("/{id}/backward-references")
     fun getBackwardReferencedPapers(@PathVariable id: UUID): List<PaperResponse> = onRequest {
         paperService.getBackwardReferencedPapers(id)
-    }
-
-    private companion object {
-        // Every field of UpdatePaperRequest, so a REST PUT always behaves as a full replace
-        // instead of the partial field-mask updates the underlying service also supports.
-        val FULL_UPDATE_PATHS = listOf(
-            "paper.title",
-            "paper.abstrakt",
-            "paper.year",
-            "paper.publisher",
-            "paper.publication_name",
-            "paper.publication_type",
-            "paper.authors",
-            "paper.external_ids",
-        )
     }
 }

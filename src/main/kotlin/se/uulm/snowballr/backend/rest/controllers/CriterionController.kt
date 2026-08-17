@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion
+import se.uulm.snowballr.backend.model.dto.criterion.CriterionField
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.rest.onRequest
@@ -38,12 +39,6 @@ class CriterionController(private val criterionService: ICriterionService) {
 
     @PutMapping("${Routes.CRITERIA_ROUTE}/{id}")
     fun updateCriterion(@PathVariable id: UUID, @RequestBody request: UpdateCriterionRequest): Criterion = onRequest {
-        criterionService.updateCriterion(request.copy(criterionId = id), FULL_UPDATE_PATHS)
-    }
-
-    private companion object {
-        // Every field of UpdateCriterionRequest, so a REST PUT always behaves as a full replace
-        // instead of the partial field-mask updates the underlying service also supports.
-        val FULL_UPDATE_PATHS = listOf("criterion.tag", "criterion.name", "criterion.description", "criterion.category")
+        criterionService.updateCriterion(request.copy(criterionId = id), CriterionField.entries.toSet())
     }
 }
