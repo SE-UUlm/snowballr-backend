@@ -12,38 +12,57 @@
         }
     ],
     "paths": {
-        "/projects": {
+        "/api/v1/users/{id}": {
             "get": {
                 "tags": [
-                    "projects-controller"
+                    "users-controller"
                 ],
-                "operationId": "getAllProjects",
+                "operationId": "getUser",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "content": {
                             "*/*": {
                                 "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/Project"
-                                    }
+                                    "$ref": "#/components/schemas/User"
                                 }
                             }
                         }
                     }
                 }
             },
-            "post": {
+            "put": {
                 "tags": [
-                    "projects-controller"
+                    "users-controller"
                 ],
-                "operationId": "createProject",
+                "operationId": "updateUser",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
                 "requestBody": {
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/CreateProjectRequest"
+                                "$ref": "#/components/schemas/UpdateUserRequest"
                             }
                         }
                     },
@@ -55,15 +74,149 @@
                         "content": {
                             "*/*": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/Project"
+                                    "$ref": "#/components/schemas/User"
                                 }
                             }
                         }
                     }
                 }
+            },
+            "delete": {
+                "tags": [
+                    "users-controller"
+                ],
+                "operationId": "deleteUser",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
             }
         },
-        "/projects/{id}": {
+        "/api/v1/users/me/reading-list/{paperId}": {
+            "put": {
+                "tags": [
+                    "reading-list-controller"
+                ],
+                "operationId": "addPaperToReadingList",
+                "parameters": [
+                    {
+                        "name": "paperId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "reading-list-controller"
+                ],
+                "operationId": "removePaperFromReadingList",
+                "parameters": [
+                    {
+                        "name": "paperId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            },
+            "head": {
+                "tags": [
+                    "reading-list-controller"
+                ],
+                "operationId": "isPaperOnReadingList",
+                "parameters": [
+                    {
+                        "name": "paperId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {}
+                    }
+                }
+            }
+        },
+        "/api/v1/projects/{projectId}/members/{userId}/role": {
+            "put": {
+                "tags": [
+                    "project-member-controller"
+                ],
+                "operationId": "updateProjectMemberRole",
+                "parameters": [
+                    {
+                        "name": "projectId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "userId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateMemberRoleRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/api/v1/projects/{id}": {
             "get": {
                 "tags": [
                     "projects-controller"
@@ -86,7 +239,46 @@
                         "content": {
                             "*/*": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/Project"
+                                    "$ref": "#/components/schemas/ProjectResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "projects-controller"
+                ],
+                "operationId": "updateProject",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateProjectRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProjectResponse"
                                 }
                             }
                         }
@@ -115,15 +307,1562 @@
                     }
                 }
             }
+        },
+        "/api/v1/papers/{id}": {
+            "get": {
+                "tags": [
+                    "paper-controller"
+                ],
+                "operationId": "getPaperById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaperResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "paper-controller"
+                ],
+                "operationId": "updatePaper",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdatePaperRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaperResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/criteria/{id}": {
+            "get": {
+                "tags": [
+                    "criterion-controller"
+                ],
+                "operationId": "getCriterionById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "oneOf": [
+                                        {
+                                            "$ref": "#/components/schemas/ProjectCriterion"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/UserCriterion"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "criterion-controller"
+                ],
+                "operationId": "updateCriterion",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateCriterionRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "oneOf": [
+                                        {
+                                            "$ref": "#/components/schemas/ProjectCriterion"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/UserCriterion"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users": {
+            "get": {
+                "tags": [
+                    "users-controller"
+                ],
+                "operationId": "getUsers",
+                "parameters": [
+                    {
+                        "name": "email",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/User"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "users-controller"
+                ],
+                "operationId": "register",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RegisterRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    }
+                }
+            }
+        },
+        "/api/v1/projects": {
+            "get": {
+                "tags": [
+                    "projects-controller"
+                ],
+                "operationId": "getAllProjects",
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "ACTIVE",
+                                "ACTIVE_LOCKED",
+                                "ARCHIVED",
+                                "DELETED",
+                                "CLEARED"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ProjectResponse"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "projects-controller"
+                ],
+                "operationId": "createProject",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateProjectRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProjectResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/projects/{projectId}/papers": {
+            "get": {
+                "tags": [
+                    "project-paper-controller"
+                ],
+                "operationId": "getAllProjectPapersForProject",
+                "parameters": [
+                    {
+                        "name": "projectId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ProjectPaperResponse"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "project-paper-controller"
+                ],
+                "operationId": "addPaperToProject",
+                "parameters": [
+                    {
+                        "name": "projectId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AddPaperToProjectRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProjectPaperResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/projects/{projectId}/invitations": {
+            "get": {
+                "tags": [
+                    "invitation-controller"
+                ],
+                "operationId": "getPendingInvitationsForProject",
+                "parameters": [
+                    {
+                        "name": "projectId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/InvitationResponse"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "invitation-controller"
+                ],
+                "operationId": "inviteUserToProject",
+                "parameters": [
+                    {
+                        "name": "projectId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/InviteUserRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    }
+                }
+            }
+        },
+        "/api/v1/project-papers/{id}/reviews": {
+            "get": {
+                "tags": [
+                    "review-controller"
+                ],
+                "operationId": "getAllReviewsForProjectPaper",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ReviewResponse"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "review-controller"
+                ],
+                "operationId": "createReview",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateReviewRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReviewResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/papers": {
+            "post": {
+                "tags": [
+                    "paper-controller"
+                ],
+                "operationId": "createPaper",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreatePaperRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaperResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/invitations/{token}/accept": {
+            "post": {
+                "tags": [
+                    "invitation-controller"
+                ],
+                "operationId": "acceptProjectInvitation",
+                "parameters": [
+                    {
+                        "name": "token",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/api/v1/criteria": {
+            "post": {
+                "tags": [
+                    "criterion-controller"
+                ],
+                "operationId": "createCriterion",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateCriterionRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "oneOf": [
+                                        {
+                                            "$ref": "#/components/schemas/ProjectCriterion"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/UserCriterion"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/verify-email": {
+            "post": {
+                "tags": [
+                    "auth-controller"
+                ],
+                "operationId": "verifyEmail",
+                "parameters": [
+                    {
+                        "name": "token",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/logout": {
+            "post": {
+                "tags": [
+                    "auth-controller"
+                ],
+                "operationId": "logout",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/login": {
+            "post": {
+                "tags": [
+                    "auth-controller"
+                ],
+                "operationId": "login",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LoginRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/change-password": {
+            "post": {
+                "tags": [
+                    "auth-controller"
+                ],
+                "operationId": "changePassword",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChangePasswordRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/api/v1/users/me": {
+            "get": {
+                "tags": [
+                    "users-controller"
+                ],
+                "operationId": "getCurrentUser",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/me/settings": {
+            "get": {
+                "tags": [
+                    "users-controller"
+                ],
+                "operationId": "getUserSettings",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserSettingsWithCriteria"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/me/reading-list": {
+            "get": {
+                "tags": [
+                    "reading-list-controller"
+                ],
+                "operationId": "getReadingList",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/PaperResponse"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/invite-candidates": {
+            "get": {
+                "tags": [
+                    "users-controller"
+                ],
+                "operationId": "getInviteCandidates",
+                "parameters": [
+                    {
+                        "name": "projectId",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "query",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/User"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/reviews/{id}": {
+            "get": {
+                "tags": [
+                    "review-controller"
+                ],
+                "operationId": "getReviewById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReviewResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/projects/{projectId}/papers/{relativeId}": {
+            "get": {
+                "tags": [
+                    "project-paper-controller"
+                ],
+                "operationId": "getProjectPaperByRelativeId",
+                "parameters": [
+                    {
+                        "name": "projectId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "relativeId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProjectPaperResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/projects/{projectId}/papers-to-review": {
+            "get": {
+                "tags": [
+                    "project-paper-controller"
+                ],
+                "operationId": "getPapersToReviewForProject",
+                "parameters": [
+                    {
+                        "name": "projectId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ProjectPaperResponse"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/projects/{projectId}/members": {
+            "get": {
+                "tags": [
+                    "project-member-controller"
+                ],
+                "operationId": "getProjectMembers",
+                "parameters": [
+                    {
+                        "name": "projectId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ProjectMemberWithUser"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/projects/{projectId}/criteria": {
+            "get": {
+                "tags": [
+                    "criterion-controller"
+                ],
+                "operationId": "getAllCriteriaForProject",
+                "parameters": [
+                    {
+                        "name": "projectId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ProjectCriterion"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/projects/{id}/stages/{stage}/decision-statistics": {
+            "get": {
+                "tags": [
+                    "projects-controller"
+                ],
+                "operationId": "getDecisionStatisticsForStage",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "stage",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProjectDecisionStatistics"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/projects/{id}/paper-candidates/local": {
+            "get": {
+                "tags": [
+                    "fetcher-controller"
+                ],
+                "operationId": "searchLocalProjectPaperCandidates",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "query",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/PaperResponse"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/projects/{id}/paper-candidates/fetcher": {
+            "get": {
+                "tags": [
+                    "fetcher-controller"
+                ],
+                "operationId": "searchFetcherProjectPaperCandidates",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "query",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/FetcherPaperResponse"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/projects/{id}/information": {
+            "get": {
+                "tags": [
+                    "projects-controller"
+                ],
+                "operationId": "getProjectInformation",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProjectInformation"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/project-papers/{id}": {
+            "get": {
+                "tags": [
+                    "project-paper-controller"
+                ],
+                "operationId": "getProjectPaperById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProjectPaperResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/project-papers/{id}/previous": {
+            "get": {
+                "tags": [
+                    "project-paper-controller"
+                ],
+                "operationId": "getPreviousPaper",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProjectPaperResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/project-papers/{id}/next": {
+            "get": {
+                "tags": [
+                    "project-paper-controller"
+                ],
+                "operationId": "getNextPaper",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProjectPaperResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/project-papers/{id}/next-to-review": {
+            "get": {
+                "tags": [
+                    "project-paper-controller"
+                ],
+                "operationId": "getNextPaperToReview",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProjectPaperResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/papers/{id}/forward-references": {
+            "get": {
+                "tags": [
+                    "paper-controller"
+                ],
+                "operationId": "getForwardReferencedPapers",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/PaperResponse"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/papers/{id}/backward-references": {
+            "get": {
+                "tags": [
+                    "paper-controller"
+                ],
+                "operationId": "getBackwardReferencedPapers",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/PaperResponse"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/fetchers": {
+            "get": {
+                "tags": [
+                    "fetcher-controller"
+                ],
+                "operationId": "getAvailableFetchers",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/FetcherInformationWithId"
+                                    },
+                                    "uniqueItems": true
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/export/projects/{id}": {
+            "get": {
+                "tags": [
+                    "export-controller"
+                ],
+                "operationId": "exportProject",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "format",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "JSON"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "byte"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/export/formats": {
+            "get": {
+                "tags": [
+                    "export-controller"
+                ],
+                "operationId": "getAvailableExportFormats",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "enum": [
+                                            "JSON"
+                                        ]
+                                    },
+                                    "uniqueItems": true
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/status": {
+            "get": {
+                "tags": [
+                    "auth-controller"
+                ],
+                "operationId": "getAuthStatus",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "string",
+                                    "enum": [
+                                        "UNAUTHENTICATED",
+                                        "ACCESS_TOKEN_EXPIRED",
+                                        "AUTHENTICATED"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/projects/{projectId}/members/{email}": {
+            "delete": {
+                "tags": [
+                    "project-member-controller"
+                ],
+                "operationId": "removeProjectMember",
+                "parameters": [
+                    {
+                        "name": "projectId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "email",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
         }
     },
     "components": {
         "schemas": {
-            "CreateProjectRequest": {
+            "UpdateUserRequest": {
                 "type": "object",
                 "properties": {
-                    "name": {
+                    "userId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "firstName": {
                         "type": "string"
+                    },
+                    "lastName": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string"
+                    },
+                    "role": {
+                        "type": "string",
+                        "enum": [
+                            "DEFAULT",
+                            "ADMIN"
+                        ]
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "ACTIVE_UNCONFIRMED",
+                            "ACTIVE",
+                            "DELETED",
+                            "CLEARED"
+                        ]
+                    }
+                }
+            },
+            "User": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "email": {
+                        "type": "string"
+                    },
+                    "firstName": {
+                        "type": "string"
+                    },
+                    "lastName": {
+                        "type": "string"
+                    },
+                    "role": {
+                        "type": "string",
+                        "enum": [
+                            "DEFAULT",
+                            "ADMIN"
+                        ]
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "ACTIVE_UNCONFIRMED",
+                            "ACTIVE",
+                            "DELETED",
+                            "CLEARED"
+                        ]
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "modifiedAt": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    },
+                    "deletedAt": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    },
+                    "active": {
+                        "type": "boolean"
+                    },
+                    "fullName": {
+                        "type": "string"
+                    },
+                    "serverAdmin": {
+                        "type": "boolean"
+                    },
+                    "activeAndConfirmed": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "UpdateMemberRoleRequest": {
+                "type": "object",
+                "properties": {
+                    "newRole": {
+                        "type": "string",
+                        "enum": [
+                            "DEFAULT",
+                            "ADMIN"
+                        ]
                     }
                 }
             },
@@ -164,7 +1903,79 @@
                     }
                 }
             },
-            "Project": {
+            "ReviewDecisionMatrix": {
+                "type": "object",
+                "properties": {
+                    "numberOfReviewers": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "patterns": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DecisionMatrixPattern"
+                        }
+                    }
+                }
+            },
+            "UpdateProjectRequest": {
+                "type": "object",
+                "properties": {
+                    "projectId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "ACTIVE",
+                            "ACTIVE_LOCKED",
+                            "ARCHIVED",
+                            "DELETED",
+                            "CLEARED"
+                        ]
+                    },
+                    "settings": {
+                        "$ref": "#/components/schemas/UpdateProjectSettingRequest"
+                    }
+                }
+            },
+            "UpdateProjectSettingRequest": {
+                "type": "object",
+                "properties": {
+                    "similarityThreshold": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "snowballingType": {
+                        "type": "string",
+                        "enum": [
+                            "FORWARD",
+                            "BACKWARD",
+                            "BOTH"
+                        ]
+                    },
+                    "reviewMaybeAllowed": {
+                        "type": "boolean"
+                    },
+                    "fetchers": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "decisionMatrix": {
+                        "$ref": "#/components/schemas/ReviewDecisionMatrix"
+                    }
+                }
+            },
+            "ProjectResponse": {
                 "type": "object",
                 "properties": {
                     "id": {
@@ -225,18 +2036,771 @@
                     }
                 }
             },
-            "ReviewDecisionMatrix": {
+            "Author": {
                 "type": "object",
                 "properties": {
-                    "numberOfReviewers": {
+                    "firstName": {
+                        "type": "string"
+                    },
+                    "lastName": {
+                        "type": "string"
+                    }
+                }
+            },
+            "ExternalId": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "DOI",
+                            "ARXIV",
+                            "MAG",
+                            "ACL",
+                            "PUB_MED",
+                            "MEDLINE",
+                            "PUB_MED_CENTRAL",
+                            "DBLP",
+                            "SEMANTIC_SCHOLAR"
+                        ]
+                    },
+                    "value": {
+                        "type": "string"
+                    }
+                }
+            },
+            "UpdatePaperRequest": {
+                "type": "object",
+                "properties": {
+                    "paperId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "externalIds": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ExternalId"
+                        }
+                    },
+                    "abstract": {
+                        "type": "string"
+                    },
+                    "year": {
                         "type": "integer",
                         "format": "int32"
                     },
-                    "patterns": {
+                    "publisher": {
+                        "type": "string"
+                    },
+                    "publicationName": {
+                        "type": "string"
+                    },
+                    "publicationType": {
+                        "type": "string"
+                    },
+                    "authors": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/DecisionMatrixPattern"
+                            "$ref": "#/components/schemas/Author"
                         }
+                    }
+                }
+            },
+            "PaperResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "externalIds": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ExternalId"
+                        }
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "abstract": {
+                        "type": "string"
+                    },
+                    "year": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "publisher": {
+                        "type": "string"
+                    },
+                    "publicationName": {
+                        "type": "string"
+                    },
+                    "publicationType": {
+                        "type": "string"
+                    },
+                    "authors": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Author"
+                        }
+                    },
+                    "fetcherMetadata": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    },
+                    "backwardReferencedIds": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                }
+            },
+            "UpdateCriterionRequest": {
+                "type": "object",
+                "properties": {
+                    "criterionId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "tag": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "category": {
+                        "type": "string",
+                        "enum": [
+                            "INCLUSION",
+                            "EXCLUSION",
+                            "HARD_EXCLUSION"
+                        ]
+                    }
+                }
+            },
+            "Criterion": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "category": {
+                        "type": "string",
+                        "enum": [
+                            "INCLUSION",
+                            "EXCLUSION",
+                            "HARD_EXCLUSION"
+                        ]
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "tag": {
+                        "type": "string"
+                    },
+                    "createdBy": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            },
+            "ProjectCriterion": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/Criterion"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "projectId": {
+                                "type": "string",
+                                "format": "uuid"
+                            }
+                        }
+                    }
+                ]
+            },
+            "UserCriterion": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/Criterion"
+                    }
+                ]
+            },
+            "RegisterRequest": {
+                "type": "object",
+                "properties": {
+                    "firstName": {
+                        "type": "string"
+                    },
+                    "lastName": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string"
+                    },
+                    "password": {
+                        "type": "string"
+                    }
+                }
+            },
+            "CreateProjectRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    }
+                }
+            },
+            "AddPaperToProjectRequest": {
+                "type": "object",
+                "properties": {
+                    "paperId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "stage": {
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                }
+            },
+            "ProjectPaperResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "stage": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "decision": {
+                        "type": "string",
+                        "enum": [
+                            "UNREVIEWED",
+                            "IN_REVIEW",
+                            "DECLINED",
+                            "ACCEPTED"
+                        ]
+                    },
+                    "localPaperId": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "paper": {
+                        "$ref": "#/components/schemas/PaperResponse"
+                    },
+                    "reviews": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ReviewResponse"
+                        }
+                    }
+                }
+            },
+            "ReviewResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "projectPaperId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "userId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "decision": {
+                        "type": "string",
+                        "enum": [
+                            "DECLINED",
+                            "MAYBE",
+                            "ACCEPTED"
+                        ]
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "modifiedAt": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    },
+                    "selectedCriteriaIds": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                }
+            },
+            "InviteUserRequest": {
+                "type": "object",
+                "properties": {
+                    "userEmail": {
+                        "type": "string"
+                    }
+                }
+            },
+            "CreateReviewRequest": {
+                "type": "object",
+                "properties": {
+                    "projectPaperId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "decision": {
+                        "type": "string",
+                        "enum": [
+                            "DECLINED",
+                            "MAYBE",
+                            "ACCEPTED"
+                        ]
+                    },
+                    "selectedCriteriaIds": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                }
+            },
+            "CreatePaperRequest": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string"
+                    },
+                    "externalIds": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ExternalId"
+                        }
+                    },
+                    "abstract": {
+                        "type": "string"
+                    },
+                    "year": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "publisher": {
+                        "type": "string"
+                    },
+                    "publicationName": {
+                        "type": "string"
+                    },
+                    "publicationType": {
+                        "type": "string"
+                    },
+                    "authors": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Author"
+                        }
+                    },
+                    "fetcherMetadata": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "CreateCriterionRequest": {
+                "type": "object",
+                "properties": {
+                    "tag": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "category": {
+                        "type": "string",
+                        "enum": [
+                            "INCLUSION",
+                            "EXCLUSION",
+                            "HARD_EXCLUSION"
+                        ]
+                    },
+                    "projectId": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    }
+                }
+            },
+            "LoginRequest": {
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "type": "string"
+                    },
+                    "password": {
+                        "type": "string"
+                    }
+                }
+            },
+            "ChangePasswordRequest": {
+                "type": "object",
+                "properties": {
+                    "oldPassword": {
+                        "type": "string"
+                    },
+                    "newPassword": {
+                        "type": "string"
+                    }
+                }
+            },
+            "UserSettings": {
+                "type": "object",
+                "properties": {
+                    "areHotkeysShown": {
+                        "type": "boolean"
+                    },
+                    "criteriaIds": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    "similarityThreshold": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "decisionMatrix": {
+                        "$ref": "#/components/schemas/ReviewDecisionMatrix"
+                    },
+                    "fetchers": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "snowballingType": {
+                        "type": "string",
+                        "enum": [
+                            "FORWARD",
+                            "BACKWARD",
+                            "BOTH"
+                        ]
+                    },
+                    "reviewMaybeAllowed": {
+                        "type": "boolean"
+                    },
+                    "reviewModeEnabled": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "UserSettingsWithCriteria": {
+                "type": "object",
+                "properties": {
+                    "settings": {
+                        "$ref": "#/components/schemas/UserSettings"
+                    },
+                    "criteria": {
+                        "type": "array",
+                        "items": {
+                            "oneOf": [
+                                {
+                                    "$ref": "#/components/schemas/ProjectCriterion"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/UserCriterion"
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "ProjectMember": {
+                "type": "object",
+                "properties": {
+                    "projectId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "userId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "role": {
+                        "type": "string",
+                        "enum": [
+                            "DEFAULT",
+                            "ADMIN"
+                        ]
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "modifiedAt": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    },
+                    "projectAdmin": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "ProjectMemberWithUser": {
+                "type": "object",
+                "properties": {
+                    "projectMember": {
+                        "$ref": "#/components/schemas/ProjectMember"
+                    },
+                    "user": {
+                        "$ref": "#/components/schemas/User"
+                    }
+                }
+            },
+            "InvitationResponse": {
+                "type": "object",
+                "properties": {
+                    "userId": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    },
+                    "email": {
+                        "type": "string"
+                    },
+                    "firstName": {
+                        "type": "string"
+                    },
+                    "lastName": {
+                        "type": "string"
+                    },
+                    "role": {
+                        "type": "string",
+                        "enum": [
+                            "DEFAULT",
+                            "ADMIN"
+                        ]
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "ACTIVE_UNCONFIRMED",
+                            "ACTIVE",
+                            "DELETED",
+                            "CLEARED"
+                        ]
+                    }
+                }
+            },
+            "ProjectDecisionCount": {
+                "type": "object",
+                "properties": {
+                    "decision": {
+                        "type": "string",
+                        "enum": [
+                            "UNREVIEWED",
+                            "IN_REVIEW",
+                            "DECLINED",
+                            "ACCEPTED"
+                        ]
+                    },
+                    "count": {
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                }
+            },
+            "ProjectDecisionStatistics": {
+                "type": "object",
+                "properties": {
+                    "statistics": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ProjectDecisionCount"
+                        }
+                    }
+                }
+            },
+            "FetcherPaperResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uuid"
+                    },
+                    "externalIds": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ExternalId"
+                        }
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "abstract": {
+                        "type": "string"
+                    },
+                    "year": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "publisher": {
+                        "type": "string"
+                    },
+                    "publicationName": {
+                        "type": "string"
+                    },
+                    "publicationType": {
+                        "type": "string"
+                    },
+                    "authors": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Author"
+                        }
+                    },
+                    "fetcherMetadata": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    },
+                    "backwardReferencedIds": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                }
+            },
+            "ProjectInformation": {
+                "type": "object",
+                "properties": {
+                    "progress": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "creationDate": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "lastStageStarted": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "FetcherInformation": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "links": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Link"
+                        }
+                    },
+                    "optionsSchema": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "$ref": "#/components/schemas/FetcherOptionsSchema"
+                        }
+                    }
+                }
+            },
+            "FetcherInformationWithId": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "information": {
+                        "$ref": "#/components/schemas/FetcherInformation"
+                    }
+                }
+            },
+            "FetcherOptionsSchema": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "defaultValue": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "required": {
+                        "type": "boolean"
+                    },
+                    "secret": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "Link": {
+                "type": "object",
+                "properties": {
+                    "label": {
+                        "type": "string"
+                    },
+                    "url": {
+                        "type": "string"
                     }
                 }
             }

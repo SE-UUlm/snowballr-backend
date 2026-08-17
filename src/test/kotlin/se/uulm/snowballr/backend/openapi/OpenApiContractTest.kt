@@ -1,19 +1,40 @@
 package se.uulm.snowballr.backend.openapi
 
+import io.mockk.every
+import io.mockk.mockk
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import org.koin.core.context.startKoin
+import org.koin.core.context.stopKoin
+import org.koin.dsl.module
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
-import se.uulm.snowballr.backend.openapi.OpenApiContractTest.Companion.COMMITTED_SPEC
+import se.uulm.snowballr.backend.auth.IAuthenticationManager
+import se.uulm.snowballr.backend.auth.ICookieManager
+import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.rest.SnowballRApplication
+import se.uulm.snowballr.backend.service.IAuthenticationService
+import se.uulm.snowballr.backend.service.ICriterionService
+import se.uulm.snowballr.backend.service.IExportService
+import se.uulm.snowballr.backend.service.IFetcherService
+import se.uulm.snowballr.backend.service.IInvitationService
+import se.uulm.snowballr.backend.service.IPaperService
+import se.uulm.snowballr.backend.service.IProjectMemberService
+import se.uulm.snowballr.backend.service.IProjectPaperService
+import se.uulm.snowballr.backend.service.IProjectService
+import se.uulm.snowballr.backend.service.IReadingListService
+import se.uulm.snowballr.backend.service.IReviewService
+import se.uulm.snowballr.backend.service.IUserService
 import java.io.File
 
 /**
@@ -24,7 +45,10 @@ import java.io.File
  * consumed by the OpenAPI TypeScript client generator).
  *
  * The full application context is deliberately pinned to [SnowballRApplication], whose component scan is
- * confined to the `rest` package, so the context is cheap to start and requires no database or Koin wiring.
+ * confined to the `rest` package, so the context is cheap to start. It still needs Koin running, though: `KoinBridge`
+ * exposes the Koin-backed services as Spring beans, and `SecurityConfig` requires them eagerly at startup. Rather
+ * than pulling in the real database-backed module, a minimal Koin module of mocks is started for the lifetime of
+ * this class - just enough to satisfy the bean wiring without touching a database.
  */
 @SpringBootTest(classes = [SnowballRApplication::class])
 @AutoConfigureMockMvc
@@ -64,7 +88,7 @@ class OpenApiContractTest(@Autowired private val mvc: MockMvc) {
 
     private companion object {
         /** Path the springdoc api-docs endpoint is served at (see `application.properties`). */
-        const val API_DOCS_PATH = "/api"
+        const val API_DOCS_PATH = "/api-docs"
 
         /** Committed specification the build is checked against. */
         const val COMMITTED_SPEC = "api/openapi.json"
@@ -73,5 +97,44 @@ class OpenApiContractTest(@Autowired private val mvc: MockMvc) {
             prettyPrint = true
             prettyPrintIndent = "    "
         }
+
+        /**
+         * Starts Koin with mocks before the Spring context is created, since `KoinBridge` and `SecurityConfig`
+         * resolve Koin-backed beans eagerly during context refresh. Auth bypass is stubbed on so the security
+         * filter never exercises [IAuthenticationManager] or [ICookieManager].
+         */
+        @JvmStatic
+        @BeforeAll
+        fun startTestKoin() {
+            val envReader = mockk<EnvReader>()
+            every { envReader.env.miscellaneous.authBypassEnabled } returns true
+            every { envReader.env.http.port } returns 8080
+
+            startKoin {
+                modules(
+                    module {
+                        single<IProjectService> { mockk() }
+                        single<IAuthenticationService> { mockk() }
+                        single<IAuthenticationManager> { mockk() }
+                        single<ICookieManager> { mockk() }
+                        single<EnvReader> { envReader }
+                        single<IUserService> { mockk() }
+                        single<IInvitationService> { mockk() }
+                        single<IExportService> { mockk() }
+                        single<IProjectMemberService> { mockk() }
+                        single<IReadingListService> { mockk() }
+                        single<IProjectPaperService> { mockk() }
+                        single<IReviewService> { mockk() }
+                        single<ICriterionService> { mockk() }
+                        single<IPaperService> { mockk() }
+                        single<IFetcherService> { mockk() }
+                    },
+                )
+            }
+        }
+
+        @JvmStatic
+        @AfterAll
+        fun stopTestKoin() = stopKoin()
     }
 }

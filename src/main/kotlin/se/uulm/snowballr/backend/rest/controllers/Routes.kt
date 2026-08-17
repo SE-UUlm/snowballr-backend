@@ -1,0 +1,23 @@
+package se.uulm.snowballr.backend.rest.controllers
+
+object Routes {
+    const val BASE_ROUTE = "/api/v1"
+
+    // Base routes
+    const val AUTH_ROUTE = "$BASE_ROUTE/auth"
+    const val PROJECTS_ROUTE = "$BASE_ROUTE/projects"
+    const val USERS_ROUTE = "$BASE_ROUTE/users"
+    const val EXPORT_ROUTE = "$BASE_ROUTE/export"
+    const val INVITATIONS_ROUTE = "$BASE_ROUTE/invitations"
+    const val PROJECT_PAPERS_ROUTE = "$BASE_ROUTE/project-papers"
+    const val REVIEWS_ROUTE = "$BASE_ROUTE/reviews"
+    const val CRITERIA_ROUTE = "$BASE_ROUTE/criteria"
+    const val PAPERS_ROUTE = "$BASE_ROUTE/papers"
+    const val FETCHERS_ROUTE = "$BASE_ROUTE/fetchers"
+
+    // Project routes
+    const val PROJECT_MEMBERS_ROUTE = "$PROJECTS_ROUTE/{projectId}/members"
+
+    // User routes
+    const val READING_LIST_ROUTE = "$USERS_ROUTE/me/reading-list"
+}
