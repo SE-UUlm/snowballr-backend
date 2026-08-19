@@ -18,6 +18,7 @@ import se.uulm.snowballr.backend.model.fetcher.FetcherInformation
 import se.uulm.snowballr.backend.model.fetcher.FetcherInformationWithId
 import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
 import se.uulm.snowballr.backend.model.fetcher.ProcessResult
+import se.uulm.snowballr.backend.normalization.PaperNormalizer
 import java.io.IOException
 import java.io.InputStream
 import java.nio.file.Files
@@ -90,11 +91,12 @@ class PythonPluginFetcherManager(
         options: Map<String, String>,
     ): Set<FetcherPaper> {
         val action = FetcherAction.QUERY
-        return executeFetcher(
+        val papers: Set<FetcherPaper> = executeFetcher(
             fetcher,
             action,
             action.payload(searchQuery = searchQuery, options = options),
         )
+        return papers.normalized()
     }
 
     override suspend fun fetchForwardReferences(
@@ -103,11 +105,12 @@ class PythonPluginFetcherManager(
         options: Map<String, String>,
     ): Set<FetcherPaper> {
         val action = FetcherAction.FORWARDS
-        return executeFetcher(
+        val papers: Set<FetcherPaper> = executeFetcher(
             fetcher,
             action,
             action.payload(paper = paper, options = options),
         )
+        return papers.normalized()
     }
 
     override suspend fun fetchBackwardReferences(
@@ -116,12 +119,19 @@ class PythonPluginFetcherManager(
         options: Map<String, String>,
     ): Set<FetcherPaper> {
         val action = FetcherAction.BACKWARDS
-        return executeFetcher(
+        val papers: Set<FetcherPaper> = executeFetcher(
             fetcher,
             action,
             action.payload(paper = paper, options = options),
         )
+        return papers.normalized()
     }
+
+    /**
+     * Normalizes every paper in this set via [PaperNormalizer], so that all data received from a plugin is
+     * normalized right away, regardless of which method is used to fetch it.
+     */
+    private fun Set<FetcherPaper>.normalized(): Set<FetcherPaper> = map { PaperNormalizer.normalize(it) }.toSet()
 
     /**
      * Executes the Python script of a given fetcher with the given command
@@ -219,7 +229,7 @@ class PythonPluginFetcherManager(
     private fun parseProcessResult(fetcher: String, processResult: ProcessResult): String {
         val (stdout, stderr, returnCode) = processResult
         if (returnCode == 0) {
-            if (!stderr.isBlank()) logger.info { "Fetcher '$fetcher' encountered a problem: $stderr" }
+            if (stderr.isNotBlank()) logger.info { "Fetcher '$fetcher' encountered a problem: $stderr" }
             val output = stdout.lineSequence().firstOrNull()?.trim().orEmpty()
             if (output.isBlank()) {
                 throw FetcherException("Fetcher '$fetcher' returned no JSON output.")
@@ -234,7 +244,7 @@ class PythonPluginFetcherManager(
     /**
      * Resolves the on-disk path and validates that it is safe to execute.
      *
-     * The script must be a direct child of the configured fetchers directory. Symlinks are allowed,
+     * The script must be a direct child of the configured fetchers' directory. Symlinks are allowed,
      * but the fully resolved target must still reside in that directory.
      *
      * @param fetcher Base name of the fetcher script (without `.py` extension)

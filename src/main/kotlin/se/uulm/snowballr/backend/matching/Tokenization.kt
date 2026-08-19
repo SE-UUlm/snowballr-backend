@@ -1,8 +1,27 @@
 package se.uulm.snowballr.backend.matching
 
 import se.uulm.snowballr.backend.model.dto.paper.Author
+import se.uulm.snowballr.backend.normalization.PaperNormalizer
+import java.text.Normalizer
 
+/**
+ * Tokenizes author names for use in similarity comparisons (see [PaperMatcher]).
+ *
+ * Diacritics are folded (e.g. "Jürgen" -> "jurgen") rather than dropped, and letters from non-Latin scripts
+ * (e.g. Cyrillic, CJK) are kept rather than stripped, so that names in any script and encoding still produce
+ * meaningful, comparable tokens.
+ *
+ * To fold diacritics, the name is Unicode-normalized to NFD (Normalization Form D, canonical decomposition), which
+ * splits a precomposed accented letter into its base letter plus one or more combining marks - for example "ü"
+ * becomes "u" + a combining diaeresis (U+0308). Those combining marks are then stripped, leaving only the base
+ * letter. This is the opposite of the NFC used by [PaperNormalizer] to canonicalize stored values: NFC composes marks
+ * back into a single character for consistent storage, NFD decomposes them so they can be isolated and removed here.
+ */
 object Tokenization {
+    private val COMBINING_MARKS_REGEX = Regex("""\p{Mn}+""")
+    private val WHITESPACE_REGEX = Regex("""[\s\p{Z}]+""")
+    private val NON_LETTER_OR_DIGIT_REGEX = Regex("""[^\p{L}\p{N}\s]""")
+
     /**
      * Creates a set of tokens for all passed [authors].
      *
@@ -23,13 +42,17 @@ object Tokenization {
      */
     fun authorTokens(author: Author): Set<String> {
         val fullName = "${author.firstName} ${author.lastName}".trim()
-        val cleaned = fullName.lowercase().replace(Regex("[^a-z0-9 ]"), "")
-        val tokens = cleaned.split(Regex("\\s+")).filter { it.isNotEmpty() }
+        val foldedAccents = Normalizer.normalize(fullName, Normalizer.Form.NFD).replace(COMBINING_MARKS_REGEX, "")
+        val normalizedWhitespace = foldedAccents.replace(WHITESPACE_REGEX, " ")
+        val cleaned = normalizedWhitespace.lowercase().replace(NON_LETTER_OR_DIGIT_REGEX, "")
+        val tokens = cleaned.split(WHITESPACE_REGEX).filter { it.isNotEmpty() }
 
         val result = mutableSetOf<String>()
         for (token in tokens) {
             result.add(token)
-            if (token.length > 1) result.add(token[0].toString())
+            if (token.codePointCount(0, token.length) > 1) {
+                result.add(String(Character.toChars(token.codePointAt(0))))
+            }
         }
 
         return result

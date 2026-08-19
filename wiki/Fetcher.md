@@ -168,6 +168,10 @@ author = Author(
 )
 ```
 
+Returned papers do not need to be pre-formatted by the fetcher. Fields such as the title or author names are
+normalized by the backend after they are received; see
+[Normalization](https://github.com/SE-UUlm/snowballr-backend/wiki/Normalization) for details.
+
 Let's put all the pieces together:
 
 #### Basic Fetcher

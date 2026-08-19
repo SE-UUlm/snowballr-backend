@@ -150,4 +150,19 @@ class UpdatePaperTest : PaperServiceTest() {
         service.updatePaper(request, emptySet())
         coVerify(exactly = 0) { paperRepoMock.getPapersByExternalIds(any()) }
     }
+
+    @Test
+    fun `When a paper is updated with messily formatted data, then the normalized data is persisted`() = runTest {
+        val request = getExampleRequest().copy(title = "  Messy   Title  ")
+        val normalizedRequest = request.copy(title = "Messy Title")
+        val examplePaper = DataBuilder.createExamplePaper(id = paperId)
+
+        coEvery { paperRepoMock.ensurePaperExists(paperId) } just Runs
+        coEvery { paperRepoMock.updatePaper(normalizedRequest, emptySet()) } returns examplePaper
+        coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paperId) } returns emptyList()
+
+        service.updatePaper(request, emptySet())
+
+        coVerify(exactly = 1) { paperRepoMock.updatePaper(normalizedRequest, emptySet()) }
+    }
 }

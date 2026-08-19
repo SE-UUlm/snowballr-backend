@@ -20,6 +20,10 @@ class TokenizationTest {
             Arguments.of(Author("Louis", "XIV2"), setOf("louis", "l", "xiv2", "x")),
             Arguments.of(Author("John", "  Doe"), setOf("john", "j", "doe", "d")),
             Arguments.of(Author("X", "Yu"), setOf("x", "yu", "y")),
+            Arguments.of(Author("Jürgen", "Müller"), setOf("jurgen", "j", "muller", "m")),
+            Arguments.of(Author("François", "Hénon"), setOf("francois", "f", "henon", "h")),
+            Arguments.of(Author("Владимир", "Путин"), setOf("владимир", "в", "путин", "п")),
+            Arguments.of(Author("田中", "太郎"), setOf("田中", "田", "太郎", "太")),
         )
 
         @JvmStatic
@@ -49,6 +53,22 @@ class TokenizationTest {
             val tokens = Tokenization.authorTokens(author)
 
             assertEquals(emptySet<String>(), tokens)
+        }
+
+        @Test
+        fun `When a name has diacritics, then its tokens equal the plain-ASCII spelling's tokens`() {
+            val accented = Tokenization.authorTokens(Author("Jürgen", "Müller"))
+            val plain = Tokenization.authorTokens(Author("Jurgen", "Muller"))
+
+            assertEquals(plain, accented)
+        }
+
+        @Test
+        fun `When a name is NFC-composed or NFD-decomposed, then the same tokens are returned`() {
+            val nfcComposed = Tokenization.authorTokens(Author("Caf\u00e9", "Doe")) // precomposed \u00e9
+            val nfdDecomposed = Tokenization.authorTokens(Author("Cafe\u0301", "Doe")) // "e" + combining accent
+
+            assertEquals(nfcComposed, nfdDecomposed)
         }
     }
 

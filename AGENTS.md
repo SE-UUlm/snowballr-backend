@@ -26,6 +26,7 @@ existing docs over restating them here. If you must summarize, keep it short and
 - wiki/Logging.md — log level rules, what must never be logged, layer responsibilities, correlation IDs
 - wiki/Testing.md — unit/integration testing conventions and reports
 - wiki/Fetcher.md — fetcher plugin system, security warning, contract
+- wiki/Normalization.md — paper data normalization and author tokenization for matching
 - wiki/Tools.md — dev tools, including fetcher CLI reference
 
 ## Structure
@@ -63,6 +64,7 @@ existing docs over restating them here. If you must summarize, keep it short and
 | Logging setup                   | src/main/resources/logback.xml, context/RequestContext.kt                | Pattern and MDC mirroring.                       |
 | Testing conventions             | wiki/Testing.md                                                          | Unit/integration tests, reports.                 |
 | Fetcher contract                | wiki/Fetcher.md                                                          | Security warning and invocation protocol.        |
+| Paper data normalization        | wiki/Normalization.md                                                    | Fetcher + Service normalization, tokenization.   |
 | Fetcher CLI                     | tools/fetcher-cli/cli.py, wiki/Tools.md                                  | Direct plugin invocation for dev/testing.        |
 | Fetcher orchestrator            | src/main/kotlin/se/uulm/snowballr/backend/fetcher/FetcherOrchestrator.kt | Job queue logic.                                 |
 | Fetcher orchestrator tests      | src/test/kotlin/se/uulm/snowballr/backend/fetcher/orchestrator           | Unit tests.                                      |
