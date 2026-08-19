@@ -55,6 +55,14 @@ class PaperNormalizerTest {
 
             assertEquals(PaperNormalizer.normalizeText(precomposed), PaperNormalizer.normalizeText(decomposed))
         }
+
+        @Test
+        fun `When a text contains invisible characters, then they are removed`() {
+            val text = "\u00ADFoo\u200B"
+            val expected = "Foo"
+
+            assertEquals(expected, PaperNormalizer.normalizeText(text))
+        }
     }
 
     @Nested

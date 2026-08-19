@@ -23,6 +23,7 @@ import java.text.Normalizer
  */
 object PaperNormalizer {
     private val WHITESPACE_REGEX = Regex("[\\s\\p{Z}]+")
+    private val INVISIBLE_CHARS_REGEX = Regex("""[\u00AD\u200B\u200E\u200F\u2060\uFEFF]""")
 
     private val PUNCTUATION_REPLACEMENTS = mapOf(
         '‘' to '\'', // left single quotation mark
@@ -53,7 +54,10 @@ object PaperNormalizer {
         val withPlainPunctuation = buildString(composed.length) {
             for (c in composed) append(PUNCTUATION_REPLACEMENTS[c] ?: c)
         }
-        return withPlainPunctuation.replace(WHITESPACE_REGEX, " ").trim()
+        return withPlainPunctuation
+            .replace(WHITESPACE_REGEX, " ")
+            .replace(INVISIBLE_CHARS_REGEX, "")
+            .trim()
     }
 
     /**
