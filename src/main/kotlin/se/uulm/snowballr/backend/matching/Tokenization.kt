@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.matching
 
 import se.uulm.snowballr.backend.model.dto.paper.Author
+import se.uulm.snowballr.backend.normalization.PaperNormalizer
 import java.text.Normalizer
 
 /**
@@ -13,9 +14,8 @@ import java.text.Normalizer
  * To fold diacritics, the name is Unicode-normalized to NFD (Normalization Form D, canonical decomposition), which
  * splits a precomposed accented letter into its base letter plus one or more combining marks - for example "ü"
  * becomes "u" + a combining diaeresis (U+0308). Those combining marks are then stripped, leaving only the base
- * letter. This is the opposite of the NFC used by [se.uulm.snowballr.backend.normalization.PaperNormalizer] to
- * canonicalize stored values: NFC composes marks back into a single character for consistent storage, NFD decomposes
- * them so they can be isolated and removed here.
+ * letter. This is the opposite of the NFC used by [PaperNormalizer] to canonicalize stored values: NFC composes marks
+ * back into a single character for consistent storage, NFD decomposes them so they can be isolated and removed here.
  */
 object Tokenization {
     private val COMBINING_MARKS_REGEX = Regex("""\p{Mn}+""")

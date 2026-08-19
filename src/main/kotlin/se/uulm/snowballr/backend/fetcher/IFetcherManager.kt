@@ -2,13 +2,13 @@ package se.uulm.snowballr.backend.fetcher
 
 import se.uulm.snowballr.backend.model.fetcher.FetcherInformationWithId
 import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
+import se.uulm.snowballr.backend.normalization.PaperNormalizer
 
 /**
  * Delegate requests to multiple fetchers using their names.
  *
- * Implementations are expected to normalize (see [se.uulm.snowballr.backend.normalization.PaperNormalizer])
- * every [FetcherPaper] they return, so that callers can rely on consistent formatting regardless of which fetcher
- * produced the data.
+ * Implementations are expected to normalize (see [PaperNormalizer]) every [FetcherPaper] they return, so that callers
+ * can rely on consistent formatting regardless of which fetcher produced the data.
  */
 interface IFetcherManager {
     /**
