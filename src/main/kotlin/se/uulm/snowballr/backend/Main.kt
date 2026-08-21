@@ -14,6 +14,7 @@ import se.uulm.snowballr.backend.env.EnvService
 import se.uulm.snowballr.backend.fetcher.FetcherOrchestrator
 import se.uulm.snowballr.backend.fetcher.IFetcherOrchestrator
 import se.uulm.snowballr.backend.grpc.SnowballRServer
+import se.uulm.snowballr.backend.matching.IPaperMatcher
 import se.uulm.snowballr.backend.rest.startRestServer
 import se.uulm.snowballr.backend.scheduler.SchedulerManager
 
@@ -66,10 +67,12 @@ private fun configureRootLogger(logLevel: String) {
  */
 private fun initializeFetcherOrchestrator() {
     val orchestrator = getKoin().get<IFetcherOrchestrator>()
+    val paperMatcher = getKoin().get<IPaperMatcher>()
     orchestrator.start()
     Runtime.getRuntime().addShutdownHook(
         Thread {
             orchestrator.stop()
+            paperMatcher.printDist()
         },
     )
 }

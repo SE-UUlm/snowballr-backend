@@ -8,6 +8,8 @@ import se.uulm.snowballr.backend.model.dto.paper.isNotBlank
 import se.uulm.snowballr.backend.model.dto.paper.toFetcherPaper
 import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
 import kotlin.math.abs
+import kotlin.math.roundToInt
+import kotlin.time.measureTime
 
 private val logger = KotlinLogging.logger { }
 
@@ -61,6 +63,8 @@ interface IPaperMatcher {
      * @return the highest-scoring candidate above [threshold], or `null` if none qualifies.
      */
     fun findMatch(fetched: FetcherPaper, candidates: List<Paper>, threshold: Float): Paper?
+
+    fun printDist()
 }
 
 /**
@@ -83,9 +87,13 @@ class PaperMatcher(override val config: PaperMatchingConfig) : IPaperMatcher {
         const val DELTA = 1e-6
     }
 
+    private val dist: LongArray = LongArray(101) { 0 }
+
     override fun similarity(a: FetcherPaper, b: FetcherPaper): Double {
-        if (haveSameExternalId(a, b)) return 1.0
-        if (haveConflictingExternalId(a, b)) return 0.0
+        if (haveSameExternalId(a, b)) {
+            logger.warn { "ID match:\nA:$a;\nB:$b" }
+            return 1.0
+        }
         if (abs(a.year - b.year) > config.yearTolerance) return 0.0
 
         data class Component(val weight: Double, val score: Double)
@@ -93,50 +101,62 @@ class PaperMatcher(override val config: PaperMatchingConfig) : IPaperMatcher {
         val components = mutableListOf<Component>()
 
         if (a.title.isNotBlank() && b.title.isNotBlank()) {
-            components.add(
-                Component(
-                    weight = config.titleWeight,
-                    score = Levenshtein.getNormalizedDistance(a.title.trim().lowercase(), b.title.trim().lowercase()),
-                ),
-            )
+            val titleSim = Levenshtein.getNormalizedDistance(a.title.trim().lowercase(), b.title.trim().lowercase())
+
+            if (titleSim < 0.5) return 0.0
+
+            components.add(Component(weight = config.titleWeight, score = titleSim))
         }
 
         val authorsA = a.authors.filter { it.isNotBlank() }
         val authorsB = b.authors.filter { it.isNotBlank() }
         if (authorsA.isNotEmpty() && authorsB.isNotEmpty()) {
-            components.add(
-                Component(
-                    weight = config.authorsWeight,
-                    score = jaccardSimilarity(
-                        Tokenization.authorSetTokens(authorsA),
-                        Tokenization.authorSetTokens(authorsB),
-                    ),
-                ),
+            val authorSim = jaccardSimilarity(
+                Tokenization.authorSetTokens(authorsA),
+                Tokenization.authorSetTokens(authorsB),
             )
+
+            if (authorSim < 0.5) return 0.0
+
+            components.add(Component(weight = config.authorsWeight, score = authorSim))
         }
 
         if (a.abstract.isNotBlank() && b.abstract.isNotBlank()) {
-            components.add(
-                Component(
-                    weight = config.abstractWeight,
-                    score = Levenshtein.getNormalizedDistance(
-                        a.abstract.trim().lowercase(),
-                        b.abstract.trim().lowercase(),
-                    ),
-                ),
+            val abstractSim = Levenshtein.getNormalizedDistance(
+                a.abstract.trim().lowercase(),
+                b.abstract.trim().lowercase(),
             )
+
+            if (abstractSim < 0.5) return 0.0
+
+            components.add(Component(weight = config.abstractWeight, score = abstractSim))
         }
 
         val totalWeight = components.sumOf { it.weight }
         if (totalWeight == 0.0) return 0.0
-        return components.sumOf { it.score * it.weight / totalWeight }
+        val similarity = components.sumOf { it.score * it.weight / totalWeight }
+        logger.warn { "Actual similarity: $similarity" }
+        return similarity
+    }
+
+    fun sim(a: FetcherPaper, b: FetcherPaper): Double {
+        var sim = 0.0
+        val a = measureTime {
+            sim = similarity(a, b)
+        }
+
+        if (a.inWholeMilliseconds > 100) {
+            logger.warn { "similarity took ${a.inWholeMilliseconds} ms" }
+        }
+
+        return sim
     }
 
     override fun deduplicatePapers(papers: Set<FetcherPaper>, threshold: Float): Set<FetcherPaper> {
         val groups = mutableListOf<MutableList<FetcherPaper>>()
 
         for (paper in papers) {
-            val group = groups.firstOrNull { isSimilarityAboveThreshold(similarity(paper, it[0]), threshold) }
+            val group = groups.firstOrNull { isSimilarityAboveThreshold(sim(paper, it[0]), threshold) }
             if (group != null) {
                 group.add(paper)
             } else {
@@ -149,11 +169,15 @@ class PaperMatcher(override val config: PaperMatchingConfig) : IPaperMatcher {
 
     override fun findMatch(fetched: FetcherPaper, candidates: List<Paper>, threshold: Float): Paper? = candidates
         .asSequence()
-        .map { candidate -> candidate to similarity(fetched, candidate.toFetcherPaper()) }
+        .map { candidate -> candidate to sim(fetched, candidate.toFetcherPaper()) }
         .filter { (_, score) -> isSimilarityAboveThreshold(score, threshold) }
         .sortedBy { (paper, _) -> paper.createdAt }
         .maxByOrNull { (_, score) -> score }
         ?.first
+
+    override fun printDist() {
+        logger.info { "PaperMatcherDist: ${dist.contentToString()}" }
+    }
 
     /**
      * Returns true if both [FetcherPaper]s have at least one equal external ID.
@@ -164,20 +188,6 @@ class PaperMatcher(override val config: PaperMatchingConfig) : IPaperMatcher {
         val (externalIdsA, externalIdsB) = normalizeExternalIds(a, b)
 
         return externalIdsA.any { externalIdsB.contains(it) }
-    }
-
-    /**
-     * Returns true if both [FetcherPaper]s have at least one conflicting external ID.
-     *
-     * Two external IDs are conflicting if they both have the same type, but a different value.
-     * External IDs with a blank value are filtered out.
-     */
-    private fun haveConflictingExternalId(a: FetcherPaper, b: FetcherPaper): Boolean {
-        val (externalIdsA, externalIdsB) = normalizeExternalIds(a, b)
-
-        return externalIdsA.any { exA ->
-            externalIdsB.any { exB -> exA.type == exB.type && exA.value != exB.value }
-        }
     }
 
     private fun normalizeExternalIds(a: FetcherPaper, b: FetcherPaper): Pair<List<ExternalId>, List<ExternalId>> {
@@ -242,5 +252,14 @@ class PaperMatcher(override val config: PaperMatchingConfig) : IPaperMatcher {
         return result
     }
 
-    private fun isSimilarityAboveThreshold(similarity: Double, threshold: Float) = threshold - similarity < DELTA
+    private fun isSimilarityAboveThreshold(similarity: Double, threshold: Float): Boolean {
+        val sim = (similarity * 100).roundToInt()
+        if (sim < dist.size) {
+            dist[sim]++
+        } else {
+            logger.warn { "Similarity above threshold not allowed: $sim/$similarity" }
+        }
+
+        return threshold - similarity < DELTA
+    }
 }

@@ -1,0 +1,24 @@
+Case 1: fast-path 0, but similarity 0.778
+A:FetcherPaper(title=Theoretical and numerical constraint-handling techniques used with evolutionary algorithms: a survey of the state of the art, externalIds=[ExternalId(type=MAG, value=1535482498), ExternalId(type=SEMANTIC_SCHOLAR, value=ec0434534d9e80ac984f061d0fef193f79d284ff)], abstract=, year=2002, publisher=, publicationType=Review, publicationName=, authors=[Author(firstName=C., lastName=Coello-Coello)], fetcherMetadata={SemanticScholarId=ec0434534d9e80ac984f061d0fef193f79d284ff, SemanticScholarCorpusId=9235579});
+B:FetcherPaper(title=THEORETICAL AND NUMERICAL CONSTRAINT-HANDLING TECHNIQUES USED WITH EVOLUTIONARY ALGORITHMS: A SURVEY OF THE STATE OF THE ART, externalIds=[ExternalId(type=DOI, value=10.1016/S0045-7825(01)00323-1), ExternalId(type=MAG, value=2167580870), ExternalId(type=SEMANTIC_SCHOLAR, value=232fd0ff4c568edf8ad1a1220b362f492dd725a7)], abstract=, year=2002, publisher=, publicationType=Review, publicationName=, authors=[Author(firstName=C., lastName=Coello)], fetcherMetadata={SemanticScholarId=232fd0ff4c568edf8ad1a1220b362f492dd725a7, SemanticScholarCorpusId=62303805})
+-> prob. equal, 2 ID mismatches
+
+Case 2: fast-path 0, but similarity 0.968
+A:FetcherPaper(title=Tabu Search - Part I, externalIds=[ExternalId(type=DOI, value=10.1287/ijoc.1.3.190), ExternalId(type=DBLP, value=journals/informs/Glover89), ExternalId(type=SEMANTIC_SCHOLAR, value=d115adcbf63e989804912db1e656ec8debd1f040)], abstract=, year=1989, publisher=, publicationType=JournalArticle, publicationName=INFORMS journal on computing, authors=[Author(firstName=F., lastName=Glover)], fetcherMetadata={SemanticScholarId=d115adcbf63e989804912db1e656ec8debd1f040, SemanticScholarCorpusId=5617719});
+B:FetcherPaper(title=Tabu Search - Part II, externalIds=[ExternalId(type=DOI, value=10.1287/IJOC.2.1.4), ExternalId(type=MAG, value=2104670598), ExternalId(type=DBLP, value=journals/informs/Glover90), ExternalId(type=SEMANTIC_SCHOLAR, value=9a3203a26112ec33d34233ba8b38e5509490f2a0)], abstract=, year=1989, publisher=, publicationType=JournalArticle, publicationName=INFORMS journal on computing, authors=[Author(firstName=F., lastName=Glover)],
+-> not equal, 3 ID mismatches
+
+Case 3: fast-path 0, but similarity 0.948
+A:FetcherPaper(title=Optimization by Simmulated Annealing, externalIds=[ExternalId(type=MAG, value=3022584652), ExternalId(type=DBLP, value=journals/science/KirkpatrickGV83), ExternalId(type=SEMANTIC_SCHOLAR, value=0a0c026b2b6c04baaf1fa2933d5998519bc9c5fa)], abstract=, year=1983, publisher=, publicationType=JournalArticle, publicationName=The Scientist, authors=[Author(firstName=S., lastName=Kirkpatrick), Author(firstName=D., lastName=Gelatt), Author(firstName=M., lastName=Vecchi)], fetcherMetadata={SemanticScholarId=0a0c026b2b6c04baaf1fa2933d5998519bc9c5fa, SemanticScholarCorpusId=40427348});
+B:FetcherPaper(title=Optimization by Simulated Annealing, externalIds=[ExternalId(type=DOI, value=10.1126/science.220.4598.671), ExternalId(type=MAG, value=3042865397), ExternalId(type=PUB_MED, value=17813860), ExternalId(type=SEMANTIC_SCHOLAR, value=dd5061631a4d11fa394f4421700ebf7e78dcbc59)], abstract=, year=1983, publisher=, publicationType=JournalArticle, publicationName=Science, authors=[Author(firstName=S., lastName=Kirkpatrick), Author(firstName=C. D., lastName=Gelatt), Author(firstName=M., lastName=Vecchi)], fetcherMetadata={SemanticScholarId=dd5061631a4d11fa394f4421700ebf7e78dcbc59, SemanticScholarCorpusId=205939})
+-> prob. equal, 1 ID mismatch
+
+
+
+
+
+
+[     0, 0, 0, 1, 3, 18, 38, 62, 164, 438, 1370, 3569, 8064, 16205, 28559, 47316, 68724, 89989, 103408, 105537, 96658, 79362, 61260, 43920, 30509, 20618, 13567, 9069, 6090, 4190, 2910, 2070, 1404, 993, 692, 505, 392, 229, 194, 151, 108, 101, 73, 59, 39, 40, 34, 28, 26, 25, 22, 12, 16, 9, 9, 9, 8, 7, 5, 6, 5, 6, 3, 6, 5, 3, 0, 2, 3, 3, 0, 0, 1, 2, 2, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0]
+[848924, 0, 0, 0, 0,  0,  0,  0,   0,   0,    0,    0,    0,     1,     0,     0,     0,     1,      0,      0,     1,     1,     0,     0,     1,     0,     0,    0,    1,    0,    0,    0,    0,   1,   0,   0,   1,   0,   0,   0,   0,   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+[12493063, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 3, 0, 1, 0, 4, 20]
