@@ -17,6 +17,7 @@ import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.dto.user.UserField
 import se.uulm.snowballr.backend.model.dto.user.UserRole
+import se.uulm.snowballr.backend.model.dto.user.UserSettingsField
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.validation.CriterionValidator
 import se.uulm.snowballr.backend.validation.PaperValidator
@@ -141,3 +142,6 @@ fun userFieldFromGrpc(fieldMaskPath: String) =
 fun projectInfoFieldFromGrpc(fieldMaskPath: String) =
     ProjectInfoField.entries.associateBy { ProjectValidator.getGrpcPathsForProjectInfoField(it) }
         .getValue(fieldMaskPath)
+
+fun userSettingsFieldFromGrpc(fieldMaskPath: String) =
+    UserSettingsField.entries.associateBy { UserValidator.getGrpcPathsForUserSettingsField(it) }.getValue(fieldMaskPath)

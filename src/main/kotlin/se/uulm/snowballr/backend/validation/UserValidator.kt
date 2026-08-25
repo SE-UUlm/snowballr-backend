@@ -6,6 +6,7 @@ import arrow.core.raise.either
 import arrow.core.raise.zipOrAccumulate
 import se.uulm.snowballr.backend.model.ValidationIssue
 import se.uulm.snowballr.backend.model.dto.user.UserField
+import se.uulm.snowballr.backend.model.dto.user.UserSettingsField
 import snowballr.UserOuterClass.User
 
 /**
@@ -63,5 +64,18 @@ object UserValidator {
         UserField.LAST_NAME -> "user.last_name"
         UserField.ROLE -> "user.role"
         UserField.STATUS -> "user.status"
+    }
+
+    fun getGrpcPathsForUserSettingsField(field: UserSettingsField) = when (field) {
+        UserSettingsField.ARE_HOTKEYS_SHOWN -> "user_settings.show_hotkeys"
+        UserSettingsField.IS_REVIEW_MODE_ENABLED -> "user_settings.review_mode"
+        UserSettingsField.CRITERIA_IDS -> "user_settings.default_criteria"
+        UserSettingsField.SIMILARITY_THRESHOLD -> "user_settings.default_project_settings.similarity_threshold"
+        UserSettingsField.SNOWBALLING_TYPE -> "user_settings.default_project_settings.snowballing_type"
+        UserSettingsField.REVIEW_MAYBE_ALLOWED -> "user_settings.default_project_settings.review_maybe_allowed"
+        UserSettingsField.FETCHERS -> "user_settings.default_project_settings.fetchers"
+        UserSettingsField.NUMBER_OF_REVIEWERS ->
+            "user_settings.default_project_settings.decision_matrix.number_of_reviewers"
+        UserSettingsField.DECISION_MATRIX_PATTERNS -> "user_settings.default_project_settings.decision_matrix.patterns"
     }
 }

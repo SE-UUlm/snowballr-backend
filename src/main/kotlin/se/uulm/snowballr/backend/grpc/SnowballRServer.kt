@@ -32,6 +32,7 @@ import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
 import se.uulm.snowballr.backend.model.dto.user.UserField
 import se.uulm.snowballr.backend.model.dto.user.UserRole
+import se.uulm.snowballr.backend.model.dto.user.UserSettingsField
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.export.ExportFormat
 import se.uulm.snowballr.backend.model.incoming.authentication.ChangePasswordRequest
@@ -47,6 +48,7 @@ import se.uulm.snowballr.backend.model.incoming.projectmember.UpdateProjectMembe
 import se.uulm.snowballr.backend.model.incoming.review.CreateReviewRequest
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
+import se.uulm.snowballr.backend.model.incoming.user.UpdateUserSettingsRequest
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.scheduler.SchedulerManager
 import se.uulm.snowballr.backend.service.IAuthenticationService
@@ -342,7 +344,36 @@ class SnowballRServer(
 
         override suspend fun updateUserSettings(
             request: UserSettingsOuterClass.UserSettings.Update,
-        ): UserSettingsOuterClass.UserSettings = super.updateUserSettings(request)
+        ): UserSettingsOuterClass.UserSettings {
+            val paths = FieldMaskUtil.normalize(request.mask).pathsList
+            val fields = paths.map { userSettingsFieldFromGrpc(it) }.toSet()
+
+            val settings = request.userSettings
+            val projectSettings = settings.defaultProjectSettings
+
+            val hasUnspecifiedSnowballingType = projectSettings.snowballingType ==
+                    ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_UNSPECIFIED
+            val snowballingType =
+                if (!fields.contains(UserSettingsField.SNOWBALLING_TYPE) && hasUnspecifiedSnowballingType) {
+                    SnowballingType.BOTH
+                } else {
+                    snowballingTypeFromGrpc(projectSettings.snowballingType)
+                }
+
+            return userService.updateUserSettings(
+                UpdateUserSettingsRequest(
+                    areHotkeysShown = settings.showHotkeys,
+                    isReviewModeEnabled = settings.reviewMode,
+                    criteriaIds = settings.defaultCriteria.criteriaList.map { parseUUID(it.id, EntityType.CRITERION) },
+                    similarityThreshold = projectSettings.similarityThreshold,
+                    decisionMatrix = reviewDecisionMatrixFromGrpc(projectSettings.decisionMatrix),
+                    fetchers = projectSettings.fetchersMap.mapValues { it.value.optionsMap },
+                    snowballingType = snowballingType,
+                    reviewMaybeAllowed = projectSettings.reviewMaybeAllowed,
+                ),
+                fields,
+            ).toGrpc()
+        }
 
         override suspend fun getReadingList(request: Base.Nothing): PaperOuterClass.Paper.List =
             readingListService.getReadingList().toGrpc()

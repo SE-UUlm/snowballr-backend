@@ -13,11 +13,13 @@ import se.uulm.snowballr.backend.model.UserIdentifierType
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.dto.user.UserField
+import se.uulm.snowballr.backend.model.dto.user.UserSettingsField
 import se.uulm.snowballr.backend.model.dto.user.UserSettingsWithCriteria
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateUserException
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
+import se.uulm.snowballr.backend.model.incoming.user.UpdateUserSettingsRequest
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
@@ -51,6 +53,14 @@ interface IUserService {
      * Service implementation of [SnowballRService.updateUser].
      */
     suspend fun updateUser(request: UpdateUserRequest, fields: Set<UserField>): User
+
+    /**
+     * Service implementation of [SnowballRService.updateUserSettings].
+     */
+    suspend fun updateUserSettings(
+        request: UpdateUserSettingsRequest,
+        fields: Set<UserSettingsField>,
+    ): UserSettingsWithCriteria
 
     /**
      * Service implementation of [SnowballRService.softDeleteUser].
@@ -172,6 +182,15 @@ class UserService(
             logger.info { "User ${targetUser.id} updated: ${fields.joinToString()}" }
             updatedUser
         }
+
+    override suspend fun updateUserSettings(
+        request: UpdateUserSettingsRequest,
+        fields: Set<UserSettingsField>,
+    ): UserSettingsWithCriteria = withUser(userRepo) { currentUser ->
+
+
+
+    }
 
     override suspend fun softDeleteUser(userId: UUID) = withUser(userRepo) { currentUser ->
         val targetUser = userRepo.getUserById(userId).getOrThrow()
