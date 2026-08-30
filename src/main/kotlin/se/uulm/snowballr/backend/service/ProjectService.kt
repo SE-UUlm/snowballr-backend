@@ -125,7 +125,7 @@ class ProjectService(
             val userSettings = userRepo.getUserSettings(currentUser.id).getOrThrow()
             val userDefaultCriteria = criterionRepo.getCriteriaByIds(userSettings.criteriaIds)
 
-            val project = repo.createProject(request, currentUser.id, userSettings)
+            val project = repo.createProject(request, currentUser.id, userSettings.defaultProjectSettings)
 
             // Additionally, clone user default criteria into the project as project criteria and add creator as project member
             for (criterion in userDefaultCriteria) {
