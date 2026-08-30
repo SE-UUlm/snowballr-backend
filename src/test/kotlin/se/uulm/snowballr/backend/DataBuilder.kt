@@ -87,6 +87,20 @@ object DataBuilder {
         archivedBy = archivedBy,
     )
 
+    fun createExampleProjectSettings(
+        similarityThreshold: Float = 0.5F,
+        snowballingType: SnowballingType = SnowballingType.BOTH,
+        reviewMaybeAllowed: Boolean = false,
+        reviewDecisionMatrix: ReviewDecisionMatrix = ReviewDecisionMatrix(1, emptyList()),
+        fetchers: FetcherMap = emptyMap(),
+    ) = ProjectSettings(
+        similarityThreshold = similarityThreshold,
+        snowballingType = snowballingType,
+        reviewMaybeAllowed = reviewMaybeAllowed,
+        reviewDecisionMatrix = reviewDecisionMatrix,
+        fetchers = fetchers,
+    )
+
     fun createExampleProjectCriterion(
         id: UUID = UUID.randomUUID(),
         tag: String = "Test Tag",
@@ -132,6 +146,10 @@ object DataBuilder {
         lastName: String = "User",
         role: UserRole = UserRole.DEFAULT,
         status: UserStatus = UserStatus.ACTIVE,
+        areHotkeysShown: Boolean = false,
+        isReviewModeEnabled: Boolean = false,
+        criteriaIds: List<UUID> = emptyList(),
+        defaultProjectSettings: ProjectSettings = createExampleProjectSettings(),
         createdAt: OffsetDateTime = OffsetDateTime.now(),
         modifiedAt: OffsetDateTime? = null,
         deletedAt: OffsetDateTime? = null,
@@ -142,6 +160,12 @@ object DataBuilder {
         lastName = lastName,
         role = role,
         status = status,
+        settings = UserSettings(
+            areHotkeysShown = areHotkeysShown,
+            isReviewModeEnabled = isReviewModeEnabled,
+            criteriaIds = criteriaIds,
+            defaultProjectSettings = defaultProjectSettings,
+        ),
         createdAt = createdAt,
         modifiedAt = modifiedAt,
         deletedAt = deletedAt,
