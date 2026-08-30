@@ -185,7 +185,7 @@ class UpdateProjectTest : ProjectServiceTest() {
             val user = DataBuilder.createExampleUser()
             val project = DataBuilder.createExampleProject(status = ProjectStatus.ACTIVE_LOCKED)
 
-            val updatedProject = project.copy(reviewMaybeAllowed = false)
+            val updatedProject = project.copy(settings = project.settings.copy(reviewMaybeAllowed = false))
             val request = getRequest(updatedProject)
 
             mockCurrentUser(user)
@@ -276,7 +276,7 @@ class UpdateProjectTest : ProjectServiceTest() {
             ),
             "non-existent-fetcher" to emptyMap(),
         )
-        val updatedProject = project.copy(fetchers = fetchers)
+        val updatedProject = project.copy(settings = project.settings.copy(fetchers = fetchers))
         val request = getRequest(updatedProject)
 
         mockCurrentUser(user)
@@ -322,7 +322,7 @@ class UpdateProjectTest : ProjectServiceTest() {
             val fetchers = mapOf(
                 "fetcher" to emptyMap<String, String>(),
             )
-            val updatedProject = project.copy(fetchers = fetchers)
+            val updatedProject = project.copy(settings = project.settings.copy(fetchers = fetchers))
             val request = getRequest(updatedProject)
 
             mockCurrentUser(user)
@@ -357,7 +357,7 @@ class UpdateProjectTest : ProjectServiceTest() {
                     "option1" to "",
                 ),
             )
-            val updatedProject = project.copy(fetchers = fetchers)
+            val updatedProject = project.copy(settings = project.settings.copy(fetchers = fetchers))
             val request = getRequest(updatedProject)
 
             mockCurrentUser(user)

@@ -24,8 +24,8 @@ class ReviewIntegrationTest : IntegrationTest() {
         val projectPaper = projectPaperService.addPaperToProject(project.id, paper.id, 0)
 
         val modifiedProject = project.copy(
-            reviewDecisionMatrix = project.reviewDecisionMatrix.copy(
-                numberOfReviewers = 1,
+            settings = project.settings.copy(
+                reviewDecisionMatrix = project.settings.reviewDecisionMatrix.copy(numberOfReviewers = 1),
             ),
         )
         val projectUpdate = UpdateProjectRequest.fromProjectResponse(modifiedProject)
@@ -123,7 +123,7 @@ class ReviewIntegrationTest : IntegrationTest() {
                 ),
             )
 
-            val updatedProject = project.copy(reviewMaybeAllowed = true)
+            val updatedProject = project.copy(settings = project.settings.copy(reviewMaybeAllowed = true))
             val updateRequest = UpdateProjectRequest.fromProjectResponse(updatedProject)
 
             assertThrows<FailedPreconditionException> {
