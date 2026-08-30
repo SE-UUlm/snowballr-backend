@@ -178,15 +178,16 @@ class ProjectTableRepo(
         userId: UUID,
         userSettings: UserSettings,
     ): Project = db.query {
+        val defaultProjectSettings = userSettings.defaultProjectSettings
         ProjectTable.insertAndGet(ResultRow::toProject) {
             it[name] = request.name
             it[status] = ProjectStatus.ACTIVE
             it[currentStage] = 0
             it[maxStage] = 0
-            it[similarityThreshold] = userSettings.similarityThreshold
-            it[snowballingType] = userSettings.snowballingType
-            it[reviewMaybeAllowed] = userSettings.reviewMaybeAllowed
-            it[reviewDecisionMatrixBinary] = userSettings.decisionMatrix.toByteArray()
+            it[similarityThreshold] = defaultProjectSettings.similarityThreshold
+            it[snowballingType] = defaultProjectSettings.snowballingType
+            it[reviewMaybeAllowed] = defaultProjectSettings.reviewMaybeAllowed
+            it[reviewDecisionMatrixBinary] = defaultProjectSettings.reviewDecisionMatrix.toByteArray()
             it[fetchers] = emptyMap()
             it[createdBy] = userId
         }

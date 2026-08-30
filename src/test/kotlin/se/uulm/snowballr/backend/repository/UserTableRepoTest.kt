@@ -516,12 +516,12 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
             assertTrue(userSettings.areHotkeysShown)
             assertFalse(userSettings.isReviewModeEnabled)
             assertThat(userSettings.criteriaIds).isEmpty()
-            assertEquals(0.85F, userSettings.similarityThreshold)
-            assertEquals(2, userSettings.decisionMatrix.numberOfReviewers)
-            assertNotEquals(ByteArray(0), userSettings.decisionMatrix.toByteArray())
-            assertThat(userSettings.fetchers).isEmpty()
-            assertEquals(SnowballingType.BOTH, userSettings.snowballingType)
-            assertTrue(userSettings.reviewMaybeAllowed)
+            assertEquals(0.85F, userSettings.defaultProjectSettings.similarityThreshold)
+            assertEquals(2, userSettings.defaultProjectSettings.reviewDecisionMatrix.numberOfReviewers)
+            assertNotEquals(ByteArray(0), userSettings.defaultProjectSettings.reviewDecisionMatrix.toByteArray())
+            assertThat(userSettings.defaultProjectSettings.fetchers).isEmpty()
+            assertEquals(SnowballingType.BOTH, userSettings.defaultProjectSettings.snowballingType)
+            assertTrue(userSettings.defaultProjectSettings.reviewMaybeAllowed)
         }
 
         @Test

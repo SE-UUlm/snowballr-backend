@@ -166,7 +166,7 @@ object DataBuilder {
         reviewMode: Boolean = false,
         criteriaIds: List<UUID> = emptyList(),
         similarityThreshold: Float = 0.5f,
-        decisionMatrix: ReviewDecisionMatrix = ReviewDecisionMatrix(1, emptyList()),
+        reviewDecisionMatrix: ReviewDecisionMatrix = ReviewDecisionMatrix(1, emptyList()),
         fetchers: FetcherMap = emptyMap(),
         snowballingType: SnowballingType = SnowballingType.BOTH,
         reviewMaybeAllowed: Boolean = false,
@@ -174,11 +174,13 @@ object DataBuilder {
         areHotkeysShown = showHotkeys,
         isReviewModeEnabled = reviewMode,
         criteriaIds = criteriaIds,
-        similarityThreshold = similarityThreshold,
-        decisionMatrix = decisionMatrix,
-        fetchers = fetchers,
-        snowballingType = snowballingType,
-        reviewMaybeAllowed = reviewMaybeAllowed,
+        defaultProjectSettings = ProjectSettings(
+            similarityThreshold = similarityThreshold,
+            reviewDecisionMatrix = reviewDecisionMatrix,
+            fetchers = fetchers,
+            snowballingType = snowballingType,
+            reviewMaybeAllowed = reviewMaybeAllowed,
+        ),
     )
 
     fun createExamplePaper(

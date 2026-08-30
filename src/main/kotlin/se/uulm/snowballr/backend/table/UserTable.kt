@@ -7,6 +7,7 @@ import org.jetbrains.exposed.v1.core.dao.id.java.UUIDTable
 import org.jetbrains.exposed.v1.json.json
 import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPattern
 import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPatternEntry
+import se.uulm.snowballr.backend.model.dto.project.ProjectSettings
 import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
 import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
@@ -145,9 +146,11 @@ fun ResultRow.toUserSettings() = UserSettings(
     areHotkeysShown = this[UserTable.areHotkeysShown],
     isReviewModeEnabled = this[UserTable.reviewModeEnabled],
     criteriaIds = this[UserTable.criteriaIds],
-    similarityThreshold = this[UserTable.similarityThreshold],
-    decisionMatrix = ReviewDecisionMatrix.parseFrom(this[UserTable.decisionMatrix]),
-    fetchers = this[UserTable.fetchers],
-    snowballingType = this[UserTable.snowballingType],
-    reviewMaybeAllowed = this[UserTable.reviewMaybeAllowed],
+    defaultProjectSettings = ProjectSettings(
+        similarityThreshold = this[UserTable.similarityThreshold],
+        reviewDecisionMatrix = ReviewDecisionMatrix.parseFrom(this[UserTable.decisionMatrix]),
+        fetchers = this[UserTable.fetchers],
+        snowballingType = this[UserTable.snowballingType],
+        reviewMaybeAllowed = this[UserTable.reviewMaybeAllowed],
+    ),
 )
