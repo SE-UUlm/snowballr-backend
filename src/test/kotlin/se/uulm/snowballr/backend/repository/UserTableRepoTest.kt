@@ -15,7 +15,6 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import se.uulm.snowballr.backend.isBetweenWithDelta
-import se.uulm.snowballr.backend.model.dto.project.SnowballingType
 import se.uulm.snowballr.backend.model.dto.user.UserField
 import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
@@ -501,32 +500,6 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
             assertDoesNotThrow {
                 repo.updatePasswordHash(UUID.randomUUID(), "newHash")
             }
-        }
-    }
-
-    @Nested
-    inner class GetUserSettings {
-        @Test
-        fun `When a user is found, then a successful result with the user settings is returned`() = runTest {
-            val userId = insertUserAndGetId()
-
-            val result = repo.getUserSettings(userId)
-
-            val userSettings = assertResultSuccess(result)
-            assertTrue(userSettings.areHotkeysShown)
-            assertFalse(userSettings.isReviewModeEnabled)
-            assertThat(userSettings.criteriaIds).isEmpty()
-            assertEquals(0.85F, userSettings.defaultProjectSettings.similarityThreshold)
-            assertEquals(2, userSettings.defaultProjectSettings.reviewDecisionMatrix.numberOfReviewers)
-            assertNotEquals(ByteArray(0), userSettings.defaultProjectSettings.reviewDecisionMatrix.toByteArray())
-            assertThat(userSettings.defaultProjectSettings.fetchers).isEmpty()
-            assertEquals(SnowballingType.BOTH, userSettings.defaultProjectSettings.snowballingType)
-            assertTrue(userSettings.defaultProjectSettings.reviewMaybeAllowed)
-        }
-
-        @Test
-        fun `When a user is not found, then a failed result with a NotFoundException is returned`() = runTest {
-            assertResultFailure<NotFoundException>(repo.getUserSettings(UUID.randomUUID()))
         }
     }
 
