@@ -122,10 +122,10 @@ class ProjectTableRepoTest :
     inner class CreateProject {
         @Test
         fun `When a project is created, then the passed values are correctly assigned`() = runTest {
-            val userSettings = DataBuilder.createExampleUserSettings()
+            val projectSettings = DataBuilder.createExampleProjectSettings()
             val request = CreateProjectRequest(name = "Test Project")
 
-            val project = repo.createProject(request, testUserId, userSettings)
+            val project = repo.createProject(request, testUserId, projectSettings)
 
             assertEquals("Test Project", project.name)
             assertEquals(ProjectStatus.ACTIVE, project.status)
@@ -141,11 +141,11 @@ class ProjectTableRepoTest :
 
         @Test
         fun `When two projects are created, then they have different IDs`() = runTest {
-            val userSettings = DataBuilder.createExampleUserSettings()
+            val projectSettings = DataBuilder.createExampleProjectSettings()
             val request = CreateProjectRequest(name = "Test Project 1")
 
-            val projectId1 = repo.createProject(request, testUserId, userSettings)
-            val projectId2 = repo.createProject(request, testUserId, userSettings)
+            val projectId1 = repo.createProject(request, testUserId, projectSettings)
+            val projectId2 = repo.createProject(request, testUserId, projectSettings)
             assertNotEquals(projectId2, projectId1)
         }
 
@@ -153,9 +153,9 @@ class ProjectTableRepoTest :
         fun `When a project is created, but the assigned user doesn't exist, then an SQLException is thrown`() =
             runTest {
                 val request = CreateProjectRequest(name = "Test Project")
-                val userSettings = DataBuilder.createExampleUserSettings()
+                val projectSettings = DataBuilder.createExampleProjectSettings()
 
-                assertThrows<SQLException> { repo.createProject(request, UUID.randomUUID(), userSettings) }
+                assertThrows<SQLException> { repo.createProject(request, UUID.randomUUID(), projectSettings) }
             }
     }
 

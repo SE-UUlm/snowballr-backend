@@ -37,7 +37,9 @@ class CreateProjectTest : ProjectServiceTest() {
         mockCurrentUser(user)
         coEvery { userRepoMock.getUserSettings(user.id) } returns Result.success(userSettings)
         coEvery { criterionRepoMock.getCriteriaByIds(emptyList()) } returns emptyList()
-        coEvery { projectRepoMock.createProject(getExampleRequest(), user.id, userSettings) } returns project
+        coEvery {
+            projectRepoMock.createProject(getExampleRequest(), user.id, userSettings.defaultProjectSettings)
+        } returns project
         mockProjectAdminCreation(project, user)
 
         val result = service.createProject(getExampleRequest())
@@ -71,7 +73,9 @@ class CreateProjectTest : ProjectServiceTest() {
             mockCurrentUser(user)
             coEvery { userRepoMock.getUserSettings(user.id) } returns Result.success(userSettings)
             coEvery { criterionRepoMock.getCriteriaByIds(capture(criteriaIdsSlot)) } returns listOf(criterion)
-            coEvery { projectRepoMock.createProject(getExampleRequest(), user.id, userSettings) } returns project
+            coEvery {
+                projectRepoMock.createProject(getExampleRequest(), user.id, userSettings.defaultProjectSettings)
+            } returns project
             coEvery { criterionRepoMock.createCriterion(criterionCreateRequest, user.id) } returns criterion
             mockProjectAdminCreation(project, user)
 
