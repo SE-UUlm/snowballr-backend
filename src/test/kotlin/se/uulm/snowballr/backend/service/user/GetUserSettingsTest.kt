@@ -31,7 +31,7 @@ class GetUserSettingsTest : UserServiceTest() {
 
             val result = service.getUserSettings()
 
-            assertUserSettingsEquality(userSettings, result.settings)
+            assertEquals(userSettings, result.settings)
             assertEquals(0, result.criteria.size)
         }
 
@@ -48,7 +48,7 @@ class GetUserSettingsTest : UserServiceTest() {
 
             val result = service.getUserSettings()
 
-            assertUserSettingsEquality(userSettings, result.settings)
+            assertEquals(userSettings, result.settings)
             assertEquals(listOf(criterion), result.criteria)
         }
 }

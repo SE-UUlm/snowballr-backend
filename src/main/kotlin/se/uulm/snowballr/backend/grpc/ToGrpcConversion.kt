@@ -139,22 +139,7 @@ fun UserSettingsWithCriteria.toGrpc(): UserSettingsOuterClass.UserSettings =
         .setShowHotkeys(settings.areHotkeysShown)
         .setReviewMode(settings.isReviewModeEnabled)
         .setDefaultCriteria(criteria.toGrpc())
-        .setDefaultProjectSettings(
-            ProjectOuterClass.Project.Settings.newBuilder()
-                .setSimilarityThreshold(settings.similarityThreshold)
-                .setDecisionMatrix(settings.decisionMatrix.toGrpc())
-                .putAllFetchers(
-                    settings.fetchers.mapValues {
-                        Fetcher.FetcherOptions
-                            .newBuilder()
-                            .putAllOptions(it.value)
-                            .build()
-                    },
-                )
-                .setSnowballingType(settings.snowballingType.toGrpc())
-                .setReviewMaybeAllowed(settings.reviewMaybeAllowed)
-                .build(),
-        )
+        .setDefaultProjectSettings(settings.defaultProjectSettings.toGrpc())
         .build()
 
 fun InvitationResponse.toGrpc(): UserOuterClass.User = UserOuterClass.User.newBuilder()
