@@ -134,6 +134,7 @@ fun ResultRow.toUser() = User(
     lastName = this[UserTable.lastName],
     role = this[UserTable.role],
     status = this[UserTable.status],
+    settings = this.toUserSettings(),
     createdAt = this[UserTable.createdAt],
     modifiedAt = this[UserTable.modifiedAt],
     deletedAt = this[UserTable.deletedAt],
