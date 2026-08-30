@@ -8,6 +8,7 @@ import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
 import se.uulm.snowballr.backend.model.dto.paper.Paper
 import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPattern
 import se.uulm.snowballr.backend.model.dto.project.Project
+import se.uulm.snowballr.backend.model.dto.project.ProjectSettings
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
@@ -68,11 +69,13 @@ object DataBuilder {
         status = status,
         currentStage = currentStage,
         maxStage = maxStage,
-        similarityThreshold = similarityThreshold,
-        snowballingType = snowballingType,
-        reviewMaybeAllowed = reviewMaybeAllowed,
-        reviewDecisionMatrix = reviewDecisionMatrix,
-        fetchers = fetchers,
+        settings = ProjectSettings(
+            similarityThreshold = similarityThreshold,
+            snowballingType = snowballingType,
+            reviewMaybeAllowed = reviewMaybeAllowed,
+            reviewDecisionMatrix = reviewDecisionMatrix,
+            fetchers = fetchers,
+        ),
         currentStageStartedAt = currentStageStartedAt,
         createdAt = createdAt,
         createdBy = createdBy,

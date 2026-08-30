@@ -12,7 +12,6 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.DataBuilder
-import se.uulm.snowballr.backend.DataBuilder.createExampleReviewDecisionMatrix
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPattern
@@ -38,7 +37,9 @@ import kotlin.reflect.KFunction
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CreateReviewTest : ReviewServiceTest() {
     private val userId = UUID.randomUUID()
-    private val project = DataBuilder.createExampleProject(reviewDecisionMatrix = createExampleReviewDecisionMatrix())
+    private val project = DataBuilder.createExampleProject(
+        reviewDecisionMatrix = DataBuilder.createExampleReviewDecisionMatrix(),
+    )
     private val projectPaperId = UUID.randomUUID()
     private val decision = ReviewDecision.ACCEPTED
     private val defaultCriterion = UUID.randomUUID()
@@ -258,7 +259,7 @@ class CreateReviewTest : ReviewServiceTest() {
                 ),
             )
             val project = DataBuilder.createExampleProject(
-                reviewDecisionMatrix = createExampleReviewDecisionMatrix(
+                reviewDecisionMatrix = DataBuilder.createExampleReviewDecisionMatrix(
                     numberOfReviewers = 1,
                     patterns = listOf(declinePattern),
                 ),
@@ -319,7 +320,7 @@ class CreateReviewTest : ReviewServiceTest() {
     fun `When required review count is exceeded and the latest review is REVIEW_DECISION_DECLINED, then final paper decision is REVIEW_DECISION_DECLINED`() =
         runTest {
             val project = DataBuilder.createExampleProject(
-                reviewDecisionMatrix = createExampleReviewDecisionMatrix(numberOfReviewers = 2),
+                reviewDecisionMatrix = DataBuilder.createExampleReviewDecisionMatrix(numberOfReviewers = 2),
             )
             val firstReview = DataBuilder.createExampleReview(
                 projectPaperId = projectPaperId,

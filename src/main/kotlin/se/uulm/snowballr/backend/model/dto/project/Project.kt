@@ -1,7 +1,6 @@
 package se.uulm.snowballr.backend.model.dto.project
 
 import com.fasterxml.jackson.annotation.JsonIgnore
-import se.uulm.snowballr.backend.model.fetcher.FetcherMap
 import se.uulm.snowballr.backend.table.ProjectTable
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -15,12 +14,8 @@ data class Project(
     val status: ProjectStatus,
     val currentStage: Int,
     val maxStage: Int,
-    val similarityThreshold: Float,
-    val snowballingType: SnowballingType,
-    val reviewMaybeAllowed: Boolean,
-    val reviewDecisionMatrix: ReviewDecisionMatrix,
-    val fetchers: FetcherMap,
     val currentStageStartedAt: OffsetDateTime,
+    val settings: ProjectSettings,
     @JsonIgnore
     val createdAt: OffsetDateTime,
     @JsonIgnore

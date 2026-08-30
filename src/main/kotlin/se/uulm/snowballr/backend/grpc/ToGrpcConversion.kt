@@ -11,6 +11,7 @@ import se.uulm.snowballr.backend.model.dto.paper.Author
 import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPattern
 import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPatternEntry
+import se.uulm.snowballr.backend.model.dto.project.ProjectSettings
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
@@ -71,34 +72,31 @@ fun Author.toGrpc(): PaperOuterClass.Author = PaperOuterClass.Author.newBuilder(
 
 fun List<Author>.toGrpc(): List<PaperOuterClass.Author> = this.map(Author::toGrpc)
 
-fun ProjectResponse.toGrpc(): ProjectOuterClass.Project {
-    val settings =
-        ProjectOuterClass.Project.Settings
-            .newBuilder()
-            .setSimilarityThreshold(this.similarityThreshold)
-            .setDecisionMatrix(this.reviewDecisionMatrix.toGrpc())
-            .setSnowballingType(this.snowballingType.toGrpc())
-            .setReviewMaybeAllowed(this.reviewMaybeAllowed)
-            .putAllFetchers(
-                this.fetchers.mapValues {
-                    Fetcher.FetcherOptions
-                        .newBuilder()
-                        .putAllOptions(it.value)
-                        .build()
-                },
-            )
-            .build()
+fun ProjectSettings.toGrpc(): ProjectOuterClass.Project.Settings = ProjectOuterClass.Project.Settings
+    .newBuilder()
+    .setSimilarityThreshold(this.similarityThreshold)
+    .setDecisionMatrix(this.reviewDecisionMatrix.toGrpc())
+    .setSnowballingType(this.snowballingType.toGrpc())
+    .setReviewMaybeAllowed(this.reviewMaybeAllowed)
+    .putAllFetchers(
+        this.fetchers.mapValues {
+            Fetcher.FetcherOptions
+                .newBuilder()
+                .putAllOptions(it.value)
+                .build()
+        },
+    )
+    .build()
 
-    return ProjectOuterClass.Project
-        .newBuilder()
-        .setId(this.id.toString())
-        .setName(this.name)
-        .setStatus(this.status.toGrpc())
-        .setCurrentStage(this.currentStage.toLong())
-        .setMaxStage(this.maxStage.toLong())
-        .setSettings(settings)
-        .build()
-}
+fun ProjectResponse.toGrpc(): ProjectOuterClass.Project = ProjectOuterClass.Project
+    .newBuilder()
+    .setId(this.id.toString())
+    .setName(this.name)
+    .setStatus(this.status.toGrpc())
+    .setCurrentStage(this.currentStage.toLong())
+    .setMaxStage(this.maxStage.toLong())
+    .setSettings(this.settings.toGrpc())
+    .build()
 
 @JvmName("toGrpcProjectList")
 fun List<ProjectResponse>.toGrpc(): ProjectOuterClass.Project.List {

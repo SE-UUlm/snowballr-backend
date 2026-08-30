@@ -78,15 +78,16 @@ class ProjectTableRepoTest :
             val result = repo.getProjectById(projectId)
 
             val project = assertResultSuccess(result)
+
             assertEquals(projectId, project.id)
             assertEquals("Test Project", project.name)
             assertEquals(ProjectStatus.ACTIVE, project.status)
             assertEquals(0, project.currentStage)
             assertEquals(0, project.maxStage)
-            assertEquals(0F, project.similarityThreshold)
-            assertEquals(SnowballingType.BOTH, project.snowballingType)
-            assertTrue(project.reviewMaybeAllowed)
-            assertEquals(ReviewDecisionMatrix(1, emptyList()), project.reviewDecisionMatrix)
+            assertEquals(0F, project.settings.similarityThreshold)
+            assertEquals(SnowballingType.BOTH, project.settings.snowballingType)
+            assertTrue(project.settings.reviewMaybeAllowed)
+            assertEquals(ReviewDecisionMatrix(1, emptyList()), project.settings.reviewDecisionMatrix)
             assertEquals(testUserId, project.createdBy)
         }
 
@@ -131,11 +132,11 @@ class ProjectTableRepoTest :
             assertEquals(0, project.currentStage)
             assertEquals(0, project.maxStage)
             // Assert default settings from user
-            assertEquals(0.5F, project.similarityThreshold)
-            assertEquals(SnowballingType.BOTH, project.snowballingType)
-            assertFalse(project.reviewMaybeAllowed)
-            assertEquals(ReviewDecisionMatrix(1, emptyList()), project.reviewDecisionMatrix)
-            assertThat(project.fetchers).isEmpty()
+            assertEquals(0.5F, project.settings.similarityThreshold)
+            assertEquals(SnowballingType.BOTH, project.settings.snowballingType)
+            assertFalse(project.settings.reviewMaybeAllowed)
+            assertEquals(ReviewDecisionMatrix(1, emptyList()), project.settings.reviewDecisionMatrix)
+            assertThat(project.settings.fetchers).isEmpty()
         }
 
         @Test
@@ -222,9 +223,10 @@ class ProjectTableRepoTest :
 
             val start = OffsetDateTime.now()
             val updatedProject = repo.updateProject(request, setOf(field))
+            val updatedSettings = updatedProject.settings
             val end = OffsetDateTime.now()
 
-            val fetchers = updatedProject.fetchers
+            val fetchers = updatedSettings.fetchers
             val fetcher = fetchers["test fetcher"]
             val excluded = ProjectField.entries.filter { field != it }
 
@@ -232,9 +234,9 @@ class ProjectTableRepoTest :
             when (field) {
                 ProjectField.NAME -> assertEquals("Updated Project", updatedProject.name)
                 ProjectField.STATUS -> assertEquals(ProjectStatus.ARCHIVED, updatedProject.status)
-                ProjectField.SIMILARITY_THRESHOLD -> assertEquals(1F, updatedProject.similarityThreshold)
-                ProjectField.SNOWBALLING_TYPE -> assertEquals(SnowballingType.FORWARD, updatedProject.snowballingType)
-                ProjectField.REVIEW_MAYBE_ALLOWED -> assertFalse(updatedProject.reviewMaybeAllowed)
+                ProjectField.SIMILARITY_THRESHOLD -> assertEquals(1F, updatedSettings.similarityThreshold)
+                ProjectField.SNOWBALLING_TYPE -> assertEquals(SnowballingType.FORWARD, updatedSettings.snowballingType)
+                ProjectField.REVIEW_MAYBE_ALLOWED -> assertFalse(updatedSettings.reviewMaybeAllowed)
                 ProjectField.FETCHERS -> {
                     assertEquals(1, fetchers.size)
                     assertNotNull(fetcher)
@@ -244,10 +246,10 @@ class ProjectTableRepoTest :
                     assertNull(fetcherOption2)
                 }
                 ProjectField.NUMBER_OF_REVIEWERS ->
-                    assertEquals(2, updatedProject.reviewDecisionMatrix.numberOfReviewers)
+                    assertEquals(2, updatedSettings.reviewDecisionMatrix.numberOfReviewers)
                 ProjectField.DECISION_MATRIX_PATTERNS -> {
-                    assertEquals(1, updatedProject.reviewDecisionMatrix.patterns.size)
-                    assertThat(updatedProject.reviewDecisionMatrix.patterns).containsOnly(pattern)
+                    assertEquals(1, updatedSettings.reviewDecisionMatrix.patterns.size)
+                    assertThat(updatedSettings.reviewDecisionMatrix.patterns).containsOnly(pattern)
                 }
             }
 
@@ -256,17 +258,17 @@ class ProjectTableRepoTest :
                 when (excludedField) {
                     ProjectField.NAME -> assertEquals("Test Project", updatedProject.name)
                     ProjectField.STATUS -> assertEquals(originalStatus, updatedProject.status)
-                    ProjectField.SIMILARITY_THRESHOLD -> assertEquals(0F, updatedProject.similarityThreshold)
-                    ProjectField.SNOWBALLING_TYPE -> assertEquals(SnowballingType.BOTH, updatedProject.snowballingType)
-                    ProjectField.REVIEW_MAYBE_ALLOWED -> assertTrue(updatedProject.reviewMaybeAllowed)
+                    ProjectField.SIMILARITY_THRESHOLD -> assertEquals(0F, updatedSettings.similarityThreshold)
+                    ProjectField.SNOWBALLING_TYPE -> assertEquals(SnowballingType.BOTH, updatedSettings.snowballingType)
+                    ProjectField.REVIEW_MAYBE_ALLOWED -> assertTrue(updatedSettings.reviewMaybeAllowed)
                     ProjectField.FETCHERS -> {
                         assertEquals(0, fetchers.size)
                         assertNull(fetcher)
                     }
                     ProjectField.NUMBER_OF_REVIEWERS ->
-                        assertEquals(1, updatedProject.reviewDecisionMatrix.numberOfReviewers)
+                        assertEquals(1, updatedSettings.reviewDecisionMatrix.numberOfReviewers)
                     ProjectField.DECISION_MATRIX_PATTERNS ->
-                        assertEquals(0, updatedProject.reviewDecisionMatrix.patterns.size)
+                        assertEquals(0, updatedSettings.reviewDecisionMatrix.patterns.size)
                 }
             }
 
@@ -286,6 +288,7 @@ class ProjectTableRepoTest :
                 createdBy = testUserId,
             )
             val originalProject = repo.getProjectById(projectId).getOrThrow()
+            val originalSettings = originalProject.settings
 
             val updatedDecisionMatrix = ReviewDecisionMatrix(
                 numberOfReviewers = 9,
@@ -296,19 +299,20 @@ class ProjectTableRepoTest :
                 name = originalProject.name,
                 status = originalProject.status,
                 settings = UpdateProjectSettingRequest(
-                    similarityThreshold = originalProject.similarityThreshold,
-                    snowballingType = originalProject.snowballingType,
-                    reviewMaybeAllowed = originalProject.reviewMaybeAllowed,
-                    fetchers = originalProject.fetchers,
+                    similarityThreshold = originalSettings.similarityThreshold,
+                    snowballingType = originalSettings.snowballingType,
+                    reviewMaybeAllowed = originalSettings.reviewMaybeAllowed,
+                    fetchers = originalSettings.fetchers,
                     decisionMatrix = updatedDecisionMatrix,
                 ),
             )
 
             val updatedProject = repo.updateProject(request, setOf(ProjectField.DECISION_MATRIX_PATTERNS))
+            val updatedSettings = updatedProject.settings
 
-            assertEquals(3, updatedProject.reviewDecisionMatrix.numberOfReviewers)
-            assertEquals(1, updatedProject.reviewDecisionMatrix.patterns.size)
-            assertEquals(PaperDecision.DECLINED, updatedProject.reviewDecisionMatrix.patterns.first().decision)
+            assertEquals(3, updatedSettings.reviewDecisionMatrix.numberOfReviewers)
+            assertEquals(1, updatedSettings.reviewDecisionMatrix.patterns.size)
+            assertEquals(PaperDecision.DECLINED, updatedSettings.reviewDecisionMatrix.patterns.first().decision)
         }
 
         @Test

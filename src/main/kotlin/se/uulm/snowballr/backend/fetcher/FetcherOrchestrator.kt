@@ -105,7 +105,7 @@ class FetcherOrchestrator(
 
         val project = projectRepo.getProjectById(job.projectPaper.projectId).getOrThrow()
 
-        if (project.fetchers.isEmpty()) {
+        if (project.settings.fetchers.isEmpty()) {
             logger.warn { "No fetchers configured for project '${job.projectPaper.projectId}'." }
             return
         }
@@ -114,12 +114,12 @@ class FetcherOrchestrator(
 
         val processingJob = FetcherProcessingJob(
             projectId = project.id,
-            fetchers = project.fetchers,
-            snowballingType = project.snowballingType,
+            fetchers = project.settings.fetchers,
+            snowballingType = project.settings.snowballingType,
             targetStage = job.projectPaper.stage + 1,
             paperId = job.projectPaper.paperId,
             triggeringUserId = job.triggeringUserId,
-            similarityThreshold = project.similarityThreshold,
+            similarityThreshold = project.settings.similarityThreshold,
         )
 
         val result = queue.trySend(processingJob)
@@ -405,12 +405,12 @@ class FetcherOrchestrator(
             projectRepo.updateMaxStageIfExceeded(job.projectId, job.targetStage)
         }
 
-        for (ref in filteredRefs) {
+        for ((id) in filteredRefs) {
             try {
-                projectPaperRepo.addPaperToProject(job.projectId, ref.id, job.targetStage, job.triggeringUserId)
+                projectPaperRepo.addPaperToProject(job.projectId, id, job.targetStage, job.triggeringUserId)
             } catch (ex: SQLException) {
                 logger.error(ex) {
-                    "Failed to add paper ${ref.id} to project ${job.projectId} in stage ${job.targetStage}: " +
+                    "Failed to add paper $id to project ${job.projectId} in stage ${job.targetStage}: " +
                         (ex.message ?: "<empty>")
                 }
             }

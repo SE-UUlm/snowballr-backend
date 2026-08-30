@@ -128,7 +128,7 @@ class ReviewService(
             val decision = if (hasSelectedExclusionCriterion && review.doesDeclinePaper) {
                 PaperDecision.DECLINED
             } else {
-                determinePaperDecision(reviewsForProjectPaper + review, project.reviewDecisionMatrix)
+                determinePaperDecision(reviewsForProjectPaper + review, project.settings.reviewDecisionMatrix)
             }
             projectPaperRepo.updateProjectPaperDecision(request.projectPaperId, decision)
 

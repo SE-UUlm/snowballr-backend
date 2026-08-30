@@ -79,7 +79,7 @@ class FetcherService(
         val project = projectRepo.getProjectById(projectId).getOrThrow()
 
         val papers = mutableSetOf<FetcherPaper>()
-        for ((fetcher, options) in project.fetchers) {
+        for ((fetcher, options) in project.settings.fetchers) {
             try {
                 papers += fetcherManager.searchPapers(fetcher, query, options)
             } catch (e: FetcherException) {

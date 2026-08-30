@@ -20,6 +20,7 @@ import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.project.Project
 import se.uulm.snowballr.backend.model.dto.project.ProjectField
+import se.uulm.snowballr.backend.model.dto.project.ProjectSettings
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.projectpaper.ProjectPaper
 import se.uulm.snowballr.backend.model.dto.review.Review
@@ -242,7 +243,7 @@ class ProjectTableRepo(
             }
 
             if (isUpdatingDecisionMatrix && project != null) {
-                it.applyDecisionMatrixUpdate(project, request.settings, fields)
+                it.applyDecisionMatrixUpdate(project.settings, request.settings, fields)
             }
 
             it[modifiedAt] = OffsetDateTime.now()
@@ -346,11 +347,11 @@ class ProjectTableRepo(
     private fun isUpdatingDecisionMatrix(fields: Set<ProjectField>) = fields.any { it.isDecisionMatrixField() }
 
     private fun UpdateStatement.applyDecisionMatrixUpdate(
-        project: Project,
+        projectSettings: ProjectSettings,
         settings: UpdateProjectSettingRequest,
         fields: Set<ProjectField>,
     ) {
-        var decisionMatrix = project.reviewDecisionMatrix
+        var decisionMatrix = projectSettings.reviewDecisionMatrix
         if (ProjectField.NUMBER_OF_REVIEWERS in fields) {
             decisionMatrix = decisionMatrix.copy(numberOfReviewers = settings.decisionMatrix.numberOfReviewers)
         }
