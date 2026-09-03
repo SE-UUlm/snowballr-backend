@@ -168,7 +168,8 @@ class UserService(
                 throw DuplicateUserException(request.email)
             }
 
-            val updatedUser = userRepo.updateUser(request, fields)
+            val updateData = mergeUserUpdateWithUser(targetUser, request)
+            val updatedUser = userRepo.updateUser(updateData, fields)
             logger.info { "User ${targetUser.id} updated: ${fields.joinToString()}" }
             updatedUser
         }
@@ -202,4 +203,12 @@ class UserService(
 
         UserSettingsWithCriteria(currentUser.settings, defaultUserCriteria)
     }
+
+    private fun mergeUserUpdateWithUser(user: User, request: UpdateUserRequest): User = user.copy(
+        email = request.email,
+        firstName = request.firstName,
+        lastName = request.lastName,
+        role = request.role,
+        status = request.status,
+    )
 }

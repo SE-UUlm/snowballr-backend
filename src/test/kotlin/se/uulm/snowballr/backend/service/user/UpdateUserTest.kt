@@ -98,7 +98,7 @@ class UpdateUserTest : UserServiceTest() {
         coEvery { userRepoMock.getUserById(otherUser.id) } returns Result.success(otherUser)
         coJustRun { userAccessCheckerMock.isAllowedToUpdateUser(currentUser, otherUser) }
         coEvery { userRepoMock.doesUserExistByEmail(otherUser.email) } returns false
-        coEvery { userRepoMock.updateUser(request, setOf(UserField.EMAIL)) } returns otherUser
+        coEvery { userRepoMock.updateUser(otherUser, setOf(UserField.EMAIL)) } returns otherUser
 
         val updatedUser = service.updateUser(request, setOf(UserField.EMAIL))
 
@@ -118,7 +118,7 @@ class UpdateUserTest : UserServiceTest() {
         coEvery { userRepoMock.getUserById(otherUser.id) } returns Result.success(otherUser)
         coJustRun { userAccessCheckerMock.isAllowedToUpdateUser(currentUser, otherUser) }
         coJustRun { userAccessCheckerMock.isAllowedToUpdateUserRole(currentUser, otherUser.id) }
-        coEvery { userRepoMock.updateUser(request, fields) } returns otherUser
+        coEvery { userRepoMock.updateUser(otherUser, fields) } returns otherUser
 
         val updatedUser = service.updateUser(request, fields)
 

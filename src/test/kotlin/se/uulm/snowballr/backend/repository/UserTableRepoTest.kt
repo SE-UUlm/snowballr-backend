@@ -14,13 +14,20 @@ import org.junit.jupiter.api.assertNull
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
+import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.isBetweenWithDelta
+import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPattern
+import se.uulm.snowballr.backend.model.dto.project.ProjectSettings
+import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
+import se.uulm.snowballr.backend.model.dto.project.SnowballingType
+import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.dto.user.UserField
 import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.exception.NotFoundException
+import se.uulm.snowballr.backend.model.fetcher.FetcherMap
+import se.uulm.snowballr.backend.model.fetcher.FetcherOptions
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
-import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertUserAndGetId
 import se.uulm.snowballr.backend.table.CriterionTable
@@ -214,19 +221,38 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
     inner class UpdateUser {
         @ParameterizedTest(name = "Update the field {0}")
         @EnumSource(UserField::class)
+        @Suppress("CyclomaticComplexMethod", "LongMethod")
         fun `When a user is updated, then only the specified field is updated`(field: UserField) = runTest {
             val userId = insertUserAndGetId(email = "test.user@example.com")
-            val request = UpdateUserRequest(
-                userId = userId,
+            val criterionId = UUID.randomUUID()
+            val fetchers: FetcherMap = mapOf(
+                "foo" to emptyMap(),
+            )
+            val patterns = listOf(DecisionMatrixPattern(PaperDecision.ACCEPTED, emptyList()))
+            // When updating this request choose different values than the default values in UserTable.
+            val request = DataBuilder.createExampleUser(
+                id = userId,
                 firstName = "John",
                 lastName = "Doe",
                 email = "updated.user@example.com",
                 role = UserRole.ADMIN,
                 status = UserStatus.DELETED,
+                areHotkeysShown = false,
+                isReviewModeEnabled = true,
+                criteriaIds = listOf(criterionId),
+                defaultProjectSettings = ProjectSettings(
+                    similarityThreshold = 0.5F,
+                    snowballingType = SnowballingType.FORWARD,
+                    reviewMaybeAllowed = false,
+                    reviewDecisionMatrix = ReviewDecisionMatrix(1, patterns),
+                    fetchers = fetchers,
+                ),
             )
 
             val start = OffsetDateTime.now()
             val updatedUser = repo.updateUser(request, setOf(field))
+            val updatedSettings = updatedUser.settings
+            val updatedProjectSettings = updatedSettings.defaultProjectSettings
             val end = OffsetDateTime.now()
 
             val excluded = UserField.entries.filter { field != it }
@@ -238,6 +264,18 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
                 UserField.LAST_NAME -> assertEquals("Doe", updatedUser.lastName)
                 UserField.ROLE -> assertEquals(UserRole.ADMIN, updatedUser.role)
                 UserField.STATUS -> assertEquals(UserStatus.DELETED, updatedUser.status)
+                UserField.ARE_HOTKEYS_SHOWN -> assertFalse(updatedSettings.areHotkeysShown)
+                UserField.IS_REVIEW_MODE_ENABLED -> assertTrue(updatedSettings.isReviewModeEnabled)
+                UserField.CRITERIA_IDS -> assertThat(updatedSettings.criteriaIds).containsExactly(criterionId)
+                UserField.SIMILARITY_THRESHOLD -> assertEquals(0.5F, updatedProjectSettings.similarityThreshold)
+                UserField.SNOWBALLING_TYPE ->
+                    assertEquals(SnowballingType.FORWARD, updatedProjectSettings.snowballingType)
+                UserField.REVIEW_MAYBE_ALLOWED -> assertFalse(updatedProjectSettings.reviewMaybeAllowed)
+                UserField.FETCHERS -> assertEquals(fetchers, updatedProjectSettings.fetchers)
+                UserField.NUMBER_OF_REVIEWERS ->
+                    assertEquals(1, updatedProjectSettings.reviewDecisionMatrix.numberOfReviewers)
+                UserField.DECISION_MATRIX_PATTERNS ->
+                    assertEquals(patterns, updatedProjectSettings.reviewDecisionMatrix.patterns)
             }
 
             // Excluded
@@ -248,6 +286,19 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
                     UserField.LAST_NAME -> assertEquals("User", updatedUser.lastName)
                     UserField.ROLE -> assertEquals(UserRole.DEFAULT, updatedUser.role)
                     UserField.STATUS -> assertEquals(UserStatus.ACTIVE, updatedUser.status)
+                    UserField.ARE_HOTKEYS_SHOWN -> assertTrue(updatedSettings.areHotkeysShown)
+                    UserField.IS_REVIEW_MODE_ENABLED -> assertFalse(updatedSettings.isReviewModeEnabled)
+                    UserField.CRITERIA_IDS -> assertThat(updatedSettings.criteriaIds).isEmpty()
+                    UserField.SIMILARITY_THRESHOLD -> assertEquals(0.85F, updatedProjectSettings.similarityThreshold)
+                    UserField.SNOWBALLING_TYPE ->
+                        assertEquals(SnowballingType.BOTH, updatedProjectSettings.snowballingType)
+                    UserField.REVIEW_MAYBE_ALLOWED -> assertTrue(updatedProjectSettings.reviewMaybeAllowed)
+                    UserField.FETCHERS ->
+                        assertEquals(emptyMap<String, FetcherOptions>(), updatedProjectSettings.fetchers)
+                    UserField.NUMBER_OF_REVIEWERS ->
+                        assertEquals(2, updatedProjectSettings.reviewDecisionMatrix.numberOfReviewers)
+                    UserField.DECISION_MATRIX_PATTERNS ->
+                        assertThat(updatedProjectSettings.reviewDecisionMatrix.patterns).hasSize(4)
                 }
             }
 
@@ -257,17 +308,11 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
         @Test
         fun `When a user's email should be updated to an existent email, then an SQLException is thrown`() = runTest {
             insertUserAndGetId(email = "alice.smith@example.com")
+            val userId2 = insertUserAndGetId(email = "bob.smith@example.com")
 
-            val user2Id = insertUserAndGetId(email = "bob.smith@example.com")
-            val user2 = repo.getUserById(user2Id).getOrThrow()
-
-            val updateRequest = UpdateUserRequest(
-                userId = user2.id,
-                firstName = user2.firstName,
-                lastName = user2.lastName,
+            val updateRequest = DataBuilder.createExampleUser(
+                id = userId2,
                 email = "alice.smith@example.com",
-                role = user2.role,
-                status = user2.status,
             )
 
             assertThrows<SQLException> {
@@ -279,9 +324,8 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
         fun `When a user is updated without any specified fields, then nothing is updated`() = runTest {
             val userId = insertUserAndGetId()
             val user = repo.getUserById(userId).getOrThrow()
-            val request = UpdateUserRequest.fromUser(user)
 
-            val updatedUser = repo.updateUser(request, emptySet())
+            val updatedUser = repo.updateUser(user, emptySet())
 
             assertEquals(user, updatedUser)
             assertNull(updatedUser.modifiedAt)
