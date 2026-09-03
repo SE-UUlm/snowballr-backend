@@ -21,6 +21,7 @@ import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.isBetweenWithDelta
 import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPattern
 import se.uulm.snowballr.backend.model.dto.project.ProjectField
+import se.uulm.snowballr.backend.model.dto.project.ProjectSettings
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
@@ -122,7 +123,15 @@ class ProjectTableRepoTest :
     inner class CreateProject {
         @Test
         fun `When a project is created, then the passed values are correctly assigned`() = runTest {
-            val projectSettings = DataBuilder.createExampleProjectSettings()
+            val projectSettings = ProjectSettings(
+                similarityThreshold = 0.77F,
+                snowballingType = SnowballingType.BACKWARD,
+                reviewMaybeAllowed = true,
+                reviewDecisionMatrix = ReviewDecisionMatrix(3, emptyList()),
+                fetchers = mapOf(
+                    "foo" to emptyMap(),
+                ),
+            )
             val request = CreateProjectRequest(name = "Test Project")
 
             val project = repo.createProject(request, testUserId, projectSettings)
@@ -131,12 +140,8 @@ class ProjectTableRepoTest :
             assertEquals(ProjectStatus.ACTIVE, project.status)
             assertEquals(0, project.currentStage)
             assertEquals(0, project.maxStage)
-            // Assert default settings from user
-            assertEquals(0.5F, project.settings.similarityThreshold)
-            assertEquals(SnowballingType.BOTH, project.settings.snowballingType)
-            assertFalse(project.settings.reviewMaybeAllowed)
-            assertEquals(ReviewDecisionMatrix(1, emptyList()), project.settings.reviewDecisionMatrix)
-            assertThat(project.settings.fetchers).isEmpty()
+            // Assert project settings from user
+            assertEquals(projectSettings, project.settings)
         }
 
         @Test
