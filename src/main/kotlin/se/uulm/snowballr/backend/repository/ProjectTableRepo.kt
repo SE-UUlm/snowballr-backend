@@ -185,7 +185,7 @@ class ProjectTableRepo(
             it[snowballingType] = projectSettings.snowballingType
             it[reviewMaybeAllowed] = projectSettings.reviewMaybeAllowed
             it[reviewDecisionMatrixBinary] = projectSettings.reviewDecisionMatrix.toByteArray()
-            it[fetchers] = emptyMap()
+            it[fetchers] = projectSettings.fetchers
             it[createdBy] = userId
         }
     }
