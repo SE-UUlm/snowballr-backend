@@ -20,10 +20,10 @@ import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.project.Project
 import se.uulm.snowballr.backend.model.dto.project.ProjectField
+import se.uulm.snowballr.backend.model.dto.project.ProjectSettings
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.projectpaper.ProjectPaper
 import se.uulm.snowballr.backend.model.dto.review.Review
-import se.uulm.snowballr.backend.model.dto.user.UserSettings
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
@@ -63,11 +63,10 @@ interface IProjectTableRepo {
      *
      * @param request The project creation request containing project details
      * @param userId The ID of the user creating the project.
-     * @param userSettings The user's current settings, such as default criteria IDs, similarity threshold, and other
-     * relevant preferences.
+     * @param projectSettings The settings that the project should have.
      * @return The created [Project] object representing the newly created project.
      */
-    suspend fun createProject(request: CreateProjectRequest, userId: UUID, userSettings: UserSettings): Project
+    suspend fun createProject(request: CreateProjectRequest, userId: UUID, projectSettings: ProjectSettings): Project
 
     /**
      * Returns all active projects stored in the database.
@@ -175,17 +174,17 @@ class ProjectTableRepo(
     override suspend fun createProject(
         request: CreateProjectRequest,
         userId: UUID,
-        userSettings: UserSettings,
+        projectSettings: ProjectSettings,
     ): Project = db.query {
         ProjectTable.insertAndGet(ResultRow::toProject) {
             it[name] = request.name
             it[status] = ProjectStatus.ACTIVE
             it[currentStage] = 0
             it[maxStage] = 0
-            it[similarityThreshold] = userSettings.similarityThreshold
-            it[snowballingType] = userSettings.snowballingType
-            it[reviewMaybeAllowed] = userSettings.reviewMaybeAllowed
-            it[reviewDecisionMatrixBinary] = userSettings.decisionMatrix.toByteArray()
+            it[similarityThreshold] = projectSettings.similarityThreshold
+            it[snowballingType] = projectSettings.snowballingType
+            it[reviewMaybeAllowed] = projectSettings.reviewMaybeAllowed
+            it[reviewDecisionMatrixBinary] = projectSettings.reviewDecisionMatrix.toByteArray()
             it[fetchers] = emptyMap()
             it[createdBy] = userId
         }
@@ -242,7 +241,7 @@ class ProjectTableRepo(
             }
 
             if (isUpdatingDecisionMatrix && project != null) {
-                it.applyDecisionMatrixUpdate(project, request.settings, fields)
+                it.applyDecisionMatrixUpdate(project.settings, request.settings, fields)
             }
 
             it[modifiedAt] = OffsetDateTime.now()
@@ -346,11 +345,11 @@ class ProjectTableRepo(
     private fun isUpdatingDecisionMatrix(fields: Set<ProjectField>) = fields.any { it.isDecisionMatrixField() }
 
     private fun UpdateStatement.applyDecisionMatrixUpdate(
-        project: Project,
+        projectSettings: ProjectSettings,
         settings: UpdateProjectSettingRequest,
         fields: Set<ProjectField>,
     ) {
-        var decisionMatrix = project.reviewDecisionMatrix
+        var decisionMatrix = projectSettings.reviewDecisionMatrix
         if (ProjectField.NUMBER_OF_REVIEWERS in fields) {
             decisionMatrix = decisionMatrix.copy(numberOfReviewers = settings.decisionMatrix.numberOfReviewers)
         }
