@@ -12,14 +12,21 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
+import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
+import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPattern
+import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
+import se.uulm.snowballr.backend.model.dto.project.SnowballingType
+import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.dto.user.UserField
 import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateUserException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadAllException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedUpdateException
+import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
+import se.uulm.snowballr.backend.model.incoming.user.UpdateUserSettingsRequest
 
 class UserIntegrationTest : IntegrationTest() {
     @Nested
@@ -170,6 +177,119 @@ class UserIntegrationTest : IntegrationTest() {
 
                 assertThrows<DuplicateUserException> { userService.updateUser(request, setOf(UserField.EMAIL)) }
             }
+    }
+
+    @Nested
+    inner class UpdateUserSettings {
+        private val settingsFields = UserField.entries.filter { it.isSettingsField() }.toSet()
+
+        private suspend fun currentSettingsRequest() = UpdateUserSettingsRequest.fromUser(userService.getCurrentUser())
+
+        @Test
+        fun `When a user updates all of their settings, then the updated settings are persisted`() = runTest {
+            val request = currentSettingsRequest().copy(
+                areHotkeysShown = true,
+                isReviewModeEnabled = true,
+                similarityThreshold = 0.75F,
+                snowballingType = SnowballingType.FORWARD,
+                reviewMaybeAllowed = true,
+                decisionMatrix = ReviewDecisionMatrix(
+                    numberOfReviewers = 3,
+                    patterns = listOf(DecisionMatrixPattern(PaperDecision.ACCEPTED, emptyList())),
+                ),
+                fetchers = mapOf("crossref" to emptyMap()),
+            )
+
+            val updated = userService.updateUserSettings(request, settingsFields)
+
+            val persisted = userService.getUserSettings().settings
+            assertEquals(persisted, updated.settings)
+            assertTrue(persisted.areHotkeysShown)
+            assertTrue(persisted.isReviewModeEnabled)
+            assertEquals(0.75F, persisted.defaultProjectSettings.similarityThreshold)
+            assertEquals(SnowballingType.FORWARD, persisted.defaultProjectSettings.snowballingType)
+            assertTrue(persisted.defaultProjectSettings.reviewMaybeAllowed)
+            assertEquals(mapOf("crossref" to emptyMap<String, String>()), persisted.defaultProjectSettings.fetchers)
+            assertEquals(3, persisted.defaultProjectSettings.reviewDecisionMatrix.numberOfReviewers)
+            assertEquals(
+                listOf(DecisionMatrixPattern(PaperDecision.ACCEPTED, emptyList())),
+                persisted.defaultProjectSettings.reviewDecisionMatrix.patterns,
+            )
+        }
+
+        @Test
+        fun `When a user sets default criteria in their settings, then the criteria are returned with the settings`() =
+            runTest {
+                val criterion = criterionService.createCriterion(
+                    CreateCriterionRequest(
+                        tag = "UC",
+                        name = "User Criterion",
+                        description = "A default user criterion",
+                        category = CriterionCategory.INCLUSION,
+                        projectId = null,
+                    ),
+                )
+
+                val request = currentSettingsRequest().copy(criteriaIds = listOf(criterion.id))
+
+                val updated = userService.updateUserSettings(request, settingsFields)
+
+                assertEquals(listOf(criterion.id), updated.settings.criteriaIds)
+                assertEquals(listOf(criterion.id), updated.criteria.map { it.id })
+                assertEquals(listOf(criterion.id), userService.getUserSettings().criteria.map { it.id })
+            }
+
+        @Test
+        fun `When only a subset of settings fields is requested, then fields outside the subset are not modified`() =
+            runTest {
+                val original = userService.getUserSettings().settings
+                val request = currentSettingsRequest().copy(
+                    areHotkeysShown = !original.areHotkeysShown,
+                    similarityThreshold = 0.123F,
+                )
+
+                userService.updateUserSettings(request, setOf(UserField.ARE_HOTKEYS_SHOWN))
+
+                val persisted = userService.getUserSettings().settings
+                assertEquals(!original.areHotkeysShown, persisted.areHotkeysShown)
+                assertEquals(
+                    original.defaultProjectSettings.similarityThreshold,
+                    persisted.defaultProjectSettings.similarityThreshold,
+                )
+            }
+
+        @Test
+        fun `When non-settings fields are included in the requested fields, then they are ignored`() = runTest {
+            val originalEmail = userService.getCurrentUser().email
+            val request = currentSettingsRequest().copy(isReviewModeEnabled = true)
+
+            val updated = userService.updateUserSettings(
+                request,
+                setOf(UserField.EMAIL, UserField.ROLE, UserField.IS_REVIEW_MODE_ENABLED),
+            )
+
+            assertTrue(updated.settings.isReviewModeEnabled)
+            assertEquals(originalEmail, userService.getCurrentUser().email)
+        }
+
+        @Test
+        fun `When another user updates their settings, then the current user's settings are unaffected`() = runTest {
+            val otherUser = addUser(DataBuilder.createExampleUser(email = "other.settings@example.com"))
+            val ownSettingsBefore = userService.getUserSettings().settings
+
+            actAsUser(otherUser.id) {
+                val request = UpdateUserSettingsRequest.fromUser(userService.getCurrentUser()).copy(
+                    areHotkeysShown = !ownSettingsBefore.areHotkeysShown,
+                    isReviewModeEnabled = true,
+                )
+
+                userService.updateUserSettings(request, settingsFields)
+
+                assertTrue(userService.getUserSettings().settings.isReviewModeEnabled)
+            }
+
+            assertEquals(ownSettingsBefore, userService.getUserSettings().settings)
+        }
     }
 
     @Nested
