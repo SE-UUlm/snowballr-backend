@@ -18,6 +18,7 @@ import snowballr.PaperOuterClass.Paper
 import snowballr.ProjectOuterClass
 import snowballr.ReviewOuterClass
 import snowballr.UserOuterClass
+import snowballr.UserSettingsOuterClass
 
 /**
  * Validates a given request object and returns either a collection of validation issues
@@ -44,6 +45,7 @@ fun <T> validateRequest(request: T): EitherNel<ValidationIssue, Unit> = when (re
     is Authentication.PasswordChangeRequest -> AuthenticationValidator.validateChangePasswordRequest(request)
     // User
     is UserOuterClass.User.Update -> UserValidator.validateUpdateRequest(request)
+    is UserSettingsOuterClass.UserSettings.Update -> UserValidator.validateUpdateSettingsRequest(request)
     // Project
     is ProjectOuterClass.Project.Create -> ProjectValidator.validateCreateRequest(request)
     is ProjectOuterClass.Project.Update -> ProjectValidator.validateUpdateRequest(request)
