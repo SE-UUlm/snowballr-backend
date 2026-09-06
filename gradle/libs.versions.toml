@@ -105,6 +105,8 @@ spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-start
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect" }
 spring-doc = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui", version.ref = "springdoc" }
 spring-boot-test= { module = "org.springframework.boot:spring-boot-starter-webmvc-test" }
+spring-boot-starter-security = { module = "org.springframework.boot:spring-boot-starter-security" }
+spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

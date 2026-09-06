@@ -13,7 +13,6 @@ import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.env.EnvService
 import se.uulm.snowballr.backend.fetcher.FetcherOrchestrator
 import se.uulm.snowballr.backend.fetcher.IFetcherOrchestrator
-import se.uulm.snowballr.backend.grpc.SnowballRServer
 import se.uulm.snowballr.backend.rest.startRestServer
 import se.uulm.snowballr.backend.scheduler.SchedulerManager
 
@@ -35,14 +34,7 @@ fun main() {
     addDbShutdownHook()
     initializeSchedulerManager()
 
-    // Create and run the server
-    val server = SnowballRServer(env.http.port)
-    server.start()
-
     startRestServer()
-
-    // Wait for gRPC server shutdown
-    server.blockUntilShutdown()
 }
 
 /**
