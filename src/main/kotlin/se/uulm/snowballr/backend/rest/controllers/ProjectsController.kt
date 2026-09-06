@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import se.uulm.snowballr.backend.auth.DummyUser
 import se.uulm.snowballr.backend.model.dto.project.Project
+import se.uulm.snowballr.backend.model.dto.project.ProjectSettings
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
@@ -26,11 +27,13 @@ class ProjectsController {
             status = ProjectStatus.ACTIVE,
             currentStage = 0,
             maxStage = 0,
-            similarityThreshold = 0.85F,
-            snowballingType = SnowballingType.BOTH,
-            reviewMaybeAllowed = false,
-            reviewDecisionMatrix = ReviewDecisionMatrix(1, emptyList()),
-            fetchers = emptyMap(),
+            settings = ProjectSettings(
+                similarityThreshold = 0.85F,
+                snowballingType = SnowballingType.BOTH,
+                reviewMaybeAllowed = false,
+                reviewDecisionMatrix = ReviewDecisionMatrix(1, emptyList()),
+                fetchers = emptyMap(),
+            ),
             currentStageStartedAt = OffsetDateTime.now(),
             createdAt = OffsetDateTime.now(),
             createdBy = DummyUser.id,
@@ -57,11 +60,13 @@ class ProjectsController {
             status = ProjectStatus.ACTIVE,
             currentStage = 0,
             maxStage = 0,
-            similarityThreshold = 0.85F,
-            snowballingType = SnowballingType.BOTH,
-            reviewMaybeAllowed = false,
-            reviewDecisionMatrix = ReviewDecisionMatrix(1, emptyList()),
-            fetchers = emptyMap(),
+            settings = ProjectSettings(
+                similarityThreshold = 0.85F,
+                snowballingType = SnowballingType.BOTH,
+                reviewMaybeAllowed = false,
+                reviewDecisionMatrix = ReviewDecisionMatrix(1, emptyList()),
+                fetchers = emptyMap(),
+            ),
             currentStageStartedAt = OffsetDateTime.now(),
             createdAt = OffsetDateTime.now(),
             createdBy = DummyUser.id,

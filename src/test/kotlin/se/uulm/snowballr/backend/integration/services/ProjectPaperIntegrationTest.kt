@@ -36,7 +36,11 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
         numberOfReviewers: Int,
     ): ProjectResponse {
         val projectUpdate = project.copy(
-            reviewDecisionMatrix = project.reviewDecisionMatrix.copy(numberOfReviewers = numberOfReviewers),
+            settings = project.settings.copy(
+                reviewDecisionMatrix = project.settings.reviewDecisionMatrix.copy(
+                    numberOfReviewers = numberOfReviewers,
+                ),
+            ),
         )
 
         return projectService.updateProject(

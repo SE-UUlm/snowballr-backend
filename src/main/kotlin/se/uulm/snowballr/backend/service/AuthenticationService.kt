@@ -16,7 +16,6 @@ import se.uulm.snowballr.backend.model.exception.invalidargument.IncorrectOldPas
 import se.uulm.snowballr.backend.model.exception.notfound.VerificationTokenNotFoundException
 import se.uulm.snowballr.backend.model.incoming.authentication.ChangePasswordRequest
 import se.uulm.snowballr.backend.model.incoming.authentication.LoginRequest
-import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.IVerificationTokenTableRepo
 import java.time.OffsetDateTime
@@ -77,15 +76,7 @@ class AuthenticationService(
 
         // Update the user's status to active
         val updatedUser = user.copy(status = UserStatus.ACTIVE)
-        val userUpdate = UpdateUserRequest(
-            userId = updatedUser.id,
-            firstName = updatedUser.firstName,
-            lastName = updatedUser.lastName,
-            email = updatedUser.email,
-            role = updatedUser.role,
-            status = updatedUser.status,
-        )
-        repo.updateUser(userUpdate, setOf(UserField.STATUS))
+        repo.updateUser(updatedUser, setOf(UserField.STATUS))
 
         // Remove the verification token after successful verification
         verificationTokenRepo.deleteVerificationToken(token)

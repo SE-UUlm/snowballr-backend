@@ -192,6 +192,18 @@
                         "type": "integer",
                         "format": "int32"
                     },
+                    "currentStageStartedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "settings": {
+                        "$ref": "#/components/schemas/ProjectSettings"
+                    }
+                }
+            },
+            "ProjectSettings": {
+                "type": "object",
+                "properties": {
                     "similarityThreshold": {
                         "type": "number",
                         "format": "float"
@@ -218,10 +230,6 @@
                                 "type": "string"
                             }
                         }
-                    },
-                    "currentStageStartedAt": {
-                        "type": "string",
-                        "format": "date-time"
                     }
                 }
             },

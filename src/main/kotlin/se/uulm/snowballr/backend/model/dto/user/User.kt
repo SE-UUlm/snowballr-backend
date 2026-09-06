@@ -14,6 +14,7 @@ data class User(
     val lastName: String,
     val role: UserRole,
     val status: UserStatus,
+    val settings: UserSettings,
     val createdAt: OffsetDateTime,
     val modifiedAt: OffsetDateTime?,
     val deletedAt: OffsetDateTime?,

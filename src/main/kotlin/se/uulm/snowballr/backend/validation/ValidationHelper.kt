@@ -2,11 +2,16 @@
 
 package se.uulm.snowballr.backend.validation
 
+import arrow.core.Either
+import arrow.core.EitherNel
+import arrow.core.Nel
+import arrow.core.nonEmptyListOf
 import arrow.core.raise.Raise
 import arrow.core.raise.ensure
 import com.google.protobuf.FieldMask
 import com.google.protobuf.util.FieldMaskUtil
 import se.uulm.snowballr.backend.model.BlankField
+import se.uulm.snowballr.backend.model.CompositeIssue
 import se.uulm.snowballr.backend.model.EnumUnspecified
 import se.uulm.snowballr.backend.model.InvalidEmail
 import se.uulm.snowballr.backend.model.InvalidEnumValue
@@ -178,3 +183,39 @@ fun <T : Comparable<T>> Raise<ValidationIssue>.ensureNumberFieldInRange(name: St
 inline fun <reified T : Enum<T>> Raise<ValidationIssue>.ensureValidEnumValue(value: String, name: String) {
     ensure(runCatching { enumValueOf<T>(value) }.isSuccess) { InvalidEnumValue(value, name) }
 }
+
+fun <T> Raise<Nel<ValidationIssue>>.validateElementList(
+    fieldPath: String,
+    elements: List<T>,
+    validateFn: (T) -> EitherNel<ValidationIssue, Unit>,
+    elementName: String,
+    selectedFields: Set<String>,
+) {
+    if (!hasPathOrIsEmpty(selectedFields, fieldPath)) return
+
+    val validations = elements.mapIndexed { i, element ->
+        val result = validateFn(element)
+        if (result is Either.Left) {
+            val issues = result.value.toList()
+            val compositeIssue = CompositeIssue("Issues of $elementName at index $i", issues)
+            Either.Left(nonEmptyListOf(compositeIssue))
+        } else {
+            result
+        }
+    }
+    val issues = validations.filterIsInstance<Either.Left<Nel<ValidationIssue>>>().map { it.value }
+    issues.reduceOrNull { acc, nel -> acc + nel }?.let { raise(it) }
+}
+
+/**
+ * Checks whether the given path is included in the selected fields or if no fields are selected.
+ *
+ * Either use this with a set of selected fields from a field mask, or an empty set to indicate that all fields are
+ * selected, i.e., no field mask was provided.
+ *
+ * @param selectedFields The set of selected field paths.
+ * @param path The specific field path to check.
+ * @return `true` if the selected fields are empty or if the path is included in the selected fields; `false`
+ * otherwise.
+ */
+fun hasPathOrIsEmpty(selectedFields: Set<String>, path: String) = selectedFields.isEmpty() || path in selectedFields

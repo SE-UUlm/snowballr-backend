@@ -11,6 +11,7 @@ import org.jetbrains.exposed.v1.core.isNotNull
 import org.jetbrains.exposed.v1.core.lessEq
 import org.jetbrains.exposed.v1.core.neq
 import org.jetbrains.exposed.v1.core.notInList
+import org.jetbrains.exposed.v1.core.statements.UpdateStatement
 import org.jetbrains.exposed.v1.core.stringParam
 import org.jetbrains.exposed.v1.exceptions.ExposedSQLException
 import org.jetbrains.exposed.v1.jdbc.andWhere
@@ -21,17 +22,15 @@ import org.jetbrains.exposed.v1.jdbc.update
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.IdentifierType
+import se.uulm.snowballr.backend.model.dto.project.ProjectSettings
 import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.dto.user.UserField
 import se.uulm.snowballr.backend.model.dto.user.UserRole
-import se.uulm.snowballr.backend.model.dto.user.UserSettings
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
-import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.toUser
-import se.uulm.snowballr.backend.table.toUserSettings
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -106,11 +105,11 @@ interface IUserTableRepo {
     /**
      * Updates an existent user in the database with the provided new information.
      *
-     * @param request The update request containing the new user details.
+     * @param userData A user DTO with the new information.
      * @param fields The fields that should be updated.
-     * @return The updated [User] object reflecting the changes from the [request].
+     * @return The updated [User] object reflecting the changes from the [userData].
      */
-    suspend fun updateUser(request: UpdateUserRequest, fields: Set<UserField>): User
+    suspend fun updateUser(userData: User, fields: Set<UserField>): User
 
     /**
      * Performs a soft-delete meaning the user with the given [id] is not removed from the database, but only the
@@ -152,15 +151,6 @@ interface IUserTableRepo {
      * Updates the password hash of the user with the given [userId].
      */
     suspend fun updatePasswordHash(userId: UUID, passwordHash: String)
-
-    /**
-     * Returns a [Result] containing the settings of the user with the passed [id] or a [NotFoundException] if the user
-     * with the passed [id] doesn't exist.
-     *
-     * @param id The unique identifier of the user whose settings are to be fetched.
-     * @return The [UserSettings] object containing the settings for the specified user.
-     */
-    suspend fun getUserSettings(id: UUID): Result<UserSettings>
 }
 
 /**
@@ -191,9 +181,6 @@ class UserTableRepo(
         .where { UserTable.email eq email }
         .map { it[UserTable.passwordHash] }
         .singleOrNull()
-
-    private fun getUserSettingsByUserIdOrNull(userId: UUID): UserSettings? =
-        UserTable.getEntityByIdOrNull(userId, ResultRow::toUserSettings)
 
     /**
      * Retrieves a list of user IDs that are eligible for clearing sensitive data.
@@ -275,20 +262,41 @@ class UserTableRepo(
         }
     }
 
-    override suspend fun updateUser(request: UpdateUserRequest, fields: Set<UserField>): User = db.query {
+    @Suppress("CognitiveComplexMethod", "CyclomaticComplexMethod")
+    override suspend fun updateUser(userData: User, fields: Set<UserField>): User = db.query {
         if (fields.isEmpty()) {
-            return@query getUserById(request.userId).getOrThrow()
+            return@query getUserById(userData.id).getOrThrow()
         }
 
-        UserTable.updateByIdAndGet(request.userId, ResultRow::toUser) {
+        val isUpdatingDecisionMatrix = isUpdatingDecisionMatrix(fields)
+        val currentUserSettings = if (isUpdatingDecisionMatrix) getUserByIdOrNull(userData.id)?.settings else null
+
+        val settings = userData.settings
+        val projectSettings = settings.defaultProjectSettings
+        UserTable.updateByIdAndGet(userData.id, ResultRow::toUser) {
             for (field in fields) {
                 when (field) {
-                    UserField.EMAIL -> it[email] = request.email
-                    UserField.FIRST_NAME -> it[firstName] = request.firstName
-                    UserField.LAST_NAME -> it[lastName] = request.lastName
-                    UserField.ROLE -> it[role] = request.role
-                    UserField.STATUS -> it[status] = request.status
+                    UserField.EMAIL -> it[email] = userData.email
+                    UserField.FIRST_NAME -> it[firstName] = userData.firstName
+                    UserField.LAST_NAME -> it[lastName] = userData.lastName
+                    UserField.ROLE -> it[role] = userData.role
+                    UserField.STATUS -> it[status] = userData.status
+                    UserField.ARE_HOTKEYS_SHOWN -> it[areHotkeysShown] = settings.areHotkeysShown
+                    UserField.IS_REVIEW_MODE_ENABLED -> it[reviewModeEnabled] = settings.isReviewModeEnabled
+                    UserField.CRITERIA_IDS -> it[criteriaIds] = settings.criteriaIds
+                    UserField.SIMILARITY_THRESHOLD -> it[similarityThreshold] = projectSettings.similarityThreshold
+                    UserField.SNOWBALLING_TYPE -> it[snowballingType] = projectSettings.snowballingType
+                    UserField.REVIEW_MAYBE_ALLOWED -> it[reviewMaybeAllowed] = projectSettings.reviewMaybeAllowed
+                    UserField.FETCHERS -> it[fetchers] = projectSettings.fetchers
+
+                    UserField.NUMBER_OF_REVIEWERS,
+                    UserField.DECISION_MATRIX_PATTERNS,
+                    -> { /* decision matrix is handled below */ }
                 }
+            }
+
+            if (isUpdatingDecisionMatrix && currentUserSettings != null) {
+                it.applyDecisionMatrixUpdate(currentUserSettings.defaultProjectSettings, projectSettings, fields)
             }
 
             it[modifiedAt] = OffsetDateTime.now()
@@ -363,7 +371,22 @@ class UserTableRepo(
         }
     }
 
-    override suspend fun getUserSettings(id: UUID): Result<UserSettings> = db.query {
-        getEntityByKeyAsResult(::getUserSettingsByUserIdOrNull, EntityType.USER, id)
+    private fun isUpdatingDecisionMatrix(fields: Set<UserField>) = fields.any { it.isDecisionMatrixField() }
+
+    private fun UpdateStatement.applyDecisionMatrixUpdate(
+        currentProjectSettings: ProjectSettings,
+        newProjectSettings: ProjectSettings,
+        fields: Set<UserField>,
+    ) {
+        var decisionMatrix = currentProjectSettings.reviewDecisionMatrix
+        if (UserField.NUMBER_OF_REVIEWERS in fields) {
+            decisionMatrix = decisionMatrix.copy(
+                numberOfReviewers = newProjectSettings.reviewDecisionMatrix.numberOfReviewers,
+            )
+        }
+        if (UserField.DECISION_MATRIX_PATTERNS in fields) {
+            decisionMatrix = decisionMatrix.copy(patterns = newProjectSettings.reviewDecisionMatrix.patterns)
+        }
+        this[UserTable.decisionMatrix] = decisionMatrix.toByteArray()
     }
 }

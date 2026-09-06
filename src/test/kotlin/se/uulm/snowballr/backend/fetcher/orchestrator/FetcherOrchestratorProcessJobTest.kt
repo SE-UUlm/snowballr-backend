@@ -259,10 +259,18 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
                 coEvery { paperRepoMock.getPapersByYear(backwardFetcherRef.year, 1) } returns listOf(backwardRef)
                 coEvery { paperRepoMock.getPapersByYear(forwardFetcherRef.year, 1) } returns listOf(forwardRef)
                 coEvery {
-                    paperMatcherMock.findMatch(backwardFetcherRef, listOf(backwardRef), project.similarityThreshold)
+                    paperMatcherMock.findMatch(
+                        backwardFetcherRef,
+                        listOf(backwardRef),
+                        project.settings.similarityThreshold,
+                    )
                 } returns backwardRef
                 coEvery {
-                    paperMatcherMock.findMatch(forwardFetcherRef, listOf(forwardRef), project.similarityThreshold)
+                    paperMatcherMock.findMatch(
+                        forwardFetcherRef,
+                        listOf(forwardRef),
+                        project.settings.similarityThreshold,
+                    )
                 } returns forwardRef
                 coJustRun { paperRepoMock.mergeFetcherMetadata(backwardRef.id, forwardFetcherRef.fetcherMetadata) }
                 coJustRun { paperRepoMock.mergeFetcherMetadata(forwardRef.id, forwardFetcherRef.fetcherMetadata) }
@@ -432,11 +440,11 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
             every { paperMatcherMock.config.yearTolerance } returns 1
             coEvery { paperRepoMock.getPapersByYear(backwardRef.year, 1) } returns candidates
             coEvery {
-                paperMatcherMock.findMatch(backwardFetcherRef, candidates, project.similarityThreshold)
+                paperMatcherMock.findMatch(backwardFetcherRef, candidates, project.settings.similarityThreshold)
             } returns null
             coEvery { paperRepoMock.getPapersByYear(forwardRef.year, 1) } returns candidates
             coEvery {
-                paperMatcherMock.findMatch(forwardFetcherRef, candidates, project.similarityThreshold)
+                paperMatcherMock.findMatch(forwardFetcherRef, candidates, project.settings.similarityThreshold)
             } returns null
             coEvery {
                 paperRepoMock.createPaper(CreatePaperRequest.fromFetcherPaper(backwardFetcherRef))
@@ -525,7 +533,9 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
                 every { paperMatcherMock.deduplicatePapers(emptySet(), any()) } returns emptySet()
                 every { paperMatcherMock.config.yearTolerance } returns 1
                 coEvery { paperRepoMock.getPapersByYear(2012, 1) } returns candidates
-                coEvery { paperMatcherMock.findMatch(any(), candidates, project.similarityThreshold) } returns null
+                coEvery {
+                    paperMatcherMock.findMatch(any(), candidates, project.settings.similarityThreshold)
+                } returns null
                 coEvery { paperRepoMock.createPaper(any()) } returns firstRef andThen secondRef
 
                 // Stop at adding papers to project
@@ -539,7 +549,9 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
                 assertAddingPapersToProjectFailure()
                 coVerify(exactly = 2) { paperRepoMock.createPaper(any()) }
                 // Both refs are scored, but the year window is only loaded once
-                coVerify(exactly = 2) { paperMatcherMock.findMatch(any(), candidates, project.similarityThreshold) }
+                coVerify(exactly = 2) {
+                    paperMatcherMock.findMatch(any(), candidates, project.settings.similarityThreshold)
+                }
                 coVerify(exactly = 1) { paperRepoMock.getPapersByYear(2012, 1) }
             }
     }

@@ -6,6 +6,7 @@ import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.dao.id.java.UUIDTable
 import org.jetbrains.exposed.v1.datetime.timestampWithTimeZone
 import se.uulm.snowballr.backend.model.dto.project.Project
+import se.uulm.snowballr.backend.model.dto.project.ProjectSettings
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
@@ -82,11 +83,13 @@ fun ResultRow.toProject() = Project(
     status = this[ProjectTable.status],
     currentStage = this[ProjectTable.currentStage],
     maxStage = this[ProjectTable.maxStage],
-    similarityThreshold = this[ProjectTable.similarityThreshold],
-    snowballingType = this[ProjectTable.snowballingType],
-    reviewMaybeAllowed = this[ProjectTable.reviewMaybeAllowed],
-    reviewDecisionMatrix = ReviewDecisionMatrix.parseFrom(this[ProjectTable.reviewDecisionMatrixBinary]),
-    fetchers = this[ProjectTable.fetchers],
+    settings = ProjectSettings(
+        similarityThreshold = this[ProjectTable.similarityThreshold],
+        snowballingType = this[ProjectTable.snowballingType],
+        reviewMaybeAllowed = this[ProjectTable.reviewMaybeAllowed],
+        reviewDecisionMatrix = ReviewDecisionMatrix.parseFrom(this[ProjectTable.reviewDecisionMatrixBinary]),
+        fetchers = this[ProjectTable.fetchers],
+    ),
     currentStageStartedAt = this[ProjectTable.currentStageStartedAt],
     createdAt = this[ProjectTable.createdAt],
     createdBy = this[ProjectTable.createdBy].value,

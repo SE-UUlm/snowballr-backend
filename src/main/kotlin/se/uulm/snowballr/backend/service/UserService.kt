@@ -18,6 +18,7 @@ import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateUserException
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
+import se.uulm.snowballr.backend.model.incoming.user.UpdateUserSettingsRequest
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
@@ -51,6 +52,14 @@ interface IUserService {
      * Service implementation of [SnowballRService.updateUser].
      */
     suspend fun updateUser(request: UpdateUserRequest, fields: Set<UserField>): User
+
+    /**
+     * Service implementation of [SnowballRService.updateUserSettings].
+     */
+    suspend fun updateUserSettings(
+        request: UpdateUserSettingsRequest,
+        fields: Set<UserField>,
+    ): UserSettingsWithCriteria
 
     /**
      * Service implementation of [SnowballRService.softDeleteUser].
@@ -154,24 +163,42 @@ class UserService(
 
     override suspend fun updateUser(request: UpdateUserRequest, fields: Set<UserField>): User =
         withUser(userRepo) { currentUser ->
+            val updateFields = fields.filterNot { it.isSettingsField() }.toSet()
+
             val targetUser = userRepo.getUserById(request.userId).getOrThrow()
 
             accessChecker.isAllowedToUpdateUser(currentUser, targetUser)
 
             // If the role is changed, the requesting user must be a server admin.
-            if (fields.contains(UserField.ROLE)) {
+            if (updateFields.contains(UserField.ROLE)) {
                 accessChecker.isAllowedToUpdateUserRole(currentUser, request.userId)
             }
 
             // If the email is changed, there must not yet exist an account with that email address.
-            if (fields.contains(UserField.EMAIL) && userRepo.doesUserExistByEmail(request.email)) {
+            if (updateFields.contains(UserField.EMAIL) && userRepo.doesUserExistByEmail(request.email)) {
                 throw DuplicateUserException(request.email)
             }
 
-            val updatedUser = userRepo.updateUser(request, fields)
-            logger.info { "User ${targetUser.id} updated: ${fields.joinToString()}" }
+            val updateData = mergeUserUpdateWithUser(targetUser, request)
+            val updatedUser = userRepo.updateUser(updateData, updateFields)
+            logger.info { "User ${targetUser.id} updated: ${updateFields.joinToString()}" }
             updatedUser
         }
+
+    override suspend fun updateUserSettings(
+        request: UpdateUserSettingsRequest,
+        fields: Set<UserField>,
+    ): UserSettingsWithCriteria = withUser(userRepo) { currentUser ->
+        val updateFields = fields.filter { it.isSettingsField() }.toSet()
+
+        val updateData = mergeUserSettingsUpdateWithUser(currentUser, request)
+        val updatedUser = userRepo.updateUser(updateData, updateFields)
+        val defaultUserCriteria = criterionRepo.getCriteriaByIds(updatedUser.settings.criteriaIds)
+
+        logger.info { "User ${currentUser.id} updated: ${updateFields.joinToString()}" }
+
+        UserSettingsWithCriteria(updatedUser.settings, defaultUserCriteria)
+    }
 
     override suspend fun softDeleteUser(userId: UUID) = withUser(userRepo) { currentUser ->
         val targetUser = userRepo.getUserById(userId).getOrThrow()
@@ -198,9 +225,37 @@ class UserService(
     override suspend fun getCurrentUser(): User = withUser(userRepo) { it }
 
     override suspend fun getUserSettings(): UserSettingsWithCriteria = withUser(userRepo) { currentUser ->
-        val userSettings = userRepo.getUserSettings(currentUser.id).getOrThrow()
-        val defaultUserCriteria = criterionRepo.getCriteriaByIds(userSettings.criteriaIds)
+        val defaultUserCriteria = criterionRepo.getCriteriaByIds(currentUser.settings.criteriaIds)
 
-        UserSettingsWithCriteria(userSettings, defaultUserCriteria)
+        UserSettingsWithCriteria(currentUser.settings, defaultUserCriteria)
+    }
+
+    private fun mergeUserUpdateWithUser(user: User, request: UpdateUserRequest): User = user.copy(
+        email = request.email,
+        firstName = request.firstName,
+        lastName = request.lastName,
+        role = request.role,
+        status = request.status,
+    )
+
+    private fun mergeUserSettingsUpdateWithUser(user: User, request: UpdateUserSettingsRequest): User {
+        var userSettings = user.settings
+        var projectSettings = userSettings.defaultProjectSettings
+
+        projectSettings = projectSettings.copy(
+            similarityThreshold = request.similarityThreshold,
+            snowballingType = request.snowballingType,
+            reviewMaybeAllowed = request.reviewMaybeAllowed,
+            reviewDecisionMatrix = request.decisionMatrix,
+            fetchers = request.fetchers,
+        )
+        userSettings = userSettings.copy(
+            areHotkeysShown = request.areHotkeysShown,
+            isReviewModeEnabled = request.isReviewModeEnabled,
+            criteriaIds = request.criteriaIds,
+            defaultProjectSettings = projectSettings,
+        )
+
+        return user.copy(settings = userSettings)
     }
 }
