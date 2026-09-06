@@ -11,11 +11,11 @@ import se.uulm.snowballr.backend.model.InvalidFieldMask
 import se.uulm.snowballr.backend.model.InvalidId
 import se.uulm.snowballr.backend.model.OutOfRangeValue
 import se.uulm.snowballr.backend.model.TooLongField
+import se.uulm.snowballr.backend.validation.ProjectSettingsValidator.NUMBER_OF_REVIEWERS_MAX_VALUE
+import se.uulm.snowballr.backend.validation.ProjectSettingsValidator.NUMBER_OF_REVIEWERS_MIN_VALUE
+import se.uulm.snowballr.backend.validation.ProjectSettingsValidator.SIMILARITY_THRESHOLD_MAX_VALUE
+import se.uulm.snowballr.backend.validation.ProjectSettingsValidator.SIMILARITY_THRESHOLD_MIN_VALUE
 import se.uulm.snowballr.backend.validation.ProjectValidator.NAME_MAX_LENGTH
-import se.uulm.snowballr.backend.validation.ProjectValidator.NUMBER_OF_REVIEWERS_MAX_VALUE
-import se.uulm.snowballr.backend.validation.ProjectValidator.NUMBER_OF_REVIEWERS_MIN_VALUE
-import se.uulm.snowballr.backend.validation.ProjectValidator.SIMILARITY_THRESHOLD_MAX_VALUE
-import se.uulm.snowballr.backend.validation.ProjectValidator.SIMILARITY_THRESHOLD_MIN_VALUE
 import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.Project
 import snowballr.ProjectOuterClass.Project.Create
