@@ -107,6 +107,8 @@ dependencies {
     implementation(libs.spring.boot.starter.web)
     implementation(libs.kotlin.reflect)
     implementation(libs.spring.doc)
+    implementation(libs.spring.boot.starter.security)
+    implementation(libs.spring.boot.starter.actuator)
 
     testImplementation(libs.koin.test)
     testImplementation(libs.testcontainers)
@@ -203,6 +205,19 @@ tasks.register("setupFetcherPython") {
 
 tasks.shadowJar {
     archiveClassifier.set("") // omit the "all" suffix
+
+    // Several dependency jars (spring-boot, spring-boot-autoconfigure, spring-boot-tomcat,
+    // spring-boot-actuator-autoconfigure, springdoc, ...) each ship their own
+    // META-INF/spring.factories and META-INF/spring/*.imports files at the same path. Shadow's default
+    // duplicatesStrategy is EXCLUDE, which drops every same-path entry but the first before transformers
+    // ever see them, silently losing most autoconfiguration classes — including the one that registers the
+    // embedded Tomcat server, so the REST server never actually starts. INCLUDE lets every duplicate reach
+    // the transformers below, which then merge them instead of picking one arbitrarily.
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    mergeServiceFiles()
+    append("META-INF/spring.factories")
+    append("META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports")
+    append("META-INF/spring/org.springframework.boot.actuate.autoconfigure.web.ManagementContextConfiguration.imports")
 }
 
 tasks.shadowDistTar {
@@ -246,7 +261,7 @@ tasks.register<Test>("createApiSpec") {
     group = "build"
     testClassesDirs = sourceSets["test"].output.classesDirs
     classpath = sourceSets["test"].runtimeClasspath
-    reports.html.required.set(false)
+    reports.html.required.set(true)
     reports.junitXml.required.set(false)
 }
 
@@ -300,6 +315,21 @@ tasks.register<Exec>("buildTsClient") {
     doFirst {
         copyToPackage("LICENSE")
         copyToPackage("CHANGELOG.md")
+
+        // Restrict the published package contents to the compiled output and docs (source code is omitted).
+        ProcessBuilder(
+            "npm", "pkg", "set",
+            "description=API client for the SnowballR Web Application",
+            "author=SnowballR",
+            "files[0]=dist",
+            "files[1]=README.md",
+            "files[2]=LICENSE",
+            "files[3]=CHANGELOG.md",
+        )
+            .directory(tsClientDir.get().asFile)
+            .inheritIO()
+            .start()
+            .waitFor()
     }
 }
 

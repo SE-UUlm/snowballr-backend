@@ -13,7 +13,7 @@ services:
         healthcheck:
             test: "pg_isready -U postgres"
             start_period: 4s # wait 4s to let db get ready for accepting connections
-            start_interval: 2s # start first healthcheck after 2s
+            start_interval: 2s # start first health check after 2s
 
     # Local Backend + Proxy (profile: default)
     backend-local:
@@ -45,12 +45,14 @@ services:
             - ./plugins:/app/plugins
         ports:
             - ${PORT:-8080}:${PORT:-8080}
+            - "8090:8090"
         depends_on:
             db:
                 condition: service_healthy
         healthcheck:
+            test: wget --no-verbose --tries=1 --spider http://localhost:8090/actuator/health || exit 1
             start_period: 4s # wait 4s to let backend get ready for accepting connections
-            start_interval: 2s # start first healthcheck after 2s
+            start_interval: 2s # start first health check after 2s
 
     proxy-local:
         profiles: [ "" ]
@@ -99,12 +101,14 @@ services:
             - ./plugins:/app/plugins
         ports:
             - ${PORT:-8080}:${PORT:-8080}
+            - "8090:8090"
         depends_on:
             db:
                 condition: service_healthy
         healthcheck:
+            test: wget --no-verbose --tries=1 --spider http://localhost:8090/actuator/health || exit 1
             start_period: 4s # wait 4s to let backend get ready for accepting connections
-            start_interval: 2s # start first healthcheck after 2s
+            start_interval: 2s # start first health check after 2s
 
     proxy-registry:
         profiles: [ "registry" ]
@@ -152,9 +156,11 @@ services:
             PYTHON_EXECUTABLE: ${PYTHON_EXECUTABLE:-.venv/bin/python3}
         ports:
             - ${PORT:-8080}:${PORT:-8080}
+            - "8090:8090"
         healthcheck:
+            test: wget --no-verbose --tries=1 --spider http://localhost:8090/actuator/health || exit 1
             start_period: 4s # wait 4s to let backend get ready for accepting connections
-            start_interval: 2s # start first healthcheck after 2s
+            start_interval: 2s # start first health check after 2s
 
     # Proxy only (profile: proxy-only)
     proxy:

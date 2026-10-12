@@ -12,7 +12,30 @@
         }
     ],
     "paths": {
-        "/projects": {
+        "/api/v1/users": {
+            "post": {
+                "tags": [
+                    "users-controller"
+                ],
+                "operationId": "register",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RegisterRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    }
+                }
+            }
+        },
+        "/api/v1/projects": {
             "get": {
                 "tags": [
                     "projects-controller"
@@ -26,7 +49,7 @@
                                 "schema": {
                                     "type": "array",
                                     "items": {
-                                        "$ref": "#/components/schemas/Project"
+                                        "$ref": "#/components/schemas/ProjectResponse"
                                     }
                                 }
                             }
@@ -50,12 +73,12 @@
                     "required": true
                 },
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "content": {
                             "*/*": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/Project"
+                                    "$ref": "#/components/schemas/ProjectResponse"
                                 }
                             }
                         }
@@ -63,7 +86,89 @@
                 }
             }
         },
-        "/projects/{id}": {
+        "/api/v1/auth/verify-email": {
+            "post": {
+                "tags": [
+                    "auth-controller"
+                ],
+                "operationId": "verifyEmail",
+                "parameters": [
+                    {
+                        "name": "token",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/logout": {
+            "post": {
+                "tags": [
+                    "auth-controller"
+                ],
+                "operationId": "logout",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/login": {
+            "post": {
+                "tags": [
+                    "auth-controller"
+                ],
+                "operationId": "login",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LoginRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/change-password": {
+            "post": {
+                "tags": [
+                    "auth-controller"
+                ],
+                "operationId": "changePassword",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChangePasswordRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/api/v1/projects/{id}": {
             "get": {
                 "tags": [
                     "projects-controller"
@@ -86,7 +191,7 @@
                         "content": {
                             "*/*": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/Project"
+                                    "$ref": "#/components/schemas/ProjectResponse"
                                 }
                             }
                         }
@@ -115,10 +220,52 @@
                     }
                 }
             }
+        },
+        "/api/v1/auth/status": {
+            "get": {
+                "tags": [
+                    "auth-controller"
+                ],
+                "operationId": "getAuthStatus",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "string",
+                                    "enum": [
+                                        "UNAUTHENTICATED",
+                                        "ACCESS_TOKEN_EXPIRED",
+                                        "AUTHENTICATED"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "components": {
         "schemas": {
+            "RegisterRequest": {
+                "type": "object",
+                "properties": {
+                    "firstName": {
+                        "type": "string"
+                    },
+                    "lastName": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string"
+                    },
+                    "password": {
+                        "type": "string"
+                    }
+                }
+            },
             "CreateProjectRequest": {
                 "type": "object",
                 "properties": {
@@ -164,7 +311,7 @@
                     }
                 }
             },
-            "Project": {
+            "ProjectResponse": {
                 "type": "object",
                 "properties": {
                     "id": {
@@ -237,6 +384,28 @@
                         "items": {
                             "$ref": "#/components/schemas/DecisionMatrixPattern"
                         }
+                    }
+                }
+            },
+            "LoginRequest": {
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "type": "string"
+                    },
+                    "password": {
+                        "type": "string"
+                    }
+                }
+            },
+            "ChangePasswordRequest": {
+                "type": "object",
+                "properties": {
+                    "oldPassword": {
+                        "type": "string"
+                    },
+                    "newPassword": {
+                        "type": "string"
                     }
                 }
             }
