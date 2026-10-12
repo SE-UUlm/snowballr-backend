@@ -4,4 +4,4 @@ dataclass-wizard==1.0.0
 idna==3.19
 pycurl==7.47.0
 requests==2.34.2
-urllib3==2.7.0
+urllib3==2.8.0
