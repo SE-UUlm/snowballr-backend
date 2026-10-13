@@ -3,6 +3,8 @@ package se.uulm.snowballr.backend.model.dto.project
 enum class ProjectField {
     NAME,
     STATUS,
+
+    // Settings
     SIMILARITY_THRESHOLD,
     SNOWBALLING_TYPE,
     REVIEW_MAYBE_ALLOWED,
