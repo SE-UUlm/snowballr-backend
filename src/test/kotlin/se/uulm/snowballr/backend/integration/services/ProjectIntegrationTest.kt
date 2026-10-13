@@ -102,6 +102,7 @@ class ProjectIntegrationTest : IntegrationTest() {
         fun `When a user updates the fetchers of a project, then non-existent fetchers and options are removed`() =
             runTest {
                 val project = projectService.createProject(CreateProjectRequest(name = "Fetcher Project"))
+                val projectSettings = project.settings
 
                 val availableFetchers = setOf(
                     FetcherInformationWithId(
@@ -115,7 +116,7 @@ class ProjectIntegrationTest : IntegrationTest() {
                 )
                 coEvery { fetcherManagerMock.getAvailableFetchers() } returns availableFetchers
 
-                val updatedProject = project.copy(
+                val updatedSettings = projectSettings.copy(
                     fetchers = mapOf(
                         "existent-fetcher" to mapOf(
                             "existent-option" to "value1",
@@ -124,11 +125,12 @@ class ProjectIntegrationTest : IntegrationTest() {
                         "non-existent-fetcher" to emptyMap(),
                     ),
                 )
+                val updatedProject = project.copy(settings = updatedSettings)
                 val request = UpdateProjectRequest.fromProjectResponse(updatedProject)
 
                 val result = projectService.updateProject(request, setOf(ProjectField.FETCHERS))
 
-                val fetchersMap = result.fetchers
+                val fetchersMap = result.settings.fetchers
                 assertContains(fetchersMap.keys, "existent-fetcher")
                 assertFalse(fetchersMap.containsKey("non-existent-fetcher"))
                 val sanitizedOptions = fetchersMap["existent-fetcher"]
@@ -141,6 +143,7 @@ class ProjectIntegrationTest : IntegrationTest() {
         fun `When a user updates the fetchers of a project and a required option is missing, then a FailedPreconditionException is thrown`() =
             runTest {
                 val project = projectService.createProject(CreateProjectRequest(name = "Required Option Project"))
+                val projectSettings = project.settings
 
                 val requiredOption = DataBuilder.createExampleFetcherOptionsSchema(isRequired = true)
                 val availableFetchers = setOf(
@@ -156,11 +159,12 @@ class ProjectIntegrationTest : IntegrationTest() {
                 )
                 coEvery { fetcherManagerMock.getAvailableFetchers() } returns availableFetchers
 
-                val updatedProject = project.copy(
+                val updatedSettings = projectSettings.copy(
                     fetchers = mapOf(
                         "fetcher" to mapOf("option1" to "value"),
                     ),
                 )
+                val updatedProject = project.copy(settings = updatedSettings)
                 val request = UpdateProjectRequest.fromProjectResponse(updatedProject)
 
                 assertThrows<FailedPreconditionException> {

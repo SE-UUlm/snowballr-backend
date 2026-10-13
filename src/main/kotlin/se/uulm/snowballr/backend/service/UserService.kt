@@ -198,9 +198,8 @@ class UserService(
     override suspend fun getCurrentUser(): User = withUser(userRepo) { it }
 
     override suspend fun getUserSettings(): UserSettingsWithCriteria = withUser(userRepo) { currentUser ->
-        val userSettings = userRepo.getUserSettings(currentUser.id).getOrThrow()
-        val defaultUserCriteria = criterionRepo.getCriteriaByIds(userSettings.criteriaIds)
+        val defaultUserCriteria = criterionRepo.getCriteriaByIds(currentUser.settings.criteriaIds)
 
-        UserSettingsWithCriteria(userSettings, defaultUserCriteria)
+        UserSettingsWithCriteria(currentUser.settings, defaultUserCriteria)
     }
 }

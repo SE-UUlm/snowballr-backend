@@ -8,6 +8,7 @@ import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
 import se.uulm.snowballr.backend.model.dto.paper.Paper
 import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPattern
 import se.uulm.snowballr.backend.model.dto.project.Project
+import se.uulm.snowballr.backend.model.dto.project.ProjectSettings
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
@@ -68,11 +69,13 @@ object DataBuilder {
         status = status,
         currentStage = currentStage,
         maxStage = maxStage,
-        similarityThreshold = similarityThreshold,
-        snowballingType = snowballingType,
-        reviewMaybeAllowed = reviewMaybeAllowed,
-        reviewDecisionMatrix = reviewDecisionMatrix,
-        fetchers = fetchers,
+        settings = ProjectSettings(
+            similarityThreshold = similarityThreshold,
+            snowballingType = snowballingType,
+            reviewMaybeAllowed = reviewMaybeAllowed,
+            reviewDecisionMatrix = reviewDecisionMatrix,
+            fetchers = fetchers,
+        ),
         currentStageStartedAt = currentStageStartedAt,
         createdAt = createdAt,
         createdBy = createdBy,
@@ -82,6 +85,20 @@ object DataBuilder {
         deletedBy = deletedBy,
         archivedAt = archivedAt,
         archivedBy = archivedBy,
+    )
+
+    fun createExampleProjectSettings(
+        similarityThreshold: Float = 0.5F,
+        snowballingType: SnowballingType = SnowballingType.BOTH,
+        reviewMaybeAllowed: Boolean = false,
+        reviewDecisionMatrix: ReviewDecisionMatrix = ReviewDecisionMatrix(1, emptyList()),
+        fetchers: FetcherMap = emptyMap(),
+    ) = ProjectSettings(
+        similarityThreshold = similarityThreshold,
+        snowballingType = snowballingType,
+        reviewMaybeAllowed = reviewMaybeAllowed,
+        reviewDecisionMatrix = reviewDecisionMatrix,
+        fetchers = fetchers,
     )
 
     fun createExampleProjectCriterion(
@@ -129,6 +146,10 @@ object DataBuilder {
         lastName: String = "User",
         role: UserRole = UserRole.DEFAULT,
         status: UserStatus = UserStatus.ACTIVE,
+        areHotkeysShown: Boolean = false,
+        isReviewModeEnabled: Boolean = false,
+        criteriaIds: List<UUID> = emptyList(),
+        defaultProjectSettings: ProjectSettings = createExampleProjectSettings(),
         createdAt: OffsetDateTime = OffsetDateTime.now(),
         modifiedAt: OffsetDateTime? = null,
         deletedAt: OffsetDateTime? = null,
@@ -139,6 +160,12 @@ object DataBuilder {
         lastName = lastName,
         role = role,
         status = status,
+        settings = UserSettings(
+            areHotkeysShown = areHotkeysShown,
+            isReviewModeEnabled = isReviewModeEnabled,
+            criteriaIds = criteriaIds,
+            defaultProjectSettings = defaultProjectSettings,
+        ),
         createdAt = createdAt,
         modifiedAt = modifiedAt,
         deletedAt = deletedAt,
@@ -163,7 +190,7 @@ object DataBuilder {
         reviewMode: Boolean = false,
         criteriaIds: List<UUID> = emptyList(),
         similarityThreshold: Float = 0.5f,
-        decisionMatrix: ReviewDecisionMatrix = ReviewDecisionMatrix(1, emptyList()),
+        reviewDecisionMatrix: ReviewDecisionMatrix = ReviewDecisionMatrix(1, emptyList()),
         fetchers: FetcherMap = emptyMap(),
         snowballingType: SnowballingType = SnowballingType.BOTH,
         reviewMaybeAllowed: Boolean = false,
@@ -171,11 +198,13 @@ object DataBuilder {
         areHotkeysShown = showHotkeys,
         isReviewModeEnabled = reviewMode,
         criteriaIds = criteriaIds,
-        similarityThreshold = similarityThreshold,
-        decisionMatrix = decisionMatrix,
-        fetchers = fetchers,
-        snowballingType = snowballingType,
-        reviewMaybeAllowed = reviewMaybeAllowed,
+        defaultProjectSettings = ProjectSettings(
+            similarityThreshold = similarityThreshold,
+            reviewDecisionMatrix = reviewDecisionMatrix,
+            fetchers = fetchers,
+            snowballingType = snowballingType,
+            reviewMaybeAllowed = reviewMaybeAllowed,
+        ),
     )
 
     fun createExamplePaper(

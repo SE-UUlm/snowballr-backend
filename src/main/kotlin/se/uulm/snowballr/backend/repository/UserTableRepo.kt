@@ -24,14 +24,12 @@ import se.uulm.snowballr.backend.model.IdentifierType
 import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.dto.user.UserField
 import se.uulm.snowballr.backend.model.dto.user.UserRole
-import se.uulm.snowballr.backend.model.dto.user.UserSettings
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
 import se.uulm.snowballr.backend.table.UserTable
 import se.uulm.snowballr.backend.table.toUser
-import se.uulm.snowballr.backend.table.toUserSettings
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -152,15 +150,6 @@ interface IUserTableRepo {
      * Updates the password hash of the user with the given [userId].
      */
     suspend fun updatePasswordHash(userId: UUID, passwordHash: String)
-
-    /**
-     * Returns a [Result] containing the settings of the user with the passed [id] or a [NotFoundException] if the user
-     * with the passed [id] doesn't exist.
-     *
-     * @param id The unique identifier of the user whose settings are to be fetched.
-     * @return The [UserSettings] object containing the settings for the specified user.
-     */
-    suspend fun getUserSettings(id: UUID): Result<UserSettings>
 }
 
 /**
@@ -191,9 +180,6 @@ class UserTableRepo(
         .where { UserTable.email eq email }
         .map { it[UserTable.passwordHash] }
         .singleOrNull()
-
-    private fun getUserSettingsByUserIdOrNull(userId: UUID): UserSettings? =
-        UserTable.getEntityByIdOrNull(userId, ResultRow::toUserSettings)
 
     /**
      * Retrieves a list of user IDs that are eligible for clearing sensitive data.
@@ -361,9 +347,5 @@ class UserTableRepo(
                 it[modifiedAt] = OffsetDateTime.now()
             }
         }
-    }
-
-    override suspend fun getUserSettings(id: UUID): Result<UserSettings> = db.query {
-        getEntityByKeyAsResult(::getUserSettingsByUserIdOrNull, EntityType.USER, id)
     }
 }

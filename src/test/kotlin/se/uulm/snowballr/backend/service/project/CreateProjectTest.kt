@@ -32,12 +32,12 @@ class CreateProjectTest : ProjectServiceTest() {
     fun `When a project is correctly created, then the created project has the correct values`() = runTest {
         val project = DataBuilder.createExampleProject()
         val user = DataBuilder.createExampleUser(role = UserRole.DEFAULT)
-        val userSettings = DataBuilder.createExampleUserSettings()
 
         mockCurrentUser(user)
-        coEvery { userRepoMock.getUserSettings(user.id) } returns Result.success(userSettings)
         coEvery { criterionRepoMock.getCriteriaByIds(emptyList()) } returns emptyList()
-        coEvery { projectRepoMock.createProject(getExampleRequest(), user.id, userSettings) } returns project
+        coEvery {
+            projectRepoMock.createProject(getExampleRequest(), user.id, user.settings.defaultProjectSettings)
+        } returns project
         mockProjectAdminCreation(project, user)
 
         val result = service.createProject(getExampleRequest())
@@ -55,9 +55,8 @@ class CreateProjectTest : ProjectServiceTest() {
     fun `When a project is correctly created and the user has default criteria, then the created project has the correct values`() =
         runTest {
             val project = DataBuilder.createExampleProject()
-            val user = DataBuilder.createExampleUser(role = UserRole.DEFAULT)
             val criterion = DataBuilder.createExampleProjectCriterion()
-            val userSettings = DataBuilder.createExampleUserSettings(criteriaIds = listOf(criterion.id))
+            val user = DataBuilder.createExampleUser(role = UserRole.DEFAULT, criteriaIds = listOf(criterion.id))
             val criteriaIdsSlot = slot<List<UUID>>()
 
             val criterionCreateRequest = CreateCriterionRequest(
@@ -69,9 +68,10 @@ class CreateProjectTest : ProjectServiceTest() {
             )
 
             mockCurrentUser(user)
-            coEvery { userRepoMock.getUserSettings(user.id) } returns Result.success(userSettings)
             coEvery { criterionRepoMock.getCriteriaByIds(capture(criteriaIdsSlot)) } returns listOf(criterion)
-            coEvery { projectRepoMock.createProject(getExampleRequest(), user.id, userSettings) } returns project
+            coEvery {
+                projectRepoMock.createProject(getExampleRequest(), user.id, user.settings.defaultProjectSettings)
+            } returns project
             coEvery { criterionRepoMock.createCriterion(criterionCreateRequest, user.id) } returns criterion
             mockProjectAdminCreation(project, user)
 

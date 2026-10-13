@@ -122,10 +122,9 @@ class ProjectService(
 
     override suspend fun createProject(request: CreateProjectRequest): ProjectResponse =
         withUser(userRepo) { currentUser ->
-            val userSettings = userRepo.getUserSettings(currentUser.id).getOrThrow()
-            val userDefaultCriteria = criterionRepo.getCriteriaByIds(userSettings.criteriaIds)
+            val userDefaultCriteria = criterionRepo.getCriteriaByIds(currentUser.settings.criteriaIds)
 
-            val project = repo.createProject(request, currentUser.id, userSettings)
+            val project = repo.createProject(request, currentUser.id, currentUser.settings.defaultProjectSettings)
 
             // Additionally, clone user default criteria into the project as project criteria and add creator as project member
             for (criterion in userDefaultCriteria) {

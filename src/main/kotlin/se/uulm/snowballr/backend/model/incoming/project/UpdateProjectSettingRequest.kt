@@ -15,19 +15,19 @@ data class UpdateProjectSettingRequest(
 ) {
     companion object {
         fun fromProject(project: Project) = UpdateProjectSettingRequest(
-            similarityThreshold = project.similarityThreshold,
-            snowballingType = project.snowballingType,
-            reviewMaybeAllowed = project.reviewMaybeAllowed,
-            fetchers = project.fetchers,
-            decisionMatrix = project.reviewDecisionMatrix,
+            similarityThreshold = project.settings.similarityThreshold,
+            snowballingType = project.settings.snowballingType,
+            reviewMaybeAllowed = project.settings.reviewMaybeAllowed,
+            fetchers = project.settings.fetchers,
+            decisionMatrix = project.settings.reviewDecisionMatrix,
         )
 
         fun fromProjectResponse(project: ProjectResponse) = UpdateProjectSettingRequest(
-            similarityThreshold = project.similarityThreshold,
-            snowballingType = project.snowballingType,
-            reviewMaybeAllowed = project.reviewMaybeAllowed,
-            fetchers = project.fetchers,
-            decisionMatrix = project.reviewDecisionMatrix,
+            similarityThreshold = project.settings.similarityThreshold,
+            snowballingType = project.settings.snowballingType,
+            reviewMaybeAllowed = project.settings.reviewMaybeAllowed,
+            fetchers = project.settings.fetchers,
+            decisionMatrix = project.settings.reviewDecisionMatrix,
         )
     }
 }
