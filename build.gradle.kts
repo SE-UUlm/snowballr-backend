@@ -374,18 +374,18 @@ detekt {
 }
 
 // https://github.com/grpc/grpc-kotlin/tree/master/compiler
-// Note: the Spring Boot Gradle plugin (ProtobufPluginAction) auto-registers a "grpc" (Java)
-// plugin locator as soon as it detects the protobuf plugin, so create()-ing our own here would
-// fail with "ExecutableLocator ... already exists". Its own version alignment for that locator
-// relies on resolving the runtimeClasspath configuration from inside another configuration's
-// dependency resolution, which comes back empty in this project, leaving the artifact version
-// unset. Reconfigure (not create) the existing locator with an explicit, pinned version instead.
+// Note: since Spring Boot 4.1.1, the Spring Boot Gradle plugin (ProtobufPluginAction) no longer
+// registers a "grpc" (Java) plugin locator itself. It only reacts to one created by the build: it
+// sets an unversioned artifact and adds the plugin to all generateProto tasks. Its own version
+// alignment for that artifact relies on resolving the runtimeClasspath configuration from inside
+// another configuration's dependency resolution, which comes back empty in this project, leaving
+// the artifact version unset. Our configure action runs after Spring Boot's, so pin the version here.
 protobuf {
     protoc {
         artifact = "com.google.protobuf:protoc:${libs.versions.protobuf.kotlin.get()}"
     }
     plugins {
-        named("grpc") {
+        create("grpc") {
             artifact = "io.grpc:protoc-gen-grpc-java:${libs.versions.grpc.asProvider().get()}"
         }
         create("grpckt") {
