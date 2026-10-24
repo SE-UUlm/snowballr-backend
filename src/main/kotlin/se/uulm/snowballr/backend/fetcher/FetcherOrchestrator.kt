@@ -8,6 +8,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import se.uulm.snowballr.backend.matching.IPaperMatcher
 import se.uulm.snowballr.backend.model.dto.paper.Paper
@@ -29,8 +30,16 @@ import se.uulm.snowballr.backend.repository.isUniqueConstraintViolation
 import java.sql.SQLException
 import java.util.UUID
 import kotlin.math.roundToInt
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 private val logger = KotlinLogging.logger { }
+
+/** Default number of retries after a failed fetcher call. */
+const val DEFAULT_FETCH_RETRIES = 3
+
+/** Default delay before the first retry of a failed fetcher call. It doubles with every further retry. */
+val DEFAULT_FETCH_RETRY_DELAY = 1.seconds
 
 interface IFetcherOrchestrator {
     /**
@@ -64,7 +73,14 @@ class FetcherOrchestrator(
     private val projectPaperRepo: IProjectPaperTableRepo,
     private val paperMatcher: IPaperMatcher,
     dispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val fetchRetries: Int = DEFAULT_FETCH_RETRIES,
+    private val fetchRetryDelay: Duration = DEFAULT_FETCH_RETRY_DELAY,
 ) : IFetcherOrchestrator {
+    init {
+        require(fetchRetries >= 0) { "Number of fetch retries must not be negative" }
+        require(!fetchRetryDelay.isNegative()) { "Fetch retry delay must not be negative" }
+    }
+
     private val queue = Channel<FetcherProcessingJob>(Channel.UNLIMITED)
 
     // Use supervisor job so that jobs can fail without cancelling the entire scope
@@ -190,7 +206,9 @@ class FetcherOrchestrator(
     /**
      * Calls the [fetcherManager] to fetch papers according to the passed [direction] for each fetcher in [fetchers].
      *
-     * If a [FetcherException] is thrown by one of the fetchers, the exception is caught and logged.
+     * If a [FetcherException] is thrown by one of the fetchers, the call is retried up to [fetchRetries] times with an
+     * exponentially growing delay starting at [fetchRetryDelay]. If all attempts fail, the last exception is logged and
+     * the fetcher is skipped.
      */
     private suspend fun fetch(fetchers: FetcherMap, paper: Paper, direction: FetchingDirection): Set<FetcherPaper> {
         val fetchCall = when (direction) {
@@ -202,11 +220,14 @@ class FetcherOrchestrator(
 
         for ((fetcher, options) in fetchers) {
             try {
-                val fetchedPapers = fetchCall.invoke(fetcher, paper.toFetcherPaper(), options)
+                val fetchedPapers = withFetchRetries(fetcher, direction) {
+                    fetchCall.invoke(fetcher, paper.toFetcherPaper(), options)
+                }
                 set += fetchedPapers
             } catch (ex: FetcherException) {
                 logger.error(ex) {
-                    "Failed to fetch ${direction.displayName} with fetcher '$fetcher': ${ex.message ?: "<empty>"}"
+                    "Failed to fetch ${direction.displayName} with fetcher '$fetcher' after ${fetchRetries + 1} " +
+                        "attempt(s): ${ex.message ?: "<empty>"}"
                 }
             }
         }
@@ -216,6 +237,33 @@ class FetcherOrchestrator(
         }
 
         return set
+    }
+
+    /**
+     * Runs [block] and retries it up to [fetchRetries] times if it throws a [FetcherException]. The delay between two
+     * attempts starts at [fetchRetryDelay] and doubles after each retry.
+     *
+     * @throws FetcherException if the last attempt fails.
+     */
+    private suspend fun <T> withFetchRetries(
+        fetcher: String,
+        direction: FetchingDirection,
+        block: suspend () -> T,
+    ): T {
+        var retryDelay = fetchRetryDelay
+        repeat(fetchRetries) { retry ->
+            try {
+                return block()
+            } catch (ex: FetcherException) {
+                logger.warn {
+                    "Fetching ${direction.displayName} with fetcher '$fetcher' failed, retrying in $retryDelay " +
+                        "(retry ${retry + 1}/$fetchRetries): ${ex.message ?: "<empty>"}"
+                }
+            }
+            delay(retryDelay)
+            retryDelay *= 2
+        }
+        return block()
     }
 
     /**
