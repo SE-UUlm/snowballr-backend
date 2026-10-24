@@ -363,9 +363,17 @@ class SnowballRServer(
                 UpdateUserSettingsRequest(
                     areHotkeysShown = settings.showHotkeys,
                     isReviewModeEnabled = settings.reviewMode,
-                    criteriaIds = settings.defaultCriteria.criteriaList.map { parseUUID(it.id, EntityType.CRITERION) },
+                    // Only converted if part of the update, since they are only validated in that case.
+                    criteriaIds = if (fields.contains(UserField.CRITERIA_IDS)) {
+                        settings.defaultCriteria.criteriaList.map { parseUUID(it.id, EntityType.CRITERION) }
+                    } else {
+                        emptyList()
+                    },
                     similarityThreshold = projectSettings.similarityThreshold,
-                    decisionMatrix = reviewDecisionMatrixFromGrpc(projectSettings.decisionMatrix),
+                    decisionMatrix = reviewDecisionMatrixFromGrpc(
+                        projectSettings.decisionMatrix,
+                        includePatterns = fields.contains(UserField.DECISION_MATRIX_PATTERNS),
+                    ),
                     fetchers = projectSettings.fetchersMap.mapValues { it.value.optionsMap },
                     snowballingType = snowballingType,
                     reviewMaybeAllowed = projectSettings.reviewMaybeAllowed,

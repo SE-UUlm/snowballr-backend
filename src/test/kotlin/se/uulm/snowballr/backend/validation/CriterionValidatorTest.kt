@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.validation
 import com.google.protobuf.FieldMask
 import com.google.protobuf.util.FieldMaskUtil
 import `in`.rcard.assertj.arrowcore.EitherAssert
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -267,6 +268,35 @@ class CriterionValidatorTest {
             val result = validateRequest(request)
 
             EitherAssert.assertThat(result).isRight()
+        }
+    }
+
+    @Nested
+    inner class ExistingCriterion {
+        private val validCriterionBuilder: Criterion.Builder = Criterion
+            .newBuilder()
+            .setId(UUID.randomUUID().toString())
+            .setTag("C1")
+            .setName("Valid Criterion")
+            .setDescription("A valid criterion")
+            .setCategory(CriterionCategory.CRITERION_CATEGORY_EXCLUSION)
+
+        @Test
+        fun `When a valid criterion is validated, then no issue is returned`() {
+            val result = CriterionValidator.validateCriterion(validCriterionBuilder.build())
+
+            EitherAssert.assertThat(result).isRight()
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = ["", "invalid-id"])
+        fun `When a criterion with an empty or invalid ID is validated, then the 'InvalidId' issue is returned for the ID field`(
+            id: String,
+        ) {
+            val result = CriterionValidator.validateCriterion(validCriterionBuilder.setId(id).build())
+
+            val issue = assertInvalidResult<InvalidId>(result)
+            assertEquals("id", issue.name)
         }
     }
 }
