@@ -1,6 +1,8 @@
 package se.uulm.snowballr.backend.matching
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
 import se.uulm.snowballr.backend.model.dto.paper.Paper
@@ -8,9 +10,50 @@ import se.uulm.snowballr.backend.model.dto.paper.isNotBlank
 import se.uulm.snowballr.backend.model.dto.paper.normalized
 import se.uulm.snowballr.backend.model.dto.paper.toFetcherPaper
 import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
+import java.io.IOException
+import java.nio.file.Files
+import java.nio.file.Path
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.abs
 
 private val logger = KotlinLogging.logger { }
+
+/**
+ * A suspicious pair of papers, written to [SimilarityCaseWriter] to create fixtures from.
+ */
+@Serializable
+private data class SimilarityCase(
+    val kind: String,
+    val similarity: Double,
+    val a: FetcherPaper,
+    val b: FetcherPaper,
+)
+
+/**
+ * Appends suspicious paper pairs as JSON lines to `<directory>/<kind>.jsonl`. Each pair is written only once.
+ *
+ * The directory is read from `SIMILARITY_CASES_DIR` and defaults to `similarity-cases` in the working directory.
+ * Write failures are logged and never fail the calling job.
+ */
+private object SimilarityCaseWriter {
+    private val directory = Path.of(System.getenv("SIMILARITY_CASES_DIR") ?: "similarity-cases").toAbsolutePath()
+    private val json = Json { encodeDefaults = true }
+    private val written = ConcurrentHashMap.newKeySet<Set<FetcherPaper>>()
+
+    fun write(kind: String, similarity: Double, a: FetcherPaper, b: FetcherPaper) {
+        if (!written.add(setOf(a, b))) return
+
+        val line = json.encodeToString(SimilarityCase.serializer(), SimilarityCase(kind, similarity, a, b))
+        try {
+            synchronized(this) {
+                Files.createDirectories(directory)
+                directory.resolve("$kind.jsonl").toFile().appendText(line + "\n")
+            }
+        } catch (e: IOException) {
+            logger.warn(e) { "Could not write similarity case to $directory" }
+        }
+    }
+}
 
 interface IPaperMatcher {
     /**
@@ -92,7 +135,24 @@ class PaperMatcher(override val config: PaperMatchingConfig) : IPaperMatcher {
 
     @Suppress("ReturnCount")
     override fun similarity(a: FetcherPaper, b: FetcherPaper): Double {
-        if (haveSameExternalId(a, b)) return 1.0
+        if (haveSameExternalId(a, b)) {
+            val simClean = similarity(a.copy(externalIds = emptyList()), b.copy(externalIds = emptyList()))
+
+            if (!isSimilarityAboveThreshold(simClean, 0.85F)) {
+                logger.warn { "Found ID match with low similarity" }
+                SimilarityCaseWriter.write("id-match-low-similarity", simClean, a, b)
+            }
+
+            return 1.0
+        }
+        if (haveConflictingExternalId(a, b)) {
+            val simClean = similarity(a.copy(externalIds = emptyList()), b.copy(externalIds = emptyList()))
+
+            if (isSimilarityAboveThreshold(simClean, 0.85F)) {
+                logger.warn { "Found ID mismatch with high similarity" }
+                SimilarityCaseWriter.write("id-mismatch-high-similarity", simClean, a, b)
+            }
+        }
         if (abs(a.year - b.year) > config.yearTolerance) return 0.0
 
         data class Component(val weight: Double, val score: Double)
@@ -131,6 +191,14 @@ class PaperMatcher(override val config: PaperMatchingConfig) : IPaperMatcher {
         val totalWeight = components.sumOf { it.weight }
         if (totalWeight == 0.0) return 0.0
         return components.sumOf { it.score * it.weight / totalWeight }
+    }
+
+    private fun haveConflictingExternalId(a: FetcherPaper, b: FetcherPaper): Boolean {
+        val (externalIdsA, externalIdsB) = normalizeExternalIds(a, b)
+
+        return externalIdsA.any { exA ->
+            externalIdsB.any { exB -> exA.type == exB.type && exA.value != exB.value }
+        }
     }
 
     override fun deduplicatePapers(papers: Set<FetcherPaper>, threshold: Float): Set<FetcherPaper> {

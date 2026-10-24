@@ -160,16 +160,19 @@ class FetcherOrchestrator(
         logger.info { "Finished fetcher processing job for paper ${job.paperId}" }
         @Suppress("MagicNumber")
         logger.debug {
-            val total = fetchingTime + dedupTime + creationTime + citationTime + addingTime
-            fun per(t: Long) = "${(t / total.toDouble() * 1000.0).roundToInt() / 10.0}%"
+            val totalMs = fetchingTime + dedupTime + creationTime + citationTime + addingTime
+            val totalPaper = creationResults.allRefs.size
+            fun per(t: Long) = "${(t / totalMs.toDouble() * 1000.0).roundToInt() / 10.0}%"
+            val perPaper = (totalMs / creationResults.allRefs.size * 100.0).roundToInt() / 100.0
 
             """
             Processing Times:
-              - fetching: ${fetchingTime.toString().padStart(6, ' ')}ms - ${per(fetchingTime).padStart(3, ' ')}
-              - dedup:    ${dedupTime.toString().padStart(6, ' ')}ms - ${per(dedupTime).padStart(3, ' ')}
-              - creation: ${creationTime.toString().padStart(6, ' ')}ms - ${per(creationTime).padStart(3, ' ')}
-              - citation: ${citationTime.toString().padStart(6, ' ')}ms - ${per(citationTime).padStart(3, ' ')}
-              - adding:   ${addingTime.toString().padStart(6, ' ')}ms - ${per(addingTime).padStart(3, ' ')}
+              - fetching: ${fetchingTime.toString().padStart(6, ' ')} ms - ${per(fetchingTime).padStart(4, ' ')}
+              - dedup:    ${dedupTime.toString().padStart(6, ' ')} ms - ${per(dedupTime).padStart(4, ' ')}
+              - creation: ${creationTime.toString().padStart(6, ' ')} ms - ${per(creationTime).padStart(4, ' ')}
+              - citation: ${citationTime.toString().padStart(6, ' ')} ms - ${per(citationTime).padStart(4, ' ')}
+              - adding:   ${addingTime.toString().padStart(6, ' ')} ms - ${per(addingTime).padStart(4, ' ')}
+              total: $addingTime ms / $totalPaper papers - $perPaper ms/paper
             """.trimIndent()
         }
     }
