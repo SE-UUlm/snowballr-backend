@@ -185,7 +185,7 @@ class UserIntegrationTest : IntegrationTest() {
 
     @Nested
     inner class UpdateUserSettings {
-        private val settingsFields = UserField.entries.filter { it.isSettingsField() }.toSet()
+        private val settingsFields = UserField.entries.filter { it.isSettingsField }.toSet()
 
         private suspend fun currentSettingsRequest() = UpdateUserSettingsRequest.fromUser(userService.getCurrentUser())
 

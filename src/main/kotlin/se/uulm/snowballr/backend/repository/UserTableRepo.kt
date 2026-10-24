@@ -371,7 +371,7 @@ class UserTableRepo(
         }
     }
 
-    private fun isUpdatingDecisionMatrix(fields: Set<UserField>) = fields.any { it.isDecisionMatrixField() }
+    private fun isUpdatingDecisionMatrix(fields: Set<UserField>) = fields.any { it.isDecisionMatrixField }
 
     private fun UpdateStatement.applyDecisionMatrixUpdate(
         currentProjectSettings: ProjectSettings,

@@ -32,7 +32,7 @@ class UpdateUserSettingsTest : UserServiceTest() {
         val user = DataBuilder.createExampleUser()
 
         val request = getExampleRequest(user)
-        val fields = UserField.entries.filter { it.isSettingsField() }.toSet()
+        val fields = UserField.entries.filter { it.isSettingsField }.toSet()
 
         mockCurrentUser(user)
         coEvery { fetcherManagerMock.getAvailableFetchers() } returns emptySet()
@@ -83,7 +83,7 @@ class UpdateUserSettingsTest : UserServiceTest() {
             ),
         )
         val request = UpdateUserSettingsRequest.fromUser(expectedUser)
-        val fields = UserField.entries.filter { it.isSettingsField() }.toSet()
+        val fields = UserField.entries.filter { it.isSettingsField }.toSet()
 
         mockCurrentUser(user)
         criteria.forEach { criterion ->

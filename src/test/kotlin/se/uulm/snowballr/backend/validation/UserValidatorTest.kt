@@ -20,8 +20,6 @@ import se.uulm.snowballr.backend.model.TooLongList
 import se.uulm.snowballr.backend.model.dto.user.UserField
 import se.uulm.snowballr.backend.validation.UserValidator.MAX_CRITERIA_COUNT
 import se.uulm.snowballr.backend.validation.UserValidator.getGrpcPathsForUserField
-import se.uulm.snowballr.backend.validation.UserValidator.isValidUserSettingsUpdateField
-import se.uulm.snowballr.backend.validation.UserValidator.isValidUserUpdateField
 import snowballr.CriterionOuterClass.Criterion
 import snowballr.CriterionOuterClass.CriterionCategory
 import snowballr.ProjectOuterClass.Project
@@ -37,12 +35,12 @@ class UserValidatorTest {
     companion object {
         @JvmStatic
         fun invalidUserUpdateFields() = UserField.entries
-            .filterNot { isValidUserUpdateField(it) }
+            .filterNot { it.isUserUpdateField }
             .map { Arguments.of(getGrpcPathsForUserField(it)) }
 
         @JvmStatic
         fun invalidUserSettingsUpdateFields() = UserField.entries
-            .filterNot { isValidUserSettingsUpdateField(it) }
+            .filterNot { it.isSettingsField }
             .map { Arguments.of(getGrpcPathsForUserField(it)) }
     }
 
@@ -58,7 +56,7 @@ class UserValidatorTest {
         private val validFieldMask: FieldMask = FieldMaskUtil
             .fromStringList(
                 listOf("user.id") + UserField.entries
-                    .filter { isValidUserUpdateField(it) }
+                    .filter { it.isUserUpdateField }
                     .map { getGrpcPathsForUserField(it) },
             )
 
@@ -253,7 +251,7 @@ class UserValidatorTest {
         private val validFieldMask: FieldMask = FieldMaskUtil
             .fromStringList(
                 UserField.entries
-                    .filter { isValidUserSettingsUpdateField(it) }
+                    .filter { it.isSettingsField }
                     .map { getGrpcPathsForUserField(it) },
             )
 
