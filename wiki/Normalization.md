@@ -18,6 +18,7 @@ On this page, we cover the following topics:
 
 ## Paper Data Normalization
 
+The
 [`PaperNormalizer`](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/normalization/PaperNormalizer.kt)
 applies the following transforms to the free-text fields of a paper (title, abstract, publisher, publication type,
 publication name, author names):
