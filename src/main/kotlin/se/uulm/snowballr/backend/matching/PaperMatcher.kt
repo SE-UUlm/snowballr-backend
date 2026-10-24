@@ -22,9 +22,9 @@ interface IPaperMatcher {
      *
      * Scoring rules:
      * - If both papers share at least one [ExternalId], returns 1.0 immediately.
-     * - If both papers have at least one conflicting [ExternalId], returns 0.0 immediately.
-     *   - A conflict means same type, but different value.
      * - If the publication years differ by more than the configured threshold, returns 0.0 immediately.
+     * - If the similarity of the titles, abstracts, or author sets is below a configured threshold, returns 0.0
+     * immediately.
      * - Otherwise, the score is a weighted combination of:
      *   - **Title**: normalized Levenshtein similarity.
      *   - **Authors**: Jaccard similarity on author name tokens. Omitted when either list is empty.
@@ -78,6 +78,12 @@ class PaperMatcher(override val config: PaperMatchingConfig) : IPaperMatcher {
             authorsWeight = 0.3,
             // The abstract similarity accounts for 10% of the total similarity
             abstractWeight = 0.1,
+            // The titles must have at least 50% similarity
+            titleMinSimilarity = 0.5,
+            // The abstracts must have at least 50% similarity
+            abstractMinSimilarity = 0.5,
+            // The author sets must have at least 50% similarity
+            authorsMinSimilarity = 0.5,
         )
 
         const val DELTA = 1e-6
@@ -85,7 +91,6 @@ class PaperMatcher(override val config: PaperMatchingConfig) : IPaperMatcher {
 
     override fun similarity(a: FetcherPaper, b: FetcherPaper): Double {
         if (haveSameExternalId(a, b)) return 1.0
-        if (haveConflictingExternalId(a, b)) return 0.0
         if (abs(a.year - b.year) > config.yearTolerance) return 0.0
 
         data class Component(val weight: Double, val score: Double)
@@ -93,38 +98,32 @@ class PaperMatcher(override val config: PaperMatchingConfig) : IPaperMatcher {
         val components = mutableListOf<Component>()
 
         if (a.title.isNotBlank() && b.title.isNotBlank()) {
-            components.add(
-                Component(
-                    weight = config.titleWeight,
-                    score = Levenshtein.getNormalizedDistance(a.title.trim().lowercase(), b.title.trim().lowercase()),
-                ),
-            )
+            val titleSim = Levenshtein.getNormalizedDistance(a.title.trim().lowercase(), b.title.trim().lowercase())
+            if (titleSim < config.titleMinSimilarity) return 0.0
+
+            components.add(Component(weight = config.titleWeight, score = titleSim))
         }
 
         val authorsA = a.authors.filter { it.isNotBlank() }
         val authorsB = b.authors.filter { it.isNotBlank() }
         if (authorsA.isNotEmpty() && authorsB.isNotEmpty()) {
-            components.add(
-                Component(
-                    weight = config.authorsWeight,
-                    score = jaccardSimilarity(
-                        Tokenization.authorSetTokens(authorsA),
-                        Tokenization.authorSetTokens(authorsB),
-                    ),
-                ),
+            val authorSim = jaccardSimilarity(
+                Tokenization.authorSetTokens(authorsA),
+                Tokenization.authorSetTokens(authorsB),
             )
+            if (authorSim < config.authorsMinSimilarity) return 0.0
+
+            components.add(Component(weight = config.authorsWeight, score = authorSim))
         }
 
         if (a.abstract.isNotBlank() && b.abstract.isNotBlank()) {
-            components.add(
-                Component(
-                    weight = config.abstractWeight,
-                    score = Levenshtein.getNormalizedDistance(
-                        a.abstract.trim().lowercase(),
-                        b.abstract.trim().lowercase(),
-                    ),
-                ),
+            val abstractSim = Levenshtein.getNormalizedDistance(
+                a.abstract.trim().lowercase(),
+                b.abstract.trim().lowercase(),
             )
+            if (abstractSim < config.abstractMinSimilarity) return 0.0
+
+            components.add(Component(weight = config.abstractWeight, score = abstractSim))
         }
 
         val totalWeight = components.sumOf { it.weight }
@@ -164,20 +163,6 @@ class PaperMatcher(override val config: PaperMatchingConfig) : IPaperMatcher {
         val (externalIdsA, externalIdsB) = normalizeExternalIds(a, b)
 
         return externalIdsA.any { externalIdsB.contains(it) }
-    }
-
-    /**
-     * Returns true if both [FetcherPaper]s have at least one conflicting external ID.
-     *
-     * Two external IDs are conflicting if they both have the same type, but a different value.
-     * External IDs with a blank value are filtered out.
-     */
-    private fun haveConflictingExternalId(a: FetcherPaper, b: FetcherPaper): Boolean {
-        val (externalIdsA, externalIdsB) = normalizeExternalIds(a, b)
-
-        return externalIdsA.any { exA ->
-            externalIdsB.any { exB -> exA.type == exB.type && exA.value != exB.value }
-        }
     }
 
     private fun normalizeExternalIds(a: FetcherPaper, b: FetcherPaper): Pair<List<ExternalId>, List<ExternalId>> {

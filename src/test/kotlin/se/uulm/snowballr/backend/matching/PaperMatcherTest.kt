@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.matching
 
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
@@ -8,6 +9,7 @@ import org.junit.jupiter.api.assertNotNull
 import org.junit.jupiter.api.assertNull
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
+import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.ValueSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.dto.paper.Author
@@ -19,9 +21,9 @@ import java.time.OffsetDateTime
 private const val DELTA = 1e-9
 
 class PaperMatcherTest {
-    private val defaultConfig = PaperMatchingConfig(1, 0.6, 0.3, 0.1)
+    private val defaultConfig = PaperMatchingConfig(1, 0.6, 0.3, 0.1, 0.5, 0.5, 0.5)
     private val matcher = PaperMatcher(defaultConfig)
-    private val titleOnlyMatcher = PaperMatcher(PaperMatchingConfig(1, 1.0, 0.0, 0.0))
+    private val titleOnlyMatcher = PaperMatcher(PaperMatchingConfig(1, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0))
 
     /**
      * Creates two strings with a target similarity in [0, 100].
@@ -128,13 +130,13 @@ class PaperMatcherTest {
         @Test
         fun `When both abstracts are blank, then only title and authors contribute`() {
             val authors1 = listOf(Author("John", "Doe"), Author("Jane", "Doe"))
-            val authors2 = authors1.map { Author(it.lastName.reversed(), it.firstName.reversed()) }
+            val authors2 = listOf(Author("Johnny", "Doe"), Author("Jane", "Doe"))
             val a1 = DataBuilder.createExampleFetcherPaper(
                 title = "Some random title",
                 authors = authors1,
                 abstract = "",
             )
-            val b1 = a1.copy(title = a1.title.reversed(), authors = authors2)
+            val b1 = a1.copy(title = "Some random paper title", authors = authors2)
             val emptyResult = matcher.similarity(a1, b1)
 
             val altMatcher = PaperMatcher(defaultConfig.copy(abstractWeight = 0.0))
@@ -204,22 +206,6 @@ class PaperMatcherTest {
             assertEquals(emptyResult, blankResult, DELTA)
         }
 
-        @Test
-        fun `When both papers have a conflicting external ID, then the similarity is 0`() {
-            val externalIdsA = listOf(
-                ExternalId(ExternalIdType.MAG, "123456"),
-                ExternalId(ExternalIdType.DOI, "10.1234/abcd"),
-            )
-            val externalIdsB = listOf(
-                ExternalId(ExternalIdType.SEMANTIC_SCHOLAR, "123456"),
-                ExternalId(ExternalIdType.DOI, "10.4321/dcba"),
-            )
-            val a = DataBuilder.createExampleFetcherPaper(externalIds = externalIdsA)
-            val b = DataBuilder.createExampleFetcherPaper(externalIds = externalIdsB)
-
-            assertEquals(0.0, matcher.similarity(a, b), DELTA)
-        }
-
         @ParameterizedTest
         @CsvSource(
             value = [
@@ -248,6 +234,22 @@ class PaperMatcherTest {
 
             // Dropping title is the same as not weighing its similarity
             assertEquals(noWeightResult, emptyResult, DELTA)
+        }
+
+        @ParameterizedTest
+        @Disabled
+        @MethodSource("se.uulm.snowballr.backend.matching.SimilarityFixtures#getRealSimilarityExamples")
+        fun `When a real world example is computed, then the result equals the expected result`(fixture: SimilarityFixture) {
+            val result = matcher.similarity(fixture.a, fixture.b)
+            val isSame = 0.85 - result < PaperMatcher.DELTA
+
+            assertEquals(fixture.isSame, isSame) {
+                if (fixture.isSame) {
+                    "Expected papers to be the same, but similarity is $result"
+                } else {
+                    "Expected papers to not be the same, but similarity is $result"
+                }
+            }
         }
     }
 
