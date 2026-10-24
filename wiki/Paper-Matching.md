@@ -6,27 +6,30 @@ different papers right away:
 
 1. **Matching external ID:** If both papers share at least one external ID, e.g. the same DOI, they are the same
    (score 1).
-2. **Conflicting external ID:** If both papers have an external ID of the same type but with different values, they
-   are different (score 0).
-3. **Year difference:** If the publication years differ by more than the configured year tolerance, the papers are
+2. **Year difference:** If the publication years differ by more than the configured year tolerance, the papers are
    different (score 0).
 
-The checks run in this order, so a matching external ID takes precedence over a conflicting one. External IDs with a
-blank value are ignored.
+The checks run in this order, so a matching external ID takes precedence over the year difference. External IDs with a
+blank value are ignored. Conflicting external IDs, i.e., IDs of the same type with different values, do not mark papers
+as different, because an external source can contain the same paper as several records, each with its own ID.
 
 If none of these shortcuts apply, the score is a weighted combination of the similarity of three paper fields:
 
-| Component | Similarity measure                    | Default weight | Omitted when                   |
-|-----------|---------------------------------------|----------------|--------------------------------|
-| Title     | Normalized Levenshtein similarity     | 0.6            | either title is blank          |
-| Authors   | Jaccard similarity of author tokens   | 0.3            | either author list is empty    |
-| Abstract  | Normalized Levenshtein similarity     | 0.1            | either abstract is blank       |
+| Component | Similarity measure                  | Default weight | Default minimum similarity | Omitted when                |
+|-----------|-------------------------------------|----------------|----------------------------|-----------------------------|
+| Title     | Normalized Levenshtein similarity   | 0.6            | 0.5                        | either title is blank       |
+| Authors   | Jaccard similarity of author tokens | 0.3            | 0.5                        | either author list is empty |
+| Abstract  | Normalized Levenshtein similarity   | 0.1            | 0.5                        | either abstract is blank    |
 
-The year tolerance and the weights are defined in the
+If the similarity of a component is below its minimum similarity, the papers are different (score 0), regardless of the
+other components. This prevents a high similarity in one field from outweighing a clear mismatch in another, e.g.,
+two different papers by the same authors. Omitted components are not checked against their minimum similarity.
+
+The year tolerance, the weights, and the minimum similarities are defined in the
 [`PaperMatchingConfig`](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/matching/PaperMatchingConfig.kt).
 The default configuration in
 [`PaperMatcher`](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/matching/PaperMatcher.kt)
-uses a year tolerance of one year and the weights listed above.
+uses a year tolerance of one year and the weights and minimum similarities listed above.
 
 ### Title and Abstract
 
@@ -56,10 +59,11 @@ The order of the authors therefore does not affect the score.
 
 ### Combining the Components
 
-The final score is the weighted sum of the component similarities. If a component is omitted because the data is
-missing in one of the papers, the weights of the remaining components are renormalized to sum to 1. A missing field
-therefore does not count as a mismatch. For example, if one of the papers has no abstract, the title accounts for
-0.6 / 0.9 ≈ 67% and the authors for 0.3 / 0.9 ≈ 33% of the score. If all components are omitted, the score is 0.
+If all components reach their minimum similarity, the final score is the weighted sum of the component similarities. If
+a component is omitted because the data is missing in one of the papers, the weights of the remaining components are
+renormalized to sum to 1. A missing field therefore does not count as a mismatch. For example, if one of the papers has
+no abstract, the title accounts for 0.6 / 0.9 ≈ 67% and the authors for 0.3 / 0.9 ≈ 33% of the score. If all components
+are omitted, the score is 0.
 
 Two papers are considered the same if their score reaches the similarity threshold configured in the project settings.
 
