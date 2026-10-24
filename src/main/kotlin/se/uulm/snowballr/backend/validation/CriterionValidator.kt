@@ -32,22 +32,15 @@ object CriterionValidator {
     fun validateCreateRequest(request: Criterion.Create): EitherNel<ValidationIssue, Unit> = either {
         zipOrAccumulate(
             {
+                // An empty project ID creates a user criterion
                 if (request.projectId.isNotEmpty()) {
                     ensureIdValidity(FIELD_PROJECT_ID, request.projectId)
                 }
             },
-            {
-                ensureTextFieldValidity(FIELD_TAG, request.tag, TAG_MAX_LENGTH)
-            },
-            {
-                ensureTextFieldValidity(FIELD_NAME, request.name, NAME_MAX_LENGTH)
-            },
-            {
-                ensureTextFieldValidity(FIELD_DESCRIPTION, request.description, DESCRIPTION_MAX_LENGTH)
-            },
-            {
-                ensureEnumNotUnspecified(FIELD_CATEGORY, request.category)
-            },
+            { ensureTextFieldValidity(FIELD_TAG, request.tag, TAG_MAX_LENGTH) },
+            { ensureTextFieldValidity(FIELD_NAME, request.name, NAME_MAX_LENGTH) },
+            { ensureTextFieldValidity(FIELD_DESCRIPTION, request.description, DESCRIPTION_MAX_LENGTH) },
+            { ensureEnumNotUnspecified(FIELD_CATEGORY, request.category) },
         ) { _, _, _, _, _ -> }
     }
 
@@ -86,6 +79,27 @@ object CriterionValidator {
                 if (MASK_CATEGORY in selectedFields) {
                     ensureEnumNotUnspecified(FIELD_CATEGORY, criterion.category)
                 }
+            },
+        ) { _, _, _, _, _ -> }
+    }
+
+    /**
+     * Validates an existing [criterion], which therefore must have a valid ID.
+     */
+    fun validateCriterion(criterion: Criterion): EitherNel<ValidationIssue, Unit> = either {
+        zipOrAccumulate(
+            { ensureIdValidity(FIELD_ID, criterion.id) },
+            {
+                ensureTextFieldValidity(FIELD_TAG, criterion.tag, TAG_MAX_LENGTH)
+            },
+            {
+                ensureTextFieldValidity(FIELD_NAME, criterion.name, NAME_MAX_LENGTH)
+            },
+            {
+                ensureTextFieldValidity(FIELD_DESCRIPTION, criterion.description, DESCRIPTION_MAX_LENGTH)
+            },
+            {
+                ensureEnumNotUnspecified(FIELD_CATEGORY, criterion.category)
             },
         ) { _, _, _, _, _ -> }
     }

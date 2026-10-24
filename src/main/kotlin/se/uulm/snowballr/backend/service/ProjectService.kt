@@ -13,8 +13,6 @@ import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.notfound.StageNotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
-import se.uulm.snowballr.backend.model.fetcher.FetcherMap
-import se.uulm.snowballr.backend.model.fetcher.FetcherOptions
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
@@ -176,7 +174,7 @@ class ProjectService(
             var finalRequest = request.copy(status = finalStatus)
 
             if (fields.contains(ProjectField.FETCHERS)) {
-                val sanitizedFetchersMap = sanitizeFetchersMap(finalRequest.settings.fetchers)
+                val sanitizedFetchersMap = sanitizeFetchersMap(fetcherManager, finalRequest.settings.fetchers)
 
                 finalRequest = finalRequest.copy(settings = finalRequest.settings.copy(fetchers = sanitizedFetchersMap))
             }
@@ -306,7 +304,7 @@ class ProjectService(
 
             ProjectStatus.ACTIVE_LOCKED -> {
                 // all project settings are SLR settings
-                val isChangingSettings = fields.any { it.isSettingsField() }
+                val isChangingSettings = fields.any { it.isSettingsField }
                 if (isChangingSettings) {
                     throw FailedPreconditionException(
                         "The project is locked and therefore no SLR settings can be modified.",
@@ -367,41 +365,5 @@ class ProjectService(
             PaperDecision.UNREVIEWED,
             PaperDecision.IN_REVIEW,
         ).map(::createStatistic)
-    }
-
-    /**
-     * Sanitizes the passed [fetchers].
-     *
-     * This includes:
-     * - excluding fetchers that are not registered in the application
-     * - excluding fetcher options that are not registered for the specific fetcher
-     *
-     * This enables that no non-existent fetcher or non-existent fetcher option is stored in the database.
-     */
-    private suspend fun sanitizeFetchersMap(fetchers: FetcherMap): FetcherMap {
-        val sanitizedFetchersMap = mutableMapOf<String, FetcherOptions>()
-        val availableFetchers = fetcherManager.getAvailableFetchers()
-
-        val fetcherIndex = availableFetchers.associateBy { it.id }
-        for ((fetcher, options) in fetchers) {
-            val info = fetcherIndex[fetcher]?.information ?: continue
-
-            // Filter out non-existent options
-            val availableOptions = info.optionsSchema
-            val sanitizedOptions = options.filter { availableOptions.containsKey(it.key) }
-
-            val requiredOptions = availableOptions.filter { it.value.isRequired }
-            val missingRequiredOptions = requiredOptions.keys
-                .filter { !sanitizedOptions.containsKey(it) || sanitizedOptions[it].isNullOrEmpty() }
-            if (missingRequiredOptions.isNotEmpty()) {
-                throw FailedPreconditionException(
-                    "The following required options were not provided: $missingRequiredOptions",
-                )
-            }
-
-            sanitizedFetchersMap[fetcher] = sanitizedOptions
-        }
-
-        return sanitizedFetchersMap
     }
 }

@@ -200,4 +200,39 @@ class CriterionAccessCheckerTest {
                 assertThrows<UnauthorizedUpdateException> { accessChecker.isAllowedToUpdateCriterion(user, criterion) }
             }
     }
+
+    @Nested
+    inner class IsAllowedToUseAsDefaultCriterion {
+        @Test
+        fun `When the user is the creator of a user criterion, then access is allowed`() = runTest {
+            val user = DataBuilder.createExampleUser()
+            val criterion = DataBuilder.createExampleUserCriterion(createdBy = user.id)
+
+            assertDoesNotThrow { accessChecker.isAllowedToUseAsDefaultCriterion(user, criterion) }
+        }
+
+        @Test
+        fun `When the user is not the creator of a user criterion, then access is denied`() = runTest {
+            val user = DataBuilder.createExampleUser()
+            val criterion = DataBuilder.createExampleUserCriterion()
+
+            assertThrows<UnauthorizedReadException> { accessChecker.isAllowedToUseAsDefaultCriterion(user, criterion) }
+        }
+
+        @Test
+        fun `When the criterion is a project criterion, then access is denied`() = runTest {
+            val user = DataBuilder.createExampleUser()
+            val criterion = DataBuilder.createExampleProjectCriterion(createdBy = user.id)
+
+            assertThrows<UnauthorizedReadException> { accessChecker.isAllowedToUseAsDefaultCriterion(user, criterion) }
+        }
+
+        @Test
+        fun `When the user is a server admin but not the creator of the criterion, then access is denied`() = runTest {
+            val user = DataBuilder.createExampleUser(role = UserRole.ADMIN)
+            val criterion = DataBuilder.createExampleUserCriterion()
+
+            assertThrows<UnauthorizedReadException> { accessChecker.isAllowedToUseAsDefaultCriterion(user, criterion) }
+        }
+    }
 }

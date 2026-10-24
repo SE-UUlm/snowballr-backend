@@ -3,7 +3,6 @@ package se.uulm.snowballr.backend.service.authentication
 import io.mockk.coEvery
 import io.mockk.coJustRun
 import io.mockk.coVerify
-import io.mockk.slot
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -11,7 +10,6 @@ import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.exception.notfound.VerificationTokenNotFoundException
-import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
 import java.time.OffsetDateTime
 
 class VerifyEmailTest : AuthenticationServiceTest() {
@@ -54,12 +52,12 @@ class VerifyEmailTest : AuthenticationServiceTest() {
     fun `When a valid token is provided and all operations succeed, then the token is successfully deleted afterwards`() =
         runTest {
             val user = DataBuilder.createExampleUser(status = UserStatus.ACTIVE_UNCONFIRMED)
+            val activatedUser = user.copy(status = UserStatus.ACTIVE)
             val token = DataBuilder.createExampleVerificationToken(userId = user.id)
-            val userUpdateSlot = slot<UpdateUserRequest>()
 
             coEvery { verificationTokenRepoMock.getVerificationTokenByValue(token.token) } returns Result.success(token)
             coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
-            coEvery { userRepoMock.updateUser(capture(userUpdateSlot), any()) } returns user
+            coEvery { userRepoMock.updateUser(activatedUser, any()) } returns user
             coJustRun { verificationTokenRepoMock.deleteVerificationToken(token.token) }
 
             service.verifyEmail(token.token)
