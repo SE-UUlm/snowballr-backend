@@ -24,6 +24,7 @@ import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateU
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadAllException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedUpdateException
+import se.uulm.snowballr.backend.model.fetcher.FetcherInformationWithId
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
@@ -188,6 +189,12 @@ class UserIntegrationTest : IntegrationTest() {
 
         private suspend fun currentSettingsRequest() = UpdateUserSettingsRequest.fromUser(userService.getCurrentUser())
 
+        private fun mockAvailableFetchers(vararg ids: String) {
+            coEvery { fetcherManagerMock.getAvailableFetchers() } returns ids.map {
+                FetcherInformationWithId(id = it, information = DataBuilder.createExampleFetcherInformation())
+            }.toSet()
+        }
+
         private suspend fun createUserCriterion() = criterionService.createCriterion(
             CreateCriterionRequest(
                 tag = "UC",
@@ -200,6 +207,7 @@ class UserIntegrationTest : IntegrationTest() {
 
         @Test
         fun `When a user updates all of their settings, then the updated settings are persisted`() = runTest {
+            mockAvailableFetchers("crossref")
             val request = currentSettingsRequest().copy(
                 areHotkeysShown = true,
                 isReviewModeEnabled = true,
@@ -233,6 +241,7 @@ class UserIntegrationTest : IntegrationTest() {
         @Test
         fun `When a user sets default criteria in their settings, then the criteria are returned with the settings`() =
             runTest {
+                mockAvailableFetchers()
                 val criterion = createUserCriterion()
 
                 val request = currentSettingsRequest().copy(criteriaIds = listOf(criterion.id))
@@ -282,6 +291,7 @@ class UserIntegrationTest : IntegrationTest() {
             val otherUser = addUser(DataBuilder.createExampleUser(email = "other.settings@example.com"))
             val ownSettingsBefore = userService.getUserSettings().settings
 
+            mockAvailableFetchers()
             actAsUser(otherUser.id) {
                 val request = UpdateUserSettingsRequest.fromUser(userService.getCurrentUser()).copy(
                     areHotkeysShown = !ownSettingsBefore.areHotkeysShown,
@@ -328,6 +338,21 @@ class UserIntegrationTest : IntegrationTest() {
             assertThrows<UnauthorizedReadException> {
                 userService.updateUserSettings(request, setOf(UserField.CRITERIA_IDS))
             }
+        }
+
+        @Test
+        fun `When a user sets unknown default fetchers, then they are removed before being persisted`() = runTest {
+            mockAvailableFetchers("crossref")
+            val request = currentSettingsRequest().copy(
+                fetchers = mapOf("crossref" to emptyMap(), "non-existent-fetcher" to emptyMap()),
+            )
+
+            userService.updateUserSettings(request, setOf(UserField.FETCHERS))
+
+            assertEquals(
+                mapOf("crossref" to emptyMap<String, String>()),
+                userService.getUserSettings().settings.defaultProjectSettings.fetchers,
+            )
         }
     }
 
