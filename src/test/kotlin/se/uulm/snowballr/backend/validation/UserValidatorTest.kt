@@ -14,6 +14,7 @@ import se.uulm.snowballr.backend.model.EnumUnspecified
 import se.uulm.snowballr.backend.model.InvalidEmail
 import se.uulm.snowballr.backend.model.InvalidFieldMask
 import se.uulm.snowballr.backend.model.InvalidId
+import se.uulm.snowballr.backend.model.MultipleOccurrences
 import se.uulm.snowballr.backend.model.TooLongField
 import se.uulm.snowballr.backend.model.TooLongList
 import se.uulm.snowballr.backend.model.dto.user.UserField
@@ -350,6 +351,22 @@ class UserValidatorTest {
             val result = validateRequest(request)
 
             EitherAssert.assertThat(result).isRight()
+        }
+
+        @Test
+        fun `When the default criteria list contains a criterion twice, then a 'MultipleOccurrences' issue is returned`() {
+            val criterion = validCriterionBuilder.build()
+            val request = validUpdateRequestBuilder
+                .setUserSettings(
+                    validSettingsBuilder.setDefaultCriteria(
+                        Criterion.List.newBuilder().addAllCriteria(listOf(criterion, criterion)),
+                    ),
+                )
+                .build()
+
+            val result = validateRequest(request)
+
+            assertInvalidResult<MultipleOccurrences>(result)
         }
 
         @Test
