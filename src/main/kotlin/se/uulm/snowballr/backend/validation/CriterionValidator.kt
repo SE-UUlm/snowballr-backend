@@ -29,15 +29,20 @@ object CriterionValidator {
     private const val MASK_DESCRIPTION = "criterion.description"
     private const val MASK_CATEGORY = "criterion.category"
 
-    fun validateCreateRequest(request: Criterion.Create): EitherNel<ValidationIssue, Unit> = validateCriterion(
-        Criterion.newBuilder()
-            .setId(request.projectId)
-            .setTag(request.tag)
-            .setName(request.name)
-            .setDescription(request.description)
-            .setCategory(request.category)
-            .build(),
-    )
+    fun validateCreateRequest(request: Criterion.Create): EitherNel<ValidationIssue, Unit> = either {
+        zipOrAccumulate(
+            {
+                // An empty project ID creates a user criterion
+                if (request.projectId.isNotEmpty()) {
+                    ensureIdValidity(FIELD_PROJECT_ID, request.projectId)
+                }
+            },
+            { ensureTextFieldValidity(FIELD_TAG, request.tag, TAG_MAX_LENGTH) },
+            { ensureTextFieldValidity(FIELD_NAME, request.name, NAME_MAX_LENGTH) },
+            { ensureTextFieldValidity(FIELD_DESCRIPTION, request.description, DESCRIPTION_MAX_LENGTH) },
+            { ensureEnumNotUnspecified(FIELD_CATEGORY, request.category) },
+        ) { _, _, _, _, _ -> }
+    }
 
     fun validateUpdateRequest(request: Criterion.Update): EitherNel<ValidationIssue, Unit> = either {
         // Validate the field mask
@@ -78,13 +83,12 @@ object CriterionValidator {
         ) { _, _, _, _, _ -> }
     }
 
+    /**
+     * Validates an existing [criterion], which therefore must have a valid ID.
+     */
     fun validateCriterion(criterion: Criterion): EitherNel<ValidationIssue, Unit> = either {
         zipOrAccumulate(
-            {
-                if (criterion.id.isNotEmpty()) {
-                    ensureIdValidity(FIELD_PROJECT_ID, criterion.id)
-                }
-            },
+            { ensureIdValidity(FIELD_ID, criterion.id) },
             {
                 ensureTextFieldValidity(FIELD_TAG, criterion.tag, TAG_MAX_LENGTH)
             },

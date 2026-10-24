@@ -62,5 +62,15 @@ object ProjectSettingsValidator {
                 NUMBER_OF_REVIEWERS_MAX_VALUE,
             )
         }
+
+        if ("patterns" in decisionMatrixFields) {
+            decisionMatrix.patternsList.forEachIndexed { i, pattern ->
+                val patternFieldName = "$fieldName.patterns[$i]"
+                ensureEnumNotUnspecified("$patternFieldName.decision", pattern.decision)
+                pattern.entriesList.forEachIndexed { j, entry ->
+                    ensureEnumNotUnspecified("$patternFieldName.entries[$j].review_decision", entry.reviewDecision)
+                }
+            }
+        }
     }
 }
