@@ -8,6 +8,7 @@ import arrow.core.raise.RaiseAccumulate
 import arrow.core.raise.either
 import arrow.core.raise.ensure
 import arrow.core.raise.zipOrAccumulate
+import se.uulm.snowballr.backend.model.MultipleOccurrences
 import se.uulm.snowballr.backend.model.TooLongList
 import se.uulm.snowballr.backend.model.ValidationIssue
 import se.uulm.snowballr.backend.model.dto.user.UserField
@@ -171,6 +172,14 @@ object UserValidator {
         if (FIELD_DEFAULT_CRITERIA in selectedFields) {
             ensure(settings.defaultCriteria.criteriaCount <= MAX_CRITERIA_COUNT) {
                 TooLongList(FIELD_DEFAULT_CRITERIA, MAX_CRITERIA_COUNT)
+            }
+
+            val multipleOccurrences = settings.defaultCriteria.criteriaList.groupBy { it.id }
+                .map { it.key to it.value.size }
+                .filter { it.second > 1 }
+
+            ensure(multipleOccurrences.isEmpty()) {
+                MultipleOccurrences("default criteria", multipleOccurrences)
             }
         }
     }
