@@ -35,7 +35,7 @@ object UserValidator {
         // Validate the field mask
         val fieldMaskResult = either {
             val allowedPaths = listOf("user.id") + UserField.entries
-                .filter { isValidUserUpdateField(it) }
+                .filter { it.isUserUpdateField }
                 .map { getGrpcPathsForUserField(it) }
             ensureFieldMaskIsValid(request.mask, allowedPaths)
         }
@@ -78,7 +78,7 @@ object UserValidator {
         // Validate the field mask
         val fieldMaskResult = either {
             val allowedPaths = UserField.entries
-                .filter { isValidUserSettingsUpdateField(it) }
+                .filter { it.isSettingsField }
                 .map { getGrpcPathsForUserField(it) }
             ensureFieldMaskIsValid(request.mask, allowedPaths)
         }
@@ -102,49 +102,6 @@ object UserValidator {
             { validateCriterionList(settings, selectedFields) },
         ) { _, _, _, _ -> }
         validateCriteria(settings, selectedFields)
-    }
-
-    fun isValidUserUpdateField(field: UserField) = when (field) {
-        UserField.EMAIL,
-        UserField.FIRST_NAME,
-        UserField.LAST_NAME,
-        UserField.ROLE,
-        -> true
-
-        // unallowed non-settings field
-        UserField.STATUS,
-        // settings fields
-        UserField.ARE_HOTKEYS_SHOWN,
-        UserField.IS_REVIEW_MODE_ENABLED,
-        UserField.CRITERIA_IDS,
-        UserField.SIMILARITY_THRESHOLD,
-        UserField.SNOWBALLING_TYPE,
-        UserField.REVIEW_MAYBE_ALLOWED,
-        UserField.FETCHERS,
-        UserField.NUMBER_OF_REVIEWERS,
-        UserField.DECISION_MATRIX_PATTERNS,
-        -> false
-    }
-
-    fun isValidUserSettingsUpdateField(field: UserField) = when (field) {
-        UserField.ARE_HOTKEYS_SHOWN,
-        UserField.IS_REVIEW_MODE_ENABLED,
-        UserField.CRITERIA_IDS,
-        UserField.SIMILARITY_THRESHOLD,
-        UserField.SNOWBALLING_TYPE,
-        UserField.REVIEW_MAYBE_ALLOWED,
-        UserField.FETCHERS,
-        UserField.NUMBER_OF_REVIEWERS,
-        UserField.DECISION_MATRIX_PATTERNS,
-        -> true
-
-        // non-settings fields
-        UserField.EMAIL,
-        UserField.FIRST_NAME,
-        UserField.LAST_NAME,
-        UserField.ROLE,
-        UserField.STATUS,
-        -> false
     }
 
     @Suppress("CyclomaticComplexMethod")

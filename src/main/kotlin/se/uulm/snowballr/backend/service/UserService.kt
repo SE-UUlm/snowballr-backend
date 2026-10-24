@@ -169,7 +169,7 @@ class UserService(
 
     override suspend fun updateUser(request: UpdateUserRequest, fields: Set<UserField>): User =
         withUser(userRepo) { currentUser ->
-            val updateFields = fields.filterNot { it.isSettingsField }.toSet()
+            val updateFields = fields.filter { it.isUserUpdateField }.toSet()
 
             val targetUser = userRepo.getUserById(request.userId).getOrThrow()
 

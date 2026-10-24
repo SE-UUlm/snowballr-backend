@@ -105,7 +105,7 @@ class UpdateUserTest : UserServiceTest() {
         val otherUser = DataBuilder.createExampleUser()
 
         val request = getExampleRequest(otherUser)
-        val fields = setOf(UserField.FIRST_NAME, UserField.LAST_NAME, UserField.ROLE, UserField.STATUS)
+        val fields = setOf(UserField.FIRST_NAME, UserField.LAST_NAME, UserField.ROLE)
 
         mockCurrentUser(currentUser)
         coEvery { userRepoMock.getUserById(otherUser.id) } returns Result.success(otherUser)
@@ -156,12 +156,12 @@ class UpdateUserTest : UserServiceTest() {
         }
 
     @Test
-    fun `When a user updates themselves with all fields, then only the non-settings fields are passed to the repo`() =
+    fun `When a user updates themselves with all fields, then only the user update fields are passed to the repo`() =
         runTest {
             val user = DataBuilder.createExampleUser()
 
             val request = getExampleRequest(user)
-            val fields = UserField.entries.filterNot { it.isSettingsField }.toSet()
+            val fields = UserField.entries.filter { it.isUserUpdateField }.toSet()
 
             mockCurrentUser(user)
             coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
