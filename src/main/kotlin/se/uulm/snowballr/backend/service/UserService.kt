@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.viascom.nanoid.NanoId
+import se.uulm.snowballr.backend.access.ICriterionAccessChecker
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.access.IUserAccessChecker
 import se.uulm.snowballr.backend.auth.PasswordUtils
@@ -92,6 +93,7 @@ interface IUserService {
  * @param envReader The environment reader that provides access to configuration values.
  * @param accessChecker Interface for checking access permissions for users based on defined rules.
  * @param projectAccessChecker Interface for checking access permissions for projects based on defined rules.
+ * @param criterionAccessChecker Interface for checking access permissions for criteria based on defined rules.
  */
 @Suppress("LongParameterList")
 class UserService(
@@ -103,6 +105,7 @@ class UserService(
     private val envReader: EnvReader,
     private val accessChecker: IUserAccessChecker,
     private val projectAccessChecker: IProjectAccessChecker,
+    private val criterionAccessChecker: ICriterionAccessChecker,
 ) : IUserService {
     companion object {
         private const val VERIFICATION_TOKEN_LENGTH = 48
@@ -190,6 +193,14 @@ class UserService(
         fields: Set<UserField>,
     ): UserSettingsWithCriteria = withUser(userRepo) { currentUser ->
         val updateFields = fields.filter { it.isSettingsField() }.toSet()
+
+        // Default criteria are cloned into new projects, so they must be the current user's own user criteria.
+        if (updateFields.contains(UserField.CRITERIA_IDS)) {
+            request.criteriaIds.forEach { criterionId ->
+                val criterion = criterionRepo.getCriterionById(criterionId).getOrThrow()
+                criterionAccessChecker.isAllowedToUseAsDefaultCriterion(currentUser, criterion)
+            }
+        }
 
         val updateData = mergeUserSettingsUpdateWithUser(currentUser, request)
         val updatedUser = userRepo.updateUser(updateData, updateFields)

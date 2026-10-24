@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.service.user
 
 import io.mockk.coEvery
 import io.mockk.mockk
+import se.uulm.snowballr.backend.access.ICriterionAccessChecker
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.access.IUserAccessChecker
 import se.uulm.snowballr.backend.context.RequestContext
@@ -28,6 +29,7 @@ sealed class UserServiceTest : BaseServiceTest {
     val envReaderMock = mockk<EnvReader>()
     val userAccessCheckerMock = mockk<IUserAccessChecker>()
     val projectAccessCheckerMock = mockk<IProjectAccessChecker>()
+    val criterionAccessCheckerMock = mockk<ICriterionAccessChecker>()
 
     private val allMocks = arrayOf(
         userRepoMock,
@@ -38,6 +40,7 @@ sealed class UserServiceTest : BaseServiceTest {
         envReaderMock,
         userAccessCheckerMock,
         projectAccessCheckerMock,
+        criterionAccessCheckerMock,
     )
 
     val service = UserService(
@@ -49,6 +52,7 @@ sealed class UserServiceTest : BaseServiceTest {
         envReader = envReaderMock,
         accessChecker = userAccessCheckerMock,
         projectAccessChecker = projectAccessCheckerMock,
+        criterionAccessChecker = criterionAccessCheckerMock,
     )
 
     override fun getAllMocks(): Array<Any> = allMocks
