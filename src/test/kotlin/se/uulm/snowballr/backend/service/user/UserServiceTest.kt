@@ -7,6 +7,7 @@ import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.access.IUserAccessChecker
 import se.uulm.snowballr.backend.context.RequestContext
 import se.uulm.snowballr.backend.env.EnvReader
+import se.uulm.snowballr.backend.fetcher.IFetcherManager
 import se.uulm.snowballr.backend.mail.IEmailManager
 import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
@@ -26,6 +27,7 @@ sealed class UserServiceTest : BaseServiceTest {
     val criterionRepoMock = mockk<ICriterionTableRepo>()
     val verificationTokenRepoMock = mockk<IVerificationTokenTableRepo>()
     val emailManagerMock = mockk<IEmailManager>()
+    val fetcherManagerMock = mockk<IFetcherManager>()
     val envReaderMock = mockk<EnvReader>()
     val userAccessCheckerMock = mockk<IUserAccessChecker>()
     val projectAccessCheckerMock = mockk<IProjectAccessChecker>()
@@ -37,6 +39,7 @@ sealed class UserServiceTest : BaseServiceTest {
         criterionRepoMock,
         verificationTokenRepoMock,
         emailManagerMock,
+        fetcherManagerMock,
         envReaderMock,
         userAccessCheckerMock,
         projectAccessCheckerMock,
@@ -49,6 +52,7 @@ sealed class UserServiceTest : BaseServiceTest {
         criterionRepo = criterionRepoMock,
         verificationTokenRepo = verificationTokenRepoMock,
         emailManager = emailManagerMock,
+        fetcherManager = fetcherManagerMock,
         envReader = envReaderMock,
         accessChecker = userAccessCheckerMock,
         projectAccessChecker = projectAccessCheckerMock,

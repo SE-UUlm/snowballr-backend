@@ -7,6 +7,7 @@ import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.access.IUserAccessChecker
 import se.uulm.snowballr.backend.auth.PasswordUtils
 import se.uulm.snowballr.backend.env.EnvReader
+import se.uulm.snowballr.backend.fetcher.IFetcherManager
 import se.uulm.snowballr.backend.formatting.daysToHumanReadable
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.mail.IEmailManager
@@ -90,6 +91,7 @@ interface IUserService {
  * @param criterionRepo The repository responsible for managing persistence operations for criteria.
  * @param verificationTokenRepo The repository responsible for managing persistence operations for verification tokens.
  * @param emailManager The manager responsible for sending emails.
+ * @param fetcherManager The manager that provides the available fetchers.
  * @param envReader The environment reader that provides access to configuration values.
  * @param accessChecker Interface for checking access permissions for users based on defined rules.
  * @param projectAccessChecker Interface for checking access permissions for projects based on defined rules.
@@ -102,6 +104,7 @@ class UserService(
     private val criterionRepo: ICriterionTableRepo,
     private val verificationTokenRepo: IVerificationTokenTableRepo,
     private val emailManager: IEmailManager,
+    private val fetcherManager: IFetcherManager,
     private val envReader: EnvReader,
     private val accessChecker: IUserAccessChecker,
     private val projectAccessChecker: IProjectAccessChecker,
@@ -193,6 +196,7 @@ class UserService(
         fields: Set<UserField>,
     ): UserSettingsWithCriteria = withUser(userRepo) { currentUser ->
         val updateFields = fields.filter { it.isSettingsField() }.toSet()
+        var finalRequest = request
 
         // Default criteria are cloned into new projects, so they must be the current user's own user criteria.
         if (updateFields.contains(UserField.CRITERIA_IDS)) {
@@ -202,7 +206,12 @@ class UserService(
             }
         }
 
-        val updateData = mergeUserSettingsUpdateWithUser(currentUser, request)
+        // Default fetchers are copied into new projects, so they are sanitized the same way as project fetchers.
+        if (updateFields.contains(UserField.FETCHERS)) {
+            finalRequest = finalRequest.copy(fetchers = sanitizeFetchersMap(fetcherManager, request.fetchers))
+        }
+
+        val updateData = mergeUserSettingsUpdateWithUser(currentUser, finalRequest)
         val updatedUser = userRepo.updateUser(updateData, updateFields)
         val defaultUserCriteria = criterionRepo.getCriteriaByIds(updatedUser.settings.criteriaIds)
 

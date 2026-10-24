@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.service.user
 import io.mockk.coEvery
 import io.mockk.coJustRun
 import io.mockk.coVerify
+import io.mockk.slot
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -18,6 +19,8 @@ import se.uulm.snowballr.backend.model.dto.project.SnowballingType
 import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.dto.user.UserField
+import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
+import se.uulm.snowballr.backend.model.fetcher.FetcherInformationWithId
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserSettingsRequest
 import java.util.UUID
 
@@ -32,6 +35,7 @@ class UpdateUserSettingsTest : UserServiceTest() {
         val fields = UserField.entries.filter { it.isSettingsField() }.toSet()
 
         mockCurrentUser(user)
+        coEvery { fetcherManagerMock.getAvailableFetchers() } returns emptySet()
         coEvery { userRepoMock.updateUser(user, fields) } returns user
         coEvery { criterionRepoMock.getCriteriaByIds(emptyList()) } returns emptyList()
 
@@ -86,6 +90,9 @@ class UpdateUserSettingsTest : UserServiceTest() {
             coEvery { criterionRepoMock.getCriterionById(criterion.id) } returns Result.success(criterion)
             coJustRun { criterionAccessCheckerMock.isAllowedToUseAsDefaultCriterion(user, criterion) }
         }
+        coEvery { fetcherManagerMock.getAvailableFetchers() } returns setOf(
+            FetcherInformationWithId(id = "foo", information = DataBuilder.createExampleFetcherInformation()),
+        )
         coEvery { userRepoMock.updateUser(expectedUser, fields) } returns expectedUser
         coEvery { criterionRepoMock.getCriteriaByIds(criteriaIds) } returns criteria
 
@@ -144,4 +151,68 @@ class UpdateUserSettingsTest : UserServiceTest() {
 
         coVerify(exactly = 0) { criterionRepoMock.getCriterionById(any()) }
     }
+
+    @Test
+    fun `When a user updates their default fetchers, then the fetchers are sanitized`() = runTest {
+        val user = DataBuilder.createExampleUser()
+        val availableFetchers = setOf(
+            FetcherInformationWithId(
+                id = "existent-fetcher",
+                information = DataBuilder.createExampleFetcherInformation(
+                    optionSchema = mapOf(
+                        "existent-option" to DataBuilder.createExampleFetcherOptionsSchema(),
+                    ),
+                ),
+            ),
+        )
+        val request = getExampleRequest(user).copy(
+            fetchers = mapOf(
+                "existent-fetcher" to mapOf(
+                    "existent-option" to "foo",
+                    "non-existent-option" to "bar",
+                ),
+                "non-existent-fetcher" to emptyMap(),
+            ),
+        )
+        val fields = setOf(UserField.FETCHERS)
+
+        mockCurrentUser(user)
+        coEvery { fetcherManagerMock.getAvailableFetchers() } returns availableFetchers
+        val updateData = slot<User>()
+        coEvery { userRepoMock.updateUser(capture(updateData), fields) } answers { updateData.captured }
+        coEvery { criterionRepoMock.getCriteriaByIds(user.settings.criteriaIds) } returns emptyList()
+
+        val updatedUserSettings = service.updateUserSettings(request, fields)
+
+        assertEquals(
+            mapOf("existent-fetcher" to mapOf("existent-option" to "foo")),
+            updatedUserSettings.settings.defaultProjectSettings.fetchers,
+        )
+    }
+
+    @Test
+    fun `When a user updates their default fetchers without a required option, then a FailedPreconditionException is thrown`() =
+        runTest {
+            val user = DataBuilder.createExampleUser()
+            val availableFetchers = setOf(
+                FetcherInformationWithId(
+                    id = "fetcher",
+                    information = DataBuilder.createExampleFetcherInformation(
+                        optionSchema = mapOf(
+                            "option1" to DataBuilder.createExampleFetcherOptionsSchema(isRequired = true),
+                        ),
+                    ),
+                ),
+            )
+            val request = getExampleRequest(user).copy(fetchers = mapOf("fetcher" to emptyMap()))
+
+            mockCurrentUser(user)
+            coEvery { fetcherManagerMock.getAvailableFetchers() } returns availableFetchers
+
+            assertThrows<FailedPreconditionException> {
+                service.updateUserSettings(request, setOf(UserField.FETCHERS))
+            }
+
+            coVerify(exactly = 0) { userRepoMock.updateUser(any(), any()) }
+        }
 }
