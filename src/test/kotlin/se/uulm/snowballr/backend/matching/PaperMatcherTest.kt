@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.matching
 
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
@@ -8,6 +9,7 @@ import org.junit.jupiter.api.assertNotNull
 import org.junit.jupiter.api.assertNull
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
+import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.ValueSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.dto.paper.Author
@@ -248,6 +250,22 @@ class PaperMatcherTest {
 
             // Dropping title is the same as not weighing its similarity
             assertEquals(noWeightResult, emptyResult, DELTA)
+        }
+
+        @ParameterizedTest
+        @Disabled
+        @MethodSource("se.uulm.snowballr.backend.matching.SimilarityFixtures#getRealSimilarityExamples")
+        fun `When a real world example is computed, then the result equals the expected result`(fixture: SimilarityFixture) {
+            val result = matcher.similarity(fixture.a, fixture.b)
+            val isSame = 0.85 - result < PaperMatcher.DELTA
+
+            assertEquals(fixture.isSame, isSame) {
+                if (fixture.isSame) {
+                    "Expected papers to be the same, but similarity is $result"
+                } else {
+                    "Expected papers to not be the same, but similarity is $result"
+                }
+            }
         }
     }
 
