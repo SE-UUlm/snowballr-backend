@@ -5,6 +5,7 @@ import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
 import se.uulm.snowballr.backend.model.dto.paper.Paper
 import se.uulm.snowballr.backend.model.dto.paper.isNotBlank
+import se.uulm.snowballr.backend.model.dto.paper.normalized
 import se.uulm.snowballr.backend.model.dto.paper.toFetcherPaper
 import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
 import kotlin.math.abs
@@ -158,7 +159,9 @@ class PaperMatcher(override val config: PaperMatchingConfig) : IPaperMatcher {
     /**
      * Returns true if both [FetcherPaper]s have at least one equal external ID.
      *
-     * External IDs with a blank value are filtered out.
+     * External IDs are compared after [normalization][ExternalId.normalized], so that, e.g., DOIs only differing in
+     * casing are equal. This also covers papers persisted before their external IDs were normalized. External IDs with
+     * a blank value are filtered out.
      */
     private fun haveSameExternalId(a: FetcherPaper, b: FetcherPaper): Boolean {
         val (externalIdsA, externalIdsB) = normalizeExternalIds(a, b)
@@ -166,9 +169,9 @@ class PaperMatcher(override val config: PaperMatchingConfig) : IPaperMatcher {
         return externalIdsA.any { externalIdsB.contains(it) }
     }
 
-    private fun normalizeExternalIds(a: FetcherPaper, b: FetcherPaper): Pair<List<ExternalId>, List<ExternalId>> {
-        val externalIdsA = a.externalIds.filter { it.value.isNotBlank() }
-        val externalIdsB = b.externalIds.filter { it.value.isNotBlank() }
+    private fun normalizeExternalIds(a: FetcherPaper, b: FetcherPaper): Pair<Set<ExternalId>, Set<ExternalId>> {
+        val externalIdsA = a.externalIds.map { it.normalized() }.filter { it.value.isNotBlank() }.toSet()
+        val externalIdsB = b.externalIds.map { it.normalized() }.filter { it.value.isNotBlank() }.toSet()
 
         return externalIdsA to externalIdsB
     }

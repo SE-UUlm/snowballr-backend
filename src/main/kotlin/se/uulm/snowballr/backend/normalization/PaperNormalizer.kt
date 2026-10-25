@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.normalization
 import se.uulm.snowballr.backend.model.dto.paper.Author
 import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.paper.isNotBlank
+import se.uulm.snowballr.backend.model.dto.paper.normalized
 import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
 import java.text.Normalizer
 
@@ -18,8 +19,9 @@ import java.text.Normalizer
  * report the "same" title or author name that fails an equality or similarity check purely due to encoding.
  * NFC composes such sequences into their single precomposed form wherever one exists, without otherwise altering
  * the text (unlike the compatibility forms NFKC/NFKD, which also fold things like ligatures or superscripts and
- * would be lossy for display). Blank authors and external IDs are dropped. External ID values are only trimmed,
- * since they are identifiers rather than prose and must not be altered.
+ * would be lossy for display). Blank authors and external IDs are dropped. External ID values are only trimmed, and
+ * lowercased for case-insensitive ID types such as DOIs, since they are identifiers rather than prose and must not be
+ * altered otherwise.
  */
 object PaperNormalizer {
     private val WHITESPACE_REGEX = Regex("[\\s\\p{Z}]+")
@@ -68,12 +70,12 @@ object PaperNormalizer {
         authors.map { normalizeAuthor(it) }.filter { it.isNotBlank() }
 
     /**
-     * Trims each external ID's value and drops entries whose value is blank. Unlike free-text fields, external ID
-     * values are only trimmed - not otherwise normalized - since they are identifiers rather than prose and must
-     * not be altered.
+     * Normalizes each external ID (see [ExternalId.normalized]) and drops entries whose value is blank. Unlike
+     * free-text fields, external ID values are only trimmed, and lowercased for case-insensitive ID types such as
+     * DOIs - not otherwise normalized - since they are identifiers rather than prose and must not be altered.
      */
     fun normalizeExternalIds(externalIds: List<ExternalId>): List<ExternalId> = externalIds
-        .map { it.copy(value = it.value.trim()) }
+        .map { it.normalized() }
         .filter { it.value.isNotBlank() }
 
     private fun normalizeAuthor(author: Author) = author.copy(
