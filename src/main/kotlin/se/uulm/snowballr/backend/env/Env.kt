@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.env
 
 import java.nio.file.Path
+import kotlin.time.Duration
 
 /**
  * Represents the environment configuration for the application.
@@ -63,5 +64,7 @@ data class Env(
     data class Plugins(
         val pluginDirectory: Path,
         val pythonExecutable: String,
+        val fetcherRetries: Int,
+        val fetcherRetryDelay: Duration,
     )
 }

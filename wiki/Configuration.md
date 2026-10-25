@@ -39,7 +39,6 @@ The `PROFILE` variable determines the default behavior of the application.
 | `SMTP_TRANSPORT_LOGGING_ONLY_ENABLED`  |                 :x:                  |    Profile-based    | SMTP transport logging to only log emails instead of actually sending them.                                |
 | `SMTP_SENDER_NAME`                     |          :white_check_mark:          |          -          | Name of the sender for emails.                                                                             |
 | `SMTP_SENDER_EMAIL`                    |          :white_check_mark:          |          -          | Email address of the sender for emails.                                                                    |
-| `SENSITIVE_INFORMATION_RETENTION_DAYS` |                 :x:                  |         30          | Number of days sensitive information will be kept after an entity got deleted.                             |
 | `WEB_PORT`                             |                 :x:*                 |        8081         | The port where the proxy is served (used for gRPC-Web).                                                    |
 | `BACKEND_TAG`                          |                 :x:*                 |    `latest-dev`     | Tag of registry backend image to use for `registry` docker compose profile.                                |
 | `SENSITIVE_INFORMATION_RETENTION_DAYS` |                 :x:                  |    Profile-based    | Number of days sensitive information will be kept after an entity got deleted.                             |
@@ -47,6 +46,8 @@ The `PROFILE` variable determines the default behavior of the application.
 | `VERIFICATION_TOKEN_LIFETIME_IN_DAYS`  |                 :x:                  |          1          | Lifetime of verification tokens in days.                                                                   |
 | `PLUGIN_DIRECTORY`                     |                 :x:                  |      `plugins`      | The directory in which the plugins reside. The directory is relative to the root directory of the project. |
 | `PYTHON_EXECUTABLE`                    |                 :x:                  | `.venv/bin/python3` | Python executable used to run fetchers.                                                                    |
+| `FETCHER_RETRIES`                      |                 :x:                  |          3          | Number of retries after a fetcher call failed, e.g. because of a timeout. Must not be negative.            |
+| `FETCHER_RETRY_DELAY_IN_MILLIS`        |                 :x:                  |        1000         | Delay before the first retry of a failed fetcher call. It doubles with every further retry.                |
 
 \* only used when using the docker compose profiles.
 

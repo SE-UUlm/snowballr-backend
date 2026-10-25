@@ -4,6 +4,10 @@ import io.mockk.coEvery
 import io.mockk.coJustRun
 import io.mockk.coVerify
 import io.mockk.every
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.currentTime
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -18,12 +22,14 @@ import se.uulm.snowballr.backend.model.dto.paper.toFetcherPaper
 import se.uulm.snowballr.backend.model.dto.project.Project
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
 import se.uulm.snowballr.backend.model.exception.FetcherException
+import se.uulm.snowballr.backend.model.exception.notfound.FetcherNotFoundException
 import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
 import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
 import se.uulm.snowballr.backend.repository.UNIQUE_CONSTRAINT_VIOLATION_SQL_STATE
 import java.sql.SQLException
 import java.util.UUID
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
     private val exampleFetchers = mapOf(
         "foo" to mapOf(
@@ -118,6 +124,7 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
                 }
 
                 orchestrator.enqueueTestJob(job, project)
+                advanceUntilIdle()
 
                 if (type == SnowballingType.FORWARD) {
                     coVerify(exactly = 0) { fetcherManagerMock.fetchBackwardReferences(any(), any(), any()) }
@@ -172,6 +179,7 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
                 } throws TestSpecificException()
 
                 orchestrator.enqueueTestJob(job, project)
+                advanceUntilIdle()
 
                 if (type == SnowballingType.FORWARD) {
                     coVerify(exactly = 0) { fetcherManagerMock.fetchBackwardReferences(any(), any(), any()) }
@@ -179,6 +187,82 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
                 if (type == SnowballingType.BACKWARD) {
                     coVerify(exactly = 0) { fetcherManagerMock.fetchForwardReferences(any(), any(), any()) }
                 }
+                assertPaperCreationFailure()
+            }
+    }
+
+    @Nested
+    inner class FetchRetries {
+        private val fetcherName = "test"
+        private val project = DataBuilder.createExampleProject(
+            snowballingType = SnowballingType.BACKWARD,
+            fetchers = mapOf(fetcherName to emptyMap()),
+        )
+
+        @Test
+        fun `When fetching fails temporarily, then it is retried with growing delay and the result is used`() =
+            runOrchestratorTest { orchestrator ->
+                val job = DataBuilder.createExampleFetcherEnqueueJob()
+                val paper = DataBuilder.createExamplePaper()
+                val fetcherPaper = paper.toFetcherPaper()
+                val fetchedPaper = DataBuilder.createExampleFetcherPaper()
+
+                coEvery { paperRepoMock.getPaperById(job.projectPaper.paperId) } returns Result.success(paper)
+                coEvery {
+                    fetcherManagerMock.fetchBackwardReferences(fetcherName, fetcherPaper, emptyMap())
+                } throws FetcherException("first failure") andThenThrows
+                    FetcherException("second failure") andThen setOf(fetchedPaper)
+
+                // Stop processing after deduplication
+                every {
+                    paperMatcherMock.deduplicatePapers(setOf(fetchedPaper), any())
+                } throws TestSpecificException()
+
+                val startTime = currentTime
+                orchestrator.enqueueTestJob(job, project)
+                advanceUntilIdle()
+
+                coVerify(exactly = 3) { fetcherManagerMock.fetchBackwardReferences(any(), any(), any()) }
+                coVerify(exactly = 1) { paperMatcherMock.deduplicatePapers(setOf(fetchedPaper), any()) }
+                // 1st retry after the base delay, 2nd retry after twice the base delay
+                assertEquals((fetchRetryDelay * 3).inWholeMilliseconds, currentTime - startTime)
+            }
+
+        @Test
+        fun `When fetching fails permanently, then it is attempted once plus the number of retries`() =
+            runOrchestratorTest { orchestrator ->
+                val job = DataBuilder.createExampleFetcherEnqueueJob()
+                val paper = DataBuilder.createExamplePaper()
+
+                coEvery { paperRepoMock.getPaperById(job.projectPaper.paperId) } returns Result.success(paper)
+                coEvery {
+                    fetcherManagerMock.fetchBackwardReferences(fetcherName, paper.toFetcherPaper(), emptyMap())
+                } throws FetcherException("fetching failed")
+
+                orchestrator.enqueueTestJob(job, project)
+                advanceUntilIdle()
+
+                coVerify(exactly = fetchRetries + 1) {
+                    fetcherManagerMock.fetchBackwardReferences(any(), any(), any())
+                }
+                assertPaperCreationFailure()
+            }
+
+        @Test
+        fun `When fetching fails with an exception other than FetcherException, then it is not retried`() =
+            runOrchestratorTest { orchestrator ->
+                val job = DataBuilder.createExampleFetcherEnqueueJob()
+                val paper = DataBuilder.createExamplePaper()
+
+                coEvery { paperRepoMock.getPaperById(job.projectPaper.paperId) } returns Result.success(paper)
+                coEvery {
+                    fetcherManagerMock.fetchBackwardReferences(fetcherName, paper.toFetcherPaper(), emptyMap())
+                } throws FetcherNotFoundException(fetcherName)
+
+                orchestrator.enqueueTestJob(job, project)
+                advanceUntilIdle()
+
+                coVerify(exactly = 1) { fetcherManagerMock.fetchBackwardReferences(any(), any(), any()) }
                 assertPaperCreationFailure()
             }
     }

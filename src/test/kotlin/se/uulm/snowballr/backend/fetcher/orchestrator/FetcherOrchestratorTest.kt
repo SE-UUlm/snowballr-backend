@@ -26,6 +26,7 @@ import se.uulm.snowballr.backend.repository.IPaperTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
+import kotlin.time.Duration.Companion.seconds
 
 sealed class FetcherOrchestratorTest {
     val fetcherManagerMock = mockk<IFetcherManager>()
@@ -34,6 +35,9 @@ sealed class FetcherOrchestratorTest {
     val citationRepoMock = mockk<ICitationTableRepo>()
     val projectPaperRepoMock = mockk<IProjectPaperTableRepo>()
     val paperMatcherMock = mockk<IPaperMatcher>()
+
+    val fetchRetries = 3
+    val fetchRetryDelay = 1.seconds
 
     private val allMocks = arrayOf(
         fetcherManagerMock,
@@ -65,6 +69,8 @@ sealed class FetcherOrchestratorTest {
         citationRepo = citationRepoMock,
         projectPaperRepo = projectPaperRepoMock,
         paperMatcher = paperMatcherMock,
+        fetchRetries = fetchRetries,
+        fetchRetryDelay = fetchRetryDelay,
         dispatcher = UnconfinedTestDispatcher(scheduler),
     )
 
