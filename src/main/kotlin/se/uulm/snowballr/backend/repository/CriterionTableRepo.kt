@@ -14,6 +14,7 @@ import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.table.CriterionTable
+import se.uulm.snowballr.backend.table.association.ReviewHasCriterionTable
 import se.uulm.snowballr.backend.table.toCriterion
 import se.uulm.snowballr.backend.table.toProjectCriterion
 import se.uulm.snowballr.backend.table.toUserCriterion
@@ -84,6 +85,20 @@ interface ICriterionTableRepo {
      * @return A list of [Criterion] objects associated with the given project.
      */
     suspend fun getAllProjectCriteria(projectId: UUID): List<Criterion.ProjectCriterion>
+
+    /**
+     * Deletes the criterion associated with the specified ID.
+     *
+     * @param id The unique identifier of the criterion that is to be deleted.
+     */
+    suspend fun deleteCriterionById(id: UUID)
+
+    /**
+     * Returns true, if the criterion with the specified ID is associated with any review.
+     *
+     * @param id The unique identifier of the criterion that is checked.
+     */
+    suspend fun isAssociatedWithReviews(id: UUID): Boolean
 }
 
 /**
@@ -159,5 +174,15 @@ class CriterionTableRepo(
         CriterionTable.getEntities(ResultRow::toProjectCriterion) {
             CriterionTable.projectId eq projectId
         }
+    }
+
+    override suspend fun deleteCriterionById(id: UUID) {
+        db.query {
+            CriterionTable.deleteWhere { CriterionTable.id eq id }
+        }
+    }
+
+    override suspend fun isAssociatedWithReviews(id: UUID): Boolean = db.query {
+        ReviewHasCriterionTable.doesEntityExist { ReviewHasCriterionTable.criterionId eq id }
     }
 }

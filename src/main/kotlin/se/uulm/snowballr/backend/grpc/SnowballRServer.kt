@@ -576,7 +576,9 @@ class SnowballRServer(
             ).toGrpc()
         }
 
-        override suspend fun deleteCriterion(request: Base.Id): Base.Nothing = super.deleteCriterion(request)
+        override suspend fun deleteCriterion(request: Base.Id): Base.Nothing = returnNothing {
+            criterionService.deleteCriterion(parseCriterionId(request))
+        }
 
         override suspend fun getProjectPaperById(request: Base.Id): ProjectOuterClass.Project.Paper =
             projectPaperService.getProjectPaperById(parseProjectPaperId(request)).toGrpc()
