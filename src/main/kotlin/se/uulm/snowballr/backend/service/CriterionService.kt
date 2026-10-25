@@ -6,6 +6,7 @@ import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionField
+import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
@@ -34,6 +35,11 @@ interface ICriterionService {
      * Service implementation of [SnowballRService.getAllCriteriaForProject].
      */
     suspend fun getAllCriteriaForProject(projectId: UUID): List<Criterion.ProjectCriterion>
+
+    /**
+     * Service implementation of [SnowballRService.deleteCriterion].
+     */
+    suspend fun deleteCriterion(criterionId: UUID)
 }
 
 /**
@@ -97,4 +103,16 @@ class CriterionService(
 
             repo.getAllProjectCriteria(projectId)
         }
+
+    override suspend fun deleteCriterion(criterionId: UUID) = withUser(userRepo) { currentUser ->
+        val criterion = repo.getCriterionById(criterionId).getOrThrow()
+
+        accessChecker.isAllowedToUpdateCriterion(currentUser, criterion)
+
+        if (criterion is Criterion.ProjectCriterion && repo.isAssociatedWithReviews(criterionId)) {
+            throw FailedPreconditionException("The criterion is already associated with at least one review")
+        }
+
+        repo.deleteCriterionById(criterionId)
+    }
 }
