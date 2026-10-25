@@ -57,14 +57,14 @@ data class TooLongField(
 }
 
 /**
- * Represents a validation issue where an enumeration field has the `UNSPECIFIED` value.
+ * Represents a validation issue where an enumeration field has the `UNSPECIFIED` or an unrecognized value.
  *
- * @property name The name of the enum field that has the `UNSPECIFIED` value.
+ * @property name The name of the enum field that has the `UNSPECIFIED` or an unrecognized value.
  */
 data class EnumUnspecified(
     val name: String,
 ) : ValidationIssue {
-    override fun toString(): String = "The enum field '$name' must not have the `UNSPECIFIED` value."
+    override fun toString(): String = "The enum field '$name' must not have the `UNSPECIFIED` or an unrecognized value."
 }
 
 /**

@@ -73,16 +73,19 @@ fun Raise<ValidationIssue>.ensureTextFieldValidity(name: String, value: String, 
 }
 
 /**
- * Ensures that the provided enum value is not the `UNSPECIFIED` value.
- * If the value is `UNSPECIFIED`, an [EnumUnspecified] validation issue is raised.
+ * Ensures that the provided enum value is neither the `UNSPECIFIED` nor the `UNRECOGNIZED` value.
+ * Otherwise, an [EnumUnspecified] validation issue is raised.
  *
- * It is assumed that all gRPC enums have an `UNSPECIFIED` value with ordinal 0.
+ * It is assumed that all gRPC enums have an `UNSPECIFIED` value with ordinal 0. The `UNRECOGNIZED` value is generated
+ * by protobuf for enum numbers the backend does not know.
  *
  * @param name The name of the enum field being validated.
- * @param value The enum value to check for being `UNSPECIFIED`.
+ * @param value The enum value to check for being `UNSPECIFIED` or `UNRECOGNIZED`.
  */
 fun Raise<ValidationIssue>.ensureEnumNotUnspecified(name: String, value: Enum<*>) =
-    ensure(value.ordinal > 0) { EnumUnspecified(name) }
+    ensure(value.ordinal > 0 && value.name != UNRECOGNIZED_ENUM_NAME) { EnumUnspecified(name) }
+
+private const val UNRECOGNIZED_ENUM_NAME = "UNRECOGNIZED"
 
 /**
  * Ensures that the provided [id] of field [name] has a valid format.

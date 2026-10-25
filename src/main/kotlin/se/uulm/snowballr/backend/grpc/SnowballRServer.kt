@@ -445,7 +445,10 @@ class SnowballRServer(
                         snowballingType = snowballingType,
                         reviewMaybeAllowed = request.project.settings.reviewMaybeAllowed,
                         fetchers = request.project.settings.fetchersMap.mapValues { it.value.optionsMap },
-                        decisionMatrix = reviewDecisionMatrixFromGrpc(request.project.settings.decisionMatrix),
+                        decisionMatrix = reviewDecisionMatrixFromGrpc(
+                            request.project.settings.decisionMatrix,
+                            includePatterns = fields.contains(ProjectField.DECISION_MATRIX_PATTERNS),
+                        ),
                     ),
                 ),
                 fields,

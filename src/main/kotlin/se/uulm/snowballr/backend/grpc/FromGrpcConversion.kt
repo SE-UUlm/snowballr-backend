@@ -51,10 +51,25 @@ fun decisionMatrixPatternEntryFromGrpc(entry: ProjectOuterClass.ReviewDecisionMa
         count = entry.count.toInt(),
     )
 
-fun reviewDecisionMatrixFromGrpc(decisionMatrix: ProjectOuterClass.ReviewDecisionMatrix) = ReviewDecisionMatrix(
-    numberOfReviewers = decisionMatrix.numberOfReviewers,
-    patterns = decisionMatrix.patternsList.map { decisionMatrixPatternFromGrpc(it) },
-)
+/**
+ * Converts the passed [decisionMatrix] from gRPC.
+ *
+ * If [includePatterns] is false, the patterns are not converted and left empty. Use this when the patterns are not part
+ * of the update, since they are only validated if they are.
+ */
+fun reviewDecisionMatrixFromGrpc(
+    decisionMatrix: ProjectOuterClass.ReviewDecisionMatrix,
+    includePatterns: Boolean = true,
+): ReviewDecisionMatrix {
+    val patterns = if (includePatterns) {
+        decisionMatrix.patternsList.map(
+            ::decisionMatrixPatternFromGrpc,
+        )
+    } else {
+        emptyList()
+    }
+    return ReviewDecisionMatrix(numberOfReviewers = decisionMatrix.numberOfReviewers, patterns = patterns)
+}
 
 fun projectStatusFromGrpc(status: ProjectOuterClass.ProjectStatus): ProjectStatus = when (status) {
     ProjectOuterClass.ProjectStatus.PROJECT_STATUS_ACTIVE -> ProjectStatus.ACTIVE
