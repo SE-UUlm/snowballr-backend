@@ -1,8 +1,8 @@
 package se.uulm.snowballr.backend.matching
 
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertNotNull
@@ -21,9 +21,27 @@ import java.time.OffsetDateTime
 private const val DELTA = 1e-9
 
 class PaperMatcherTest {
-    private val defaultConfig = PaperMatchingConfig(1, 0.6, 0.3, 0.1, 0.5, 0.5, 0.5)
+    private val defaultConfig = PaperMatchingConfig(
+        yearTolerance = 1,
+        titleWeight = 0.6,
+        authorsWeight = 0.3,
+        abstractWeight = 0.1,
+        titleMinSimilarity = 0.5,
+        abstractMinSimilarity = 0.5,
+        authorsMinSimilarity = 0.5,
+    )
     private val matcher = PaperMatcher(defaultConfig)
-    private val titleOnlyMatcher = PaperMatcher(PaperMatchingConfig(1, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0))
+    private val titleOnlyMatcher = PaperMatcher(
+        PaperMatchingConfig(
+            yearTolerance = 1,
+            titleWeight = 1.0,
+            authorsWeight = 0.0,
+            abstractWeight = 0.0,
+            titleMinSimilarity = 0.0,
+            abstractMinSimilarity = 0.0,
+            authorsMinSimilarity = 0.0,
+        ),
+    )
 
     /**
      * Creates two strings with a target similarity in [0, 100].
@@ -239,7 +257,9 @@ class PaperMatcherTest {
         @ParameterizedTest
         @Disabled
         @MethodSource("se.uulm.snowballr.backend.matching.SimilarityFixtures#getRealSimilarityExamples")
-        fun `When a real world example is computed, then the result equals the expected result`(fixture: SimilarityFixture) {
+        fun `When a real world example is computed, then the result equals the expected result`(
+            fixture: SimilarityFixture,
+        ) {
             val result = matcher.similarity(fixture.a, fixture.b)
             val isSame = 0.85 - result < PaperMatcher.DELTA
 

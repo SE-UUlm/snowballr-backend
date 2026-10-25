@@ -89,6 +89,7 @@ class PaperMatcher(override val config: PaperMatchingConfig) : IPaperMatcher {
         const val DELTA = 1e-6
     }
 
+    @Suppress("ReturnCount")
     override fun similarity(a: FetcherPaper, b: FetcherPaper): Double {
         if (haveSameExternalId(a, b)) return 1.0
         if (abs(a.year - b.year) > config.yearTolerance) return 0.0
