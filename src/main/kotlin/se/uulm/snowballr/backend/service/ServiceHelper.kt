@@ -1,9 +1,13 @@
 package se.uulm.snowballr.backend.service
 
 import se.uulm.snowballr.backend.context.RequestContext
+import se.uulm.snowballr.backend.fetcher.IFetcherManager
 import se.uulm.snowballr.backend.model.dto.paper.Paper
 import se.uulm.snowballr.backend.model.dto.user.User
+import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.NotFoundException
+import se.uulm.snowballr.backend.model.fetcher.FetcherMap
+import se.uulm.snowballr.backend.model.fetcher.FetcherOptions
 import se.uulm.snowballr.backend.model.outgoing.paper.PaperResponse
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.repository.association.ICitationTableRepo
@@ -24,4 +28,42 @@ suspend fun <T> withUser(userRepo: IUserTableRepo, block: suspend (User) -> T): 
 suspend fun Paper.toPaperResponse(citationRepo: ICitationTableRepo): PaperResponse {
     val backwardReferencedIds = citationRepo.getBackwardsReferencedPaperIdsOfPaperById(id)
     return PaperResponse.fromPaper(this, backwardReferencedIds)
+}
+
+/**
+ * Sanitizes the passed [fetchers] against the fetchers available in the [fetcherManager].
+ *
+ * This includes:
+ * - excluding fetchers that are not registered in the application
+ * - excluding fetcher options that are not registered for the specific fetcher
+ *
+ * This enables that no non-existent fetcher or non-existent fetcher option is stored in the database.
+ *
+ * @throws FailedPreconditionException if a required option of an available fetcher is missing or empty.
+ */
+suspend fun sanitizeFetchersMap(fetcherManager: IFetcherManager, fetchers: FetcherMap): FetcherMap {
+    val sanitizedFetchersMap = mutableMapOf<String, FetcherOptions>()
+    val availableFetchers = fetcherManager.getAvailableFetchers()
+
+    val fetcherIndex = availableFetchers.associateBy { it.id }
+    for ((fetcher, options) in fetchers) {
+        val info = fetcherIndex[fetcher]?.information ?: continue
+
+        // Filter out non-existent options
+        val availableOptions = info.optionsSchema
+        val sanitizedOptions = options.filter { availableOptions.containsKey(it.key) }
+
+        val requiredOptions = availableOptions.filter { it.value.isRequired }
+        val missingRequiredOptions = requiredOptions.keys
+            .filter { !sanitizedOptions.containsKey(it) || sanitizedOptions[it].isNullOrEmpty() }
+        if (missingRequiredOptions.isNotEmpty()) {
+            throw FailedPreconditionException(
+                "The following required options were not provided: $missingRequiredOptions",
+            )
+        }
+
+        sanitizedFetchersMap[fetcher] = sanitizedOptions
+    }
+
+    return sanitizedFetchersMap
 }
