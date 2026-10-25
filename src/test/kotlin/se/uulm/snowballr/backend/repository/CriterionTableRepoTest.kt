@@ -308,35 +308,6 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
     }
 
     @Nested
-    inner class DeleteCriteriaByIds {
-        @Test
-        fun `When a list of criteria IDs is given, then all matching criteria should be deleted`() = runTest {
-            val criterionId1 = insertCriterionAndGetId(createdBy = testUserId)
-            val criterionId2 = insertCriterionAndGetId(createdBy = testUserId)
-            val criterionId3 = insertCriterionAndGetId(createdBy = testUserId)
-
-            val idsToDelete = listOf(criterionId1, criterionId3)
-
-            repo.deleteCriteriaByIds(idsToDelete)
-
-            assertResultFailure<NotFoundException>(repo.getCriterionById(criterionId1))
-            assertResultFailure<NotFoundException>(repo.getCriterionById(criterionId3))
-            assertResultSuccess(repo.getCriterionById(criterionId2))
-        }
-
-        @Test
-        fun `When an empty list of criteria IDs is given, then no criteria should be deleted`() = runTest {
-            val criterionId1 = insertCriterionAndGetId(createdBy = testUserId)
-
-            val idsToDelete = emptyList<UUID>()
-
-            repo.deleteCriteriaByIds(idsToDelete)
-
-            assertResultSuccess(repo.getCriterionById(criterionId1))
-        }
-    }
-
-    @Nested
     inner class DeleteUserCriteriaByUserId {
         @Test
         fun `When a user ID is given, then all user criteria associated with this user should be deleted`() = runTest {
