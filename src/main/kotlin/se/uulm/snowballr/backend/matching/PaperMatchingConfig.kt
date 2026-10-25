@@ -16,8 +16,8 @@ data class PaperMatchingConfig(
         require(abstractWeight >= 0) { "abstractWeight must be positive or 0" }
         val weightSum = titleWeight + authorsWeight + abstractWeight
         require(weightSum > 0.0) { "The sum of the weights must be positive." }
-        require(titleMinSimilarity >= 0) { "titleMinSimilarity must be positive." }
-        require(abstractMinSimilarity >= 0) { "abstractMinSimilarity must be positive." }
-        require(authorsMinSimilarity >= 0) { "authorsMinSimilarity must be positive." }
+        require(titleMinSimilarity >= 0) { "titleMinSimilarity must be positive or 0." }
+        require(abstractMinSimilarity >= 0) { "abstractMinSimilarity must be positive or 0." }
+        require(authorsMinSimilarity >= 0) { "authorsMinSimilarity must be positive or 0." }
     }
 }
