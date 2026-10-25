@@ -4,7 +4,6 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
-import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.core.isNull
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import se.uulm.snowballr.backend.db.IDatabase
@@ -61,13 +60,6 @@ interface ICriterionTableRepo {
      * @return The updated [Criterion] object reflecting the changes from the [request].
      */
     suspend fun updateCriterion(request: UpdateCriterionRequest, fields: Set<CriterionField>): Criterion
-
-    /**
-     * Deletes a list of criteria from the database based on their IDs.
-     *
-     * @param ids A list of [UUID]s for the criteria to be deleted.
-     */
-    suspend fun deleteCriteriaByIds(ids: List<UUID>)
 
     /**
      * Deletes all user criteria associated with a specific user.
@@ -142,14 +134,6 @@ class CriterionTableRepo(
                 }
             }
         }
-
-    override suspend fun deleteCriteriaByIds(ids: List<UUID>) {
-        val deletedIds = db.query {
-            CriterionTable.deleteWhere { CriterionTable.id inList ids }
-        }
-
-        logger.info { "Deleted $deletedIds criteria." }
-    }
 
     override suspend fun deleteUserCriteriaByUserId(userId: UUID) {
         val deletedIds = db.query {
