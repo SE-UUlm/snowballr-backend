@@ -2,17 +2,24 @@ package se.uulm.snowballr.backend.integration.services
 
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionField
+import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
+import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
+import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
+import se.uulm.snowballr.backend.model.incoming.review.CreateReviewRequest
 import se.uulm.snowballr.backend.model.outgoing.project.ProjectResponse
+import java.util.UUID
 
 class CriterionIntegrationTest : IntegrationTest() {
     private suspend fun createProjectAndCriterion(
@@ -118,6 +125,43 @@ class CriterionIntegrationTest : IntegrationTest() {
 
             val fetched = criterionService.getCriterionById(criterion.id)
             assertEquals(CriterionCategory.HARD_EXCLUSION, fetched.category)
+        }
+    }
+
+    @Nested
+    inner class DeleteCriterion {
+        @Test
+        fun `When a criterion is deleted, then it no longer appears in the project's criteria list`() = runTest {
+            val (project, criterion) = createProjectAndCriterion()
+
+            criterionService.deleteCriterion(criterion.id)
+
+            val criteria = criterionService.getAllCriteriaForProject(project.id)
+            assertFalse(criteria.any { it.id == criterion.id })
+            assertThrows<NotFoundException> { criterionService.getCriterionById(criterion.id) }
+        }
+
+        @Test
+        fun `When a criterion is associated with a review, then deleting it fails and it is kept`() = runTest {
+            val (project, criterion) = createProjectAndCriterion()
+            val projectPaper = addToProject(project, createPaper())
+            reviewService.createReview(
+                CreateReviewRequest(
+                    projectPaperId = projectPaper.id,
+                    decision = ReviewDecision.DECLINED,
+                    selectedCriteriaIds = listOf(criterion.id),
+                ),
+            )
+
+            assertThrows<FailedPreconditionException> { criterionService.deleteCriterion(criterion.id) }
+
+            val fetched = criterionService.getCriterionById(criterion.id)
+            assertEquals(criterion.id, fetched.id)
+        }
+
+        @Test
+        fun `When a non-existing criterion is deleted, then a NotFoundException is thrown`() = runTest {
+            assertThrows<NotFoundException> { criterionService.deleteCriterion(UUID.randomUUID()) }
         }
     }
 }
