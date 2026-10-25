@@ -15,8 +15,6 @@ import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
-import se.uulm.snowballr.backend.fetcher.DEFAULT_FETCH_RETRIES
-import se.uulm.snowballr.backend.fetcher.DEFAULT_FETCH_RETRY_DELAY
 import se.uulm.snowballr.backend.fetcher.FetcherOrchestrator
 import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
@@ -227,7 +225,7 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
                 coVerify(exactly = 3) { fetcherManagerMock.fetchBackwardReferences(any(), any(), any()) }
                 coVerify(exactly = 1) { paperMatcherMock.deduplicatePapers(setOf(fetchedPaper), any()) }
                 // 1st retry after the base delay, 2nd retry after twice the base delay
-                assertEquals((DEFAULT_FETCH_RETRY_DELAY * 3).inWholeMilliseconds, currentTime - startTime)
+                assertEquals((fetchRetryDelay * 3).inWholeMilliseconds, currentTime - startTime)
             }
 
         @Test
@@ -244,7 +242,7 @@ class FetcherOrchestratorProcessJobTest : FetcherOrchestratorTest() {
                 orchestrator.enqueueTestJob(job, project)
                 advanceUntilIdle()
 
-                coVerify(exactly = DEFAULT_FETCH_RETRIES + 1) {
+                coVerify(exactly = fetchRetries + 1) {
                     fetcherManagerMock.fetchBackwardReferences(any(), any(), any())
                 }
                 assertPaperCreationFailure()

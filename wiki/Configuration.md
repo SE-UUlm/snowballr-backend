@@ -47,6 +47,8 @@ The `PROFILE` variable determines the default behavior of the application.
 | `VERIFICATION_TOKEN_LIFETIME_IN_DAYS`  |                 :x:                  |          1          | Lifetime of verification tokens in days.                                                                   |
 | `PLUGIN_DIRECTORY`                     |                 :x:                  |      `plugins`      | The directory in which the plugins reside. The directory is relative to the root directory of the project. |
 | `PYTHON_EXECUTABLE`                    |                 :x:                  | `.venv/bin/python3` | Python executable used to run fetchers.                                                                    |
+| `FETCHER_RETRIES`                      |                 :x:                  |          3          | Number of retries after a fetcher call failed, e.g. because of a timeout. Must not be negative.            |
+| `FETCHER_RETRY_DELAY_IN_MILLIS`        |                 :x:                  |        1000         | Delay before the first retry of a failed fetcher call. It doubles with every further retry.                |
 
 \* only used when using the docker compose profiles.
 

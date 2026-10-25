@@ -31,15 +31,8 @@ import java.sql.SQLException
 import java.util.UUID
 import kotlin.math.roundToInt
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
 
 private val logger = KotlinLogging.logger { }
-
-/** Default number of retries after a failed fetcher call. */
-const val DEFAULT_FETCH_RETRIES = 3
-
-/** Default delay before the first retry of a failed fetcher call. It doubles with every further retry. */
-val DEFAULT_FETCH_RETRY_DELAY = 1.seconds
 
 interface IFetcherOrchestrator {
     /**
@@ -72,9 +65,9 @@ class FetcherOrchestrator(
     private val citationRepo: ICitationTableRepo,
     private val projectPaperRepo: IProjectPaperTableRepo,
     private val paperMatcher: IPaperMatcher,
+    private val fetchRetries: Int,
+    private val fetchRetryDelay: Duration,
     dispatcher: CoroutineDispatcher = Dispatchers.Default,
-    private val fetchRetries: Int = DEFAULT_FETCH_RETRIES,
-    private val fetchRetryDelay: Duration = DEFAULT_FETCH_RETRY_DELAY,
 ) : IFetcherOrchestrator {
     init {
         require(fetchRetries >= 0) { "Number of fetch retries must not be negative" }

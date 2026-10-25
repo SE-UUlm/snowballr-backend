@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.env
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.nio.file.Path
+import kotlin.time.Duration.Companion.milliseconds
 
 // Environment variable keys
 private const val PROFILE = "PROFILE"
@@ -40,6 +41,8 @@ private const val VERIFICATION_TOKEN_LIFETIME_IN_DAYS = "VERIFICATION_TOKEN_LIFE
 // Plugins
 private const val PLUGIN_DIRECTORY = "PLUGIN_DIRECTORY"
 private const val PYTHON_EXECUTABLE = "PYTHON_EXECUTABLE"
+private const val FETCHER_RETRIES = "FETCHER_RETRIES"
+private const val FETCHER_RETRY_DELAY_IN_MILLIS = "FETCHER_RETRY_DELAY_IN_MILLIS"
 
 // Default values
 private val DEFAULT_PROFILE = AppProfile.PRODUCTION
@@ -51,6 +54,8 @@ private const val DEFAULT_INVITATION_TOKEN_LIFETIME_IN_DAYS = 7
 private const val DEFAULT_VERIFICATION_TOKEN_LIFETIME_IN_DAYS = 1
 private val DEFAULT_PLUGIN_DIRECTORY = Path.of("plugins")
 private const val DEFAULT_PYTHON_EXECUTABLE = ".venv/bin/python3"
+private const val DEFAULT_FETCHER_RETRIES = 3
+private const val DEFAULT_FETCHER_RETRY_DELAY_IN_MILLIS = 1000L
 
 private val logger = KotlinLogging.logger {}
 
@@ -208,6 +213,13 @@ class EnvReader(
         return Env.Plugins(
             pluginDirectory = envService.getPathOrDefault(PLUGIN_DIRECTORY, DEFAULT_PLUGIN_DIRECTORY).normalize(),
             pythonExecutable = envService.getStringOrDefault(PYTHON_EXECUTABLE, DEFAULT_PYTHON_EXECUTABLE),
+            fetcherRetries = envService.getOrDefault(FETCHER_RETRIES, DEFAULT_FETCHER_RETRIES) {
+                it.toIntOrNull()?.takeIf { retries -> retries >= 0 }
+            },
+            fetcherRetryDelay = envService.getOrDefault(
+                FETCHER_RETRY_DELAY_IN_MILLIS,
+                DEFAULT_FETCHER_RETRY_DELAY_IN_MILLIS,
+            ) { it.toLongOrNull()?.takeIf { delay -> delay >= 0 } }.milliseconds,
         )
     }
 

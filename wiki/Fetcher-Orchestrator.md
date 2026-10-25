@@ -76,10 +76,12 @@ paper.
 
 Errors are handled per step, so a single failure does not abort the whole job:
 
-- If a fetcher call fails, e.g. because of a timeout or invalid output, it is retried up to 3 times with an
-  exponentially growing delay (1s, 2s, 4s). If all attempts fail, the error is logged and the results of the remaining
-  fetchers are still used. Since jobs are processed sequentially, a permanently failing fetcher delays the following
-  jobs.
+- If a fetcher call fails, e.g. because of a timeout or invalid output, it is retried with an exponentially growing
+  delay. By default, it is retried up to 3 times after 1s, 2s, and 4s. Both values can be configured with
+  `FETCHER_RETRIES` and `FETCHER_RETRY_DELAY_IN_MILLIS`
+  (see [Configuration](https://github.com/SE-UUlm/snowballr-backend/wiki/Configuration)). If all attempts fail, the
+  error is logged and the results of the remaining fetchers are still used. Since jobs are processed sequentially, a
+  permanently failing fetcher delays the following jobs.
 - If a fetcher cannot be invoked at all, e.g. because it does not exist, it is not retried and the job is aborted.
 - If a database error occurs, it is logged and only the affected operation is skipped. A paper that cannot be created
   is left out of the remaining steps. If merging metadata, creating a citation, or adding a paper to the project fails,

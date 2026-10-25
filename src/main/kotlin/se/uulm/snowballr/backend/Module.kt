@@ -212,6 +212,8 @@ private fun Module.customServicesDeps() {
             citationRepo = get(),
             projectPaperRepo = get(),
             paperMatcher = get(),
+            fetchRetries = get<EnvReader>().env.plugins.fetcherRetries,
+            fetchRetryDelay = get<EnvReader>().env.plugins.fetcherRetryDelay,
         )
     }
 }
