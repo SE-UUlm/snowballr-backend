@@ -342,7 +342,7 @@ class ProjectTableRepo(
         }
     }
 
-    private fun isUpdatingDecisionMatrix(fields: Set<ProjectField>) = fields.any { it.isDecisionMatrixField() }
+    private fun isUpdatingDecisionMatrix(fields: Set<ProjectField>) = fields.any { it.isDecisionMatrixField }
 
     private fun UpdateStatement.applyDecisionMatrixUpdate(
         projectSettings: ProjectSettings,

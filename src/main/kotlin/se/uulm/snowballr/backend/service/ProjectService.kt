@@ -304,7 +304,7 @@ class ProjectService(
 
             ProjectStatus.ACTIVE_LOCKED -> {
                 // all project settings are SLR settings
-                val isChangingSettings = fields.any { it.isSettingsField() }
+                val isChangingSettings = fields.any { it.isSettingsField }
                 if (isChangingSettings) {
                     throw FailedPreconditionException(
                         "The project is locked and therefore no SLR settings can be modified.",
