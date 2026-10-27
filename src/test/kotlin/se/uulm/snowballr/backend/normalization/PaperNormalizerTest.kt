@@ -147,6 +147,35 @@ class PaperNormalizerTest {
         }
 
         @Test
+        fun `When a DOI contains uppercase letters, then it is lowercased`() {
+            val paper = DataBuilder.createExampleFetcherPaper(
+                externalIds = listOf(
+                    DataBuilder.createExampleExternalId(type = ExternalIdType.DOI, value = "10.1007/S12555-016-0541-5"),
+                ),
+            )
+
+            val result = PaperNormalizer.normalize(paper)
+
+            assertEquals("10.1007/s12555-016-0541-5", result.externalIds.single().value)
+        }
+
+        @Test
+        fun `When a case-sensitive external ID contains uppercase letters, then its casing is kept`() {
+            val paper = DataBuilder.createExampleFetcherPaper(
+                externalIds = listOf(
+                    DataBuilder.createExampleExternalId(
+                        type = ExternalIdType.DBLP,
+                        value = "journals/informs/Glover89",
+                    ),
+                ),
+            )
+
+            val result = PaperNormalizer.normalize(paper)
+
+            assertEquals("journals/informs/Glover89", result.externalIds.single().value)
+        }
+
+        @Test
         fun `When normalizeExternalIds is called directly, then blank values are dropped and the rest are trimmed`() {
             val externalIds = listOf(
                 ExternalId(ExternalIdType.DOI, "  10.1234/5678  "),

@@ -35,6 +35,11 @@ publication name, author names):
 
 In addition, authors with a blank first and last name are removed, and external IDs with a blank value are removed.
 An external ID's value itself is only trimmed and left otherwise unchanged, since it is an identifier and not prose.
+The exception are ID types that are case-insensitive, which are also lowercased. Currently, this only applies to DOIs,
+which are case-insensitive according to the
+[DOI Handbook](https://www.doi.org/doi-handbook/html/index.html) (chapter 3.3.4), but are returned with different
+casing by different sources. Other ID types are not lowercased, since some are case-sensitive, e.g., DBLP keys such as
+`journals/informs/Glover89`.
 
 ### Where It Is Applied
 

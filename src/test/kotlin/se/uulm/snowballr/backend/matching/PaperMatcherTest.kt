@@ -76,6 +76,32 @@ class PaperMatcherTest {
         }
 
         @Test
+        fun `When both papers share a DOI that only differs in casing, then similarity is 1`() {
+            val a = DataBuilder.createExampleFetcherPaper(
+                title = "Some paper title",
+                externalIds = listOf(ExternalId(ExternalIdType.DOI, "10.1007/s12555-016-0541-5")),
+            )
+            val b = DataBuilder.createExampleFetcherPaper(
+                title = "A completely different title",
+                externalIds = listOf(ExternalId(ExternalIdType.DOI, "10.1007/S12555-016-0541-5")),
+            )
+            assertEquals(1.0, matcher.similarity(a, b), DELTA)
+        }
+
+        @Test
+        fun `When both papers have a DBLP key that only differs in casing, then they are not matched by it`() {
+            val a = DataBuilder.createExampleFetcherPaper(
+                title = "Some paper title",
+                externalIds = listOf(ExternalId(ExternalIdType.DBLP, "journals/informs/Glover89")),
+            )
+            val b = DataBuilder.createExampleFetcherPaper(
+                title = "A completely different title",
+                externalIds = listOf(ExternalId(ExternalIdType.DBLP, "journals/informs/glover89")),
+            )
+            assertEquals(0.0, matcher.similarity(a, b), DELTA)
+        }
+
+        @Test
         fun `When years differ by more than the tolerance, then similarity is 0`() {
             val a = DataBuilder.createExampleFetcherPaper(year = 2000)
             val b = DataBuilder.createExampleFetcherPaper(year = 2002)
