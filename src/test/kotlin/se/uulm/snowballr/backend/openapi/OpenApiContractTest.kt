@@ -37,7 +37,7 @@ import java.io.File
  *
  * The full application context is deliberately pinned to [SnowballRApplication], whose component scan is
  * confined to the `rest` package, so the context is cheap to start. It still needs Koin running, though: `KoinBridge`
- * exposes the Koin-backed services as Spring beans and resolves them eagerly at startup. Rather
+ * exposes the Koin-backed services as Spring beans, and `SecurityConfig` requires them eagerly at startup. Rather
  * than pulling in the real database-backed module, a minimal Koin module of mocks is started for the lifetime of
  * this class - just enough to satisfy the bean wiring without touching a database.
  */
@@ -90,13 +90,15 @@ class OpenApiContractTest(@Autowired private val mvc: MockMvc) {
         }
 
         /**
-         * Starts Koin with mocks before the Spring context is created, since `KoinBridge` resolves Koin-backed
-         * beans eagerly during context refresh.
+         * Starts Koin with mocks before the Spring context is created, since `KoinBridge` and `SecurityConfig`
+         * resolve Koin-backed beans eagerly during context refresh. Auth bypass is stubbed on so the security
+         * filter never exercises [IAuthenticationManager] or [ICookieManager].
          */
         @JvmStatic
         @BeforeAll
         fun startTestKoin() {
             val envReader = mockk<EnvReader>()
+            every { envReader.env.miscellaneous.authBypassEnabled } returns true
             every { envReader.env.http.port } returns 8080
 
             startKoin {
