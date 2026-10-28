@@ -91,8 +91,6 @@ object UserValidator {
         // Only proceed with field validation if the mask is valid
         val selectedFields = request.mask.pathsList.toSet()
 
-        // ensureIdValidity("id", settings.id)
-
         val settings = request.userSettings
         val projectSettings = request.userSettings.defaultProjectSettings
         zipOrAccumulate(
