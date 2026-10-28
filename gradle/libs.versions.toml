@@ -116,7 +116,7 @@ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 git-versioning = { id = "me.qoomon.git-versioning", version.ref = "git-versioning" }
 undercouch-download = { id = "de.undercouch.download", version.ref = "undercouch-download" }
 sonarqube = { id = "org.sonarqube", version.ref = "sonarqube" }
-ben-manes-versions = { id = "com.github.ben-manes.versions", version.ref = "ben-manes-versions" }
+ben-manes-versions = { id = "io.github.ben-manes.versions", version.ref = "ben-manes-versions" }
 spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
 spring-framework-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
 spring-dep-management = { id = "io.spring.dependency-management", version.ref = "spring-dep-man" }
