@@ -11,17 +11,18 @@ import se.uulm.snowballr.backend.model.InvalidFieldMask
 import se.uulm.snowballr.backend.model.InvalidId
 import se.uulm.snowballr.backend.model.OutOfRangeValue
 import se.uulm.snowballr.backend.model.TooLongField
+import se.uulm.snowballr.backend.validation.ProjectSettingsValidator.NUMBER_OF_REVIEWERS_MAX_VALUE
+import se.uulm.snowballr.backend.validation.ProjectSettingsValidator.NUMBER_OF_REVIEWERS_MIN_VALUE
+import se.uulm.snowballr.backend.validation.ProjectSettingsValidator.SIMILARITY_THRESHOLD_MAX_VALUE
+import se.uulm.snowballr.backend.validation.ProjectSettingsValidator.SIMILARITY_THRESHOLD_MIN_VALUE
 import se.uulm.snowballr.backend.validation.ProjectValidator.NAME_MAX_LENGTH
-import se.uulm.snowballr.backend.validation.ProjectValidator.NUMBER_OF_REVIEWERS_MAX_VALUE
-import se.uulm.snowballr.backend.validation.ProjectValidator.NUMBER_OF_REVIEWERS_MIN_VALUE
-import se.uulm.snowballr.backend.validation.ProjectValidator.SIMILARITY_THRESHOLD_MAX_VALUE
-import se.uulm.snowballr.backend.validation.ProjectValidator.SIMILARITY_THRESHOLD_MIN_VALUE
 import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.Project
 import snowballr.ProjectOuterClass.Project.Create
 import snowballr.ProjectOuterClass.Project.Update
 import snowballr.ProjectOuterClass.ProjectStatus
 import snowballr.ProjectOuterClass.SnowballingType
+import snowballr.ReviewOuterClass.ReviewDecision
 import java.util.UUID
 
 class ProjectValidatorTest {
@@ -351,6 +352,79 @@ class ProjectValidatorTest {
 
             EitherAssert.assertThat(result).isRight()
         }
+
+        private fun requestWithPattern(pattern: ProjectOuterClass.ReviewDecisionMatrix.Pattern, mask: String) =
+            validUpdateRequestBuilder
+                .setProject(
+                    validUpdatedProject.setSettings(
+                        validUpdatedProjectSettings.setDecisionMatrix(
+                            validUpdatedDecisionMatrix.clearPatterns().addPatterns(pattern).build(),
+                        ).build(),
+                    ).build(),
+                )
+                .setMask(FieldMaskUtil.fromStringList(listOf(mask)))
+                .build()
+
+        private val validPatternEntry = ProjectOuterClass.ReviewDecisionMatrix.Pattern.Entry.newBuilder()
+            .setReviewDecision(ReviewDecision.REVIEW_DECISION_ACCEPTED)
+            .setCount(1)
+            .build()
+
+        private val patternsMask = "project.settings.decision_matrix.patterns"
+
+        @Test
+        fun `When a valid decision matrix pattern is specified in the field mask, then no issue is returned`() {
+            val pattern = ProjectOuterClass.ReviewDecisionMatrix.Pattern.newBuilder()
+                .setDecision(ProjectOuterClass.PaperDecision.PAPER_DECISION_ACCEPTED)
+                .addEntries(validPatternEntry)
+                .build()
+            val result = validateRequest(requestWithPattern(pattern, patternsMask))
+
+            EitherAssert.assertThat(result).isRight()
+        }
+
+        @Test
+        fun `When a decision matrix pattern has an unspecified decision and is specified in the field mask, then the 'EnumUnspecified' issue is returned`() {
+            val pattern = ProjectOuterClass.ReviewDecisionMatrix.Pattern.newBuilder()
+                .setDecision(ProjectOuterClass.PaperDecision.PAPER_DECISION_UNSPECIFIED)
+                .addEntries(validPatternEntry)
+                .build()
+            val result = validateRequest(requestWithPattern(pattern, patternsMask))
+
+            assertInvalidResult<EnumUnspecified>(result)
+        }
+
+        @Test
+        fun `When a decision matrix pattern has an unrecognized decision and is specified in the field mask, then the 'EnumUnspecified' issue is returned`() {
+            val pattern = ProjectOuterClass.ReviewDecisionMatrix.Pattern.newBuilder()
+                .setDecisionValue(UNRECOGNIZED_ENUM_NUMBER)
+                .addEntries(validPatternEntry)
+                .build()
+            val result = validateRequest(requestWithPattern(pattern, patternsMask))
+
+            assertInvalidResult<EnumUnspecified>(result)
+        }
+
+        @Test
+        fun `When a decision matrix pattern entry has an unspecified review decision and is specified in the field mask, then the 'EnumUnspecified' issue is returned`() {
+            val pattern = ProjectOuterClass.ReviewDecisionMatrix.Pattern.newBuilder()
+                .setDecision(ProjectOuterClass.PaperDecision.PAPER_DECISION_ACCEPTED)
+                .addEntries(validPatternEntry.toBuilder().setReviewDecision(ReviewDecision.REVIEW_DECISION_UNSPECIFIED))
+                .build()
+            val result = validateRequest(requestWithPattern(pattern, patternsMask))
+
+            assertInvalidResult<EnumUnspecified>(result)
+        }
+
+        @Test
+        fun `When an invalid decision matrix pattern is provided but not specified in the field mask, then no issue is returned`() {
+            val pattern = ProjectOuterClass.ReviewDecisionMatrix.Pattern.newBuilder()
+                .setDecision(ProjectOuterClass.PaperDecision.PAPER_DECISION_UNSPECIFIED)
+                .build()
+            val result = validateRequest(requestWithPattern(pattern, "project.name"))
+
+            EitherAssert.assertThat(result).isRight()
+        }
     }
 
     @Nested
@@ -449,3 +523,8 @@ class ProjectValidatorTest {
         }
     }
 }
+
+/**
+ * An enum number that is not defined in any gRPC enum, so protobuf maps it to `UNRECOGNIZED`.
+ */
+private const val UNRECOGNIZED_ENUM_NUMBER = 999
