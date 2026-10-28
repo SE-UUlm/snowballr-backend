@@ -19,7 +19,9 @@ import se.uulm.snowballr.backend.model.dto.project.SnowballingType
 import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.dto.user.UserField
+import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
+import se.uulm.snowballr.backend.model.exception.failedprecondition.EntityNotActiveException
 import se.uulm.snowballr.backend.model.fetcher.FetcherInformationWithId
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserSettingsRequest
 import java.util.UUID
@@ -215,4 +217,19 @@ class UpdateUserSettingsTest : UserServiceTest() {
 
             coVerify(exactly = 0) { userRepoMock.updateUser(any(), any()) }
         }
+
+    @Test
+    fun `When an inactive user updates themselves, an EntityNotActiveException is thrown`() = runTest {
+        val user = DataBuilder.createExampleUser(status = UserStatus.DELETED)
+
+        val request = getExampleRequest(user)
+
+        mockCurrentUser(user)
+
+        assertThrows<EntityNotActiveException> {
+            service.updateUserSettings(request, emptySet())
+        }
+
+        coVerify(exactly = 0) { userRepoMock.updateUser(any(), any()) }
+    }
 }

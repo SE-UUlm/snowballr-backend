@@ -11,6 +11,7 @@ import se.uulm.snowballr.backend.fetcher.IFetcherManager
 import se.uulm.snowballr.backend.formatting.daysToHumanReadable
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.mail.IEmailManager
+import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.UserIdentifierType
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.user.User
@@ -18,6 +19,7 @@ import se.uulm.snowballr.backend.model.dto.user.UserField
 import se.uulm.snowballr.backend.model.dto.user.UserSettingsWithCriteria
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateUserException
+import se.uulm.snowballr.backend.model.exception.failedprecondition.EntityNotActiveException
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserSettingsRequest
@@ -195,6 +197,10 @@ class UserService(
         request: UpdateUserSettingsRequest,
         fields: Set<UserField>,
     ): UserSettingsWithCriteria = withUser(userRepo) { currentUser ->
+        if (!currentUser.isActiveAndConfirmed) {
+            throw EntityNotActiveException(EntityType.USER, currentUser.id)
+        }
+
         val updateFields = fields.filter { it.isSettingsField }.toSet()
         var finalRequest = request
 
