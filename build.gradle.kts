@@ -535,7 +535,8 @@ tasks.withType<DependencyUpdatesTask> {
         return isSemVer.not()
     }
 
+    // Only allow non-stable candidates for dependencies that are already on a non-stable version (e.g. detekt)
     rejectVersionIf {
-        isNonStable(candidate.version)
+        isNonStable(candidate.version) && !isNonStable(currentVersion)
     }
 }
