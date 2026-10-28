@@ -18,7 +18,7 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 @RestController
-@RequestMapping("/projects")
+@RequestMapping(Routes.PROJECTS_ROUTE)
 class ProjectsController {
     private val projects = mutableListOf(
         Project(

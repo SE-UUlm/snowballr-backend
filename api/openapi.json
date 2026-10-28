@@ -12,7 +12,7 @@
         }
     ],
     "paths": {
-        "/projects": {
+        "/api/v1/projects": {
             "get": {
                 "tags": [
                     "projects-controller"
@@ -63,7 +63,7 @@
                 }
             }
         },
-        "/projects/{id}": {
+        "/api/v1/projects/{id}": {
             "get": {
                 "tags": [
                     "projects-controller"
