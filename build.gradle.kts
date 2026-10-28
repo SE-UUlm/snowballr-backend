@@ -258,7 +258,7 @@ tasks.register<Test>("createApiSpec") {
     group = "build"
     testClassesDirs = sourceSets["test"].output.classesDirs
     classpath = sourceSets["test"].runtimeClasspath
-    reports.html.required.set(false)
+    reports.html.required.set(true)
     reports.junitXml.required.set(false)
 }
 
