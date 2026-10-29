@@ -97,6 +97,7 @@ dependencies {
     implementation(libs.spring.doc)
     implementation(libs.spring.boot.starter.security)
     implementation(libs.spring.boot.starter.actuator)
+    implementation(libs.spring.boot.starter.grpc.server)
 
     testImplementation(libs.koin.test)
     testImplementation(libs.testcontainers)
@@ -114,7 +115,6 @@ dependencies {
 
     runtimeOnly(libs.jjwt.impl)
     runtimeOnly(libs.jjwt.jackson)
-    runtimeOnly(libs.grpc.netty)
 
     testRuntimeOnly(libs.junit.platform)
 
