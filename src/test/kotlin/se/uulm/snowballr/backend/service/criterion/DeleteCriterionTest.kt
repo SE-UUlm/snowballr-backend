@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
+import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 
 class DeleteCriterionTest : CriterionServiceTest() {
@@ -39,29 +40,30 @@ class DeleteCriterionTest : CriterionServiceTest() {
     }
 
     @Test
-    fun `When a project criterion is associated with a review, then a FailedPreconditionException is thrown`() =
-        runTest {
-            val user = DataBuilder.createExampleUser()
-            val criterion = DataBuilder.createExampleProjectCriterion()
-
-            mockCurrentUser(user)
-            coEvery { criterionRepoMock.getCriterionById(criterion.id) } returns Result.success(criterion)
-            coJustRun { criterionAccessCheckerMock.isAllowedToUpdateCriterion(user, criterion) }
-            coEvery { criterionRepoMock.isAssociatedWithReviews(criterion.id) } returns true
-
-            assertThrows<FailedPreconditionException> { service.deleteCriterion(criterion.id) }
-            coVerify(exactly = 0) { criterionRepoMock.deleteCriterionById(any()) }
-        }
-
-    @Test
-    fun `When a project criterion is not associated with a review, then the criterion is deleted`() = runTest {
+    fun `When a project criterion cannot be deleted, then a FailedPreconditionException is thrown`() = runTest {
         val user = DataBuilder.createExampleUser()
-        val criterion = DataBuilder.createExampleProjectCriterion()
+        val project = DataBuilder.createExampleProject(status = ProjectStatus.ACTIVE_LOCKED)
+        val criterion = DataBuilder.createExampleProjectCriterion(projectId = project.id)
 
         mockCurrentUser(user)
         coEvery { criterionRepoMock.getCriterionById(criterion.id) } returns Result.success(criterion)
         coJustRun { criterionAccessCheckerMock.isAllowedToUpdateCriterion(user, criterion) }
-        coEvery { criterionRepoMock.isAssociatedWithReviews(criterion.id) } returns false
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
+
+        assertThrows<FailedPreconditionException> { service.deleteCriterion(criterion.id) }
+        coVerify(exactly = 0) { criterionRepoMock.deleteCriterionById(any()) }
+    }
+
+    @Test
+    fun `When a project criterion can be deleted, then the criterion is deleted`() = runTest {
+        val user = DataBuilder.createExampleUser()
+        val project = DataBuilder.createExampleProject(status = ProjectStatus.ACTIVE)
+        val criterion = DataBuilder.createExampleProjectCriterion(projectId = project.id)
+
+        mockCurrentUser(user)
+        coEvery { criterionRepoMock.getCriterionById(criterion.id) } returns Result.success(criterion)
+        coJustRun { criterionAccessCheckerMock.isAllowedToUpdateCriterion(user, criterion) }
+        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
         coJustRun { criterionRepoMock.deleteCriterionById(criterion.id) }
 
         service.deleteCriterion(criterion.id)
@@ -82,7 +84,7 @@ class DeleteCriterionTest : CriterionServiceTest() {
 
             service.deleteCriterion(criterion.id)
 
-            coVerify(exactly = 0) { criterionRepoMock.isAssociatedWithReviews(any()) }
+            coVerify(exactly = 0) { projectRepoMock.getProjectById(any()) }
             coVerify(exactly = 1) { criterionRepoMock.deleteCriterionById(criterion.id) }
         }
 }

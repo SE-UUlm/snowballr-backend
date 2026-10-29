@@ -3,9 +3,7 @@ package se.uulm.snowballr.backend.repository
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertInstanceOf
@@ -381,36 +379,6 @@ class CriterionTableRepoTest : RepositoryTest(
             repo.deleteCriterionById(criterionId)
 
             assertResultFailure<NotFoundException>(repo.getCriterionById(criterionId))
-            assertFalse(repo.isAssociatedWithReviews(criterionId))
-        }
-    }
-
-    @Nested
-    inner class IsAssociatedWithReviews {
-        @Test
-        fun `When the criterion is associated with a review, then true is returned`() = runTest {
-            val projectId = insertProjectAndGetId(createdBy = testUserId)
-            val reviewId = insertReviewForProjectAndGetId(projectId)
-            val criterionId = insertCriterionAndGetId(projectId = projectId, createdBy = testUserId)
-            assignCriterionToReview(reviewId, criterionId)
-
-            assertTrue(repo.isAssociatedWithReviews(criterionId))
-        }
-
-        @Test
-        fun `When the criterion is not associated with any review, then false is returned`() = runTest {
-            val projectId = insertProjectAndGetId(createdBy = testUserId)
-            val reviewId = insertReviewForProjectAndGetId(projectId)
-            val criterionId = insertCriterionAndGetId(projectId = projectId, createdBy = testUserId)
-            val otherCriterionId = insertCriterionAndGetId(projectId = projectId, createdBy = testUserId)
-            assignCriterionToReview(reviewId, otherCriterionId)
-
-            assertFalse(repo.isAssociatedWithReviews(criterionId))
-        }
-
-        @Test
-        fun `When the criterion does not exist, then false is returned`() = runTest {
-            assertFalse(repo.isAssociatedWithReviews(UUID.randomUUID()))
         }
     }
 
