@@ -16,6 +16,7 @@ RUN --mount=type=cache,target=/root/.gradle \
 
 # Copy the project's source code and proto files and build
 COPY src/main src/main
+COPY api/grpc/proto api/grpc/proto
 RUN --mount=type=cache,target=/root/.gradle \
     gradle shadowJar --no-daemon --stacktrace
 
