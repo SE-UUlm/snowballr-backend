@@ -1,0 +1,47 @@
+/// Fetcher related messages and enums of the SnowballR app.
+
+syntax = "proto3";
+package snowballr;
+import "base.proto";
+
+// Response of available fetchers.
+message AvailableFetchers {
+  repeated FetcherInformation fetchers = 2;
+}
+
+// Options that are used by a fetcher to control behavior.
+message FetcherOptions {
+  // Map the option name to a (default) value
+  map<string, string> options = 1;
+}
+
+// Information about a fetcher, which can be used to generate a UI for it.
+message FetcherInformation {
+  // The unique identifier of the fetcher. This is used to identify the fetcher.
+  string id = 1;
+  // A human readable name of the fetcher.
+  string name = 2;
+  // A description of the fetcher, which can be used to generate a UI for it.
+  string description = 3;
+  // A list of links related to this fetcher, e.g. documentation or source code.
+  repeated Link links = 4;
+  // A map of option name to its schema, which describes the option and can be used to generate a
+  // UI for it. Also used to validate the options provided by the user when using the fetcher.
+  map<string, FetcherOptionSchema> options_schema = 5;
+}
+
+// Schema for a fetcher option, which describes the option and can be used to generate a UI for it.
+message FetcherOptionSchema {
+  // A human readable name of the option.
+  string name = 1;
+  // A description of the option, which can be used to generate a UI for it.
+  string description = 2;
+  // Whether this option is required or not. If an option is required, it must be provided by the
+  // user when using the fetcher.
+  bool required = 3;
+  // Whether this option is secret or not. If an option is secret, it should be handled with care
+  // and not be exposed in logs and obfuscated in the UI.
+  bool is_secret = 4;
+  // An optional default value for this option.
+  optional string default_value = 5;
+}

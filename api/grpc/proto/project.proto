@@ -1,0 +1,251 @@
+/// Project related messages and enums of the SnowballR app.
+
+syntax = "proto3";
+package snowballr;
+
+import "fetcher.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+import "paper.proto";
+import "review.proto";
+import "user.proto";
+
+// The type of snowballing, according to Wohlin (2014).
+// It defines which references (forward or backward) are fetched when a paper is accepted.
+// A backward reference is defined as a paper that is cited by the paper in question.
+// A forward reference is defined as a paper that cites the paper in question, i.e., a paper where the paper in question
+// is a backward reference.
+// Roughly speaking, one could say that "backward" and "forward" are an analogy to the order of the publication dates of
+// two papers, i.e., a backward reference was most probably published before the paper in question and a forward
+// reference afterward.
+enum SnowballingType {
+  // Unspecified snowballing type.
+  SNOWBALLING_TYPE_UNSPECIFIED = 0;
+  // All forward references are fetched.
+  SNOWBALLING_TYPE_FORWARD = 1;
+  // All backward references are fetched.
+  SNOWBALLING_TYPE_BACKWARD = 2;
+  // All forward and backward references are fetched.
+  SNOWBALLING_TYPE_BOTH = 3;
+}
+
+// Role of a user inside a project.
+enum MemberRole {
+  // Unspecified member role.
+  MEMBER_ROLE_UNSPECIFIED = 0;
+  // Default project member role. No elevated rights.
+  MEMBER_ROLE_DEFAULT = 1;
+  // Admin project member role. Can do everything that a default project member can do and more.
+  MEMBER_ROLE_ADMIN = 2;
+}
+
+// Status of the project. Can be considered the stage in the lifecycle of a project.
+enum ProjectStatus {
+  // Unspecified project status.
+  PROJECT_STATUS_UNSPECIFIED = 0;
+  // Project is active and fully editable, including settings.
+  PROJECT_STATUS_ACTIVE = 1;
+  // Project is read-only and no longer actively used.
+  // This project is marked as archived.
+  PROJECT_STATUS_ARCHIVED = 2;
+  // Project is marked for deletion and should not be shown to users.
+  // This project is marked as deleted.
+  PROJECT_STATUS_DELETED = 3;
+  // Project is active, but slr settings can no longer be changed.
+  // This state is reached as soon as the first review is submitted.
+  PROJECT_STATUS_ACTIVE_LOCKED = 4;
+}
+
+// The decision on how the paper is treated in respect to the SLR.
+enum PaperDecision {
+  // Unspecified paper decision.
+  PAPER_DECISION_UNSPECIFIED = 0;
+  // The paper has not been reviewed yet.
+  PAPER_DECISION_UNREVIEWED = 1;
+  // The paper is currently in review.
+  PAPER_DECISION_IN_REVIEW = 2;
+  // The paper was declined and is not considered part of the final SLR paper set.
+  PAPER_DECISION_DECLINED = 3;
+  // The paper was accepted and is considered part of the final SLR paper set.
+  PAPER_DECISION_ACCEPTED = 4;
+}
+
+// The project response object.
+message Project {
+  string id = 1;
+  string name = 2;
+  ProjectStatus status = 3;
+  uint64 current_stage = 4;
+  uint64 max_stage = 5;
+  Settings settings = 6;
+
+  // A list of projects.
+  message List {
+    repeated Project projects = 1;
+  }
+
+  // Request to create a project.
+  message Create {
+    string name = 1;
+  }
+
+  // Request to update a project.
+  message Update {
+    Project project = 1;
+    google.protobuf.FieldMask mask = 2;
+  }
+
+  // Response of relevant project metadata.
+  message Information {
+    // In a range from 0.0 to 1.0
+    float project_progress = 1;
+    google.protobuf.Timestamp creation_date = 2;
+    // The start time of the last (not necessarily completed) stage
+    google.protobuf.Timestamp last_stage_started = 3;
+
+    // Request to get relevant project metadata.
+    message Get {
+      string project_id = 1;
+      google.protobuf.FieldMask mask = 2;
+    }
+
+    // Response of decision statistics containing the number of decisions made in the project.
+    message DecisionStatistics {
+      repeated Statistic statistics = 1;
+
+      // The number of decisions made for a specific decision, e.g. accepted.
+      message Statistic {
+        PaperDecision decision = 1;
+        uint64 count = 2;
+      };
+
+      // Request to get the decision statistics for a specific stage of a project.
+      message Get {
+        string project_id = 1;
+        uint64 stage = 2;
+      }
+    }
+  }
+
+  // Project related settings.
+  message Settings {
+    float similarity_threshold = 5;
+    ReviewDecisionMatrix decision_matrix = 6;
+    // Map fetcher name to its fetcher options, i.e. the map of option names to saved option values
+    map<string, FetcherOptions> fetchers = 7;
+    SnowballingType snowballing_type = 8;
+    bool review_maybe_allowed = 9;
+  }
+
+  // A project member.
+  message Member {
+    User user = 1;
+    MemberRole role = 2;
+
+    // A list of project members.
+    message List {
+      repeated Member members = 1;
+    }
+
+    // Request to invite somebody to join the project.
+    message Invite {
+      string project_id = 1;
+      string user_email = 2;
+    }
+
+    // Request to accept a project invitation.
+    message Accept {
+      string token = 1;
+    }
+
+    // Request to remove an invitee or project member from a project.
+    message Remove {
+      string project_id = 1;
+      string user_email = 3;
+    }
+
+    // Request to update a project member.
+    message Update {
+      string project_id = 1;
+      string user_id = 2;
+      MemberRole new_role = 3;
+    }
+  }
+
+  // Response of candidates to invite to a project.
+  message InviteCandidatesRequest {
+    // The search query to match users by name or email.
+    // The query must be at least 3 characters long.
+    string query = 1;
+
+    // The id of the project to which potential candidates should be invited.
+    // This field is optional and should be left **unspecified** if candidates
+    // are requested for a project that has not yet been created.
+    string project_id = 2;
+  }
+
+  // The project paper connecting a project to a paper with additional information.
+  message Paper {
+    string id = 1;
+    snowballr.Paper paper = 2;
+    uint64 stage = 3;
+    PaperDecision decision = 4;
+    repeated Review reviews = 5;
+    string local_id = 6;
+
+    // Request to get a project paper.
+    message Get {
+      string project_id = 1;
+      string relative_project_paper_id = 2;
+    }
+
+    // A list of project papers.
+    message List {
+      repeated Paper project_papers = 1;
+    }
+
+    // Request to add a paper to a project.
+    message Add {
+      string project_id = 1;
+      uint64 stage = 2;
+      string paper_id = 3;
+    }
+
+    // Request to update a project paper.
+    message Update {
+      Paper project_paper = 1;
+      google.protobuf.FieldMask mask = 2;
+    }
+
+    // Request to search for project papers according to a query.
+    message SearchQuery {
+      string project_id = 1;
+      // There are no restrictions on this search query in terms of valid values,
+      // except the length.
+      // The backend is fully responsible for deciding which paper attributes this
+      // query is matched against and is supposed to provide the best results for
+      // the given query.
+      string query = 2;
+    }
+  }
+}
+
+// Matrix containing the paper decision based on reviews made for a paper.
+// This matrix defines how a paper is decided based on its reviews.
+// For this to work, the entries need to be unique and the patterns exhaustive.
+message ReviewDecisionMatrix {
+  // The actual matrix of the ReviewDecisionMatrix.
+  message Pattern {
+    repeated Entry entries = 1;
+    PaperDecision decision = 2;
+
+    // An entry in the ReviewDecisionMatrix containing the decision and the number of occurrences.
+    message Entry {
+      ReviewDecision review_decision = 1;
+      uint64 count = 2;
+    }
+  }
+
+  uint32 number_of_reviewers = 1;
+  repeated Pattern patterns = 2;
+}

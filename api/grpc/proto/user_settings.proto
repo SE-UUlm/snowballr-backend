@@ -1,0 +1,22 @@
+/// User settings related messages and enums of the SnowballR app.
+
+syntax = "proto3";
+package snowballr;
+
+import "criterion.proto";
+import "google/protobuf/field_mask.proto";
+import "project.proto";
+
+// Settings related to a user.
+message UserSettings {
+  bool show_hotkeys = 1;
+  bool review_mode = 2;
+  Project.Settings default_project_settings = 3;
+  Criterion.List default_criteria = 4;
+
+  // Request to update the user settings.
+  message Update {
+    UserSettings user_settings = 1;
+    google.protobuf.FieldMask mask = 2;
+  }
+}
