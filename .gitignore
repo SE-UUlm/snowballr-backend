@@ -53,7 +53,8 @@ bin/
 db-data
 
 ### Plugins ###
-/plugins
+/plugins/*
+!/plugins/.gitkeep
 /.venv
 
 ### Fetcher CLI ###

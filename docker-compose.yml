@@ -46,7 +46,7 @@ services:
             FETCHER_RETRIES: ${FETCHER_RETRIES:-}
             FETCHER_RETRY_DELAY_IN_MILLIS: ${FETCHER_RETRY_DELAY_IN_MILLIS:-}
         volumes:
-            - ./plugins:/app/plugins
+            - ./plugins:/app/plugins:Z
         ports:
             - ${PORT:-8080}:${PORT:-8080}
         depends_on:
@@ -104,7 +104,7 @@ services:
             FETCHER_RETRIES: ${FETCHER_RETRIES:-}
             FETCHER_RETRY_DELAY_IN_MILLIS: ${FETCHER_RETRY_DELAY_IN_MILLIS:-}
         volumes:
-            - ./plugins:/app/plugins
+            - ./plugins:/app/plugins:Z
         ports:
             - ${PORT:-8080}:${PORT:-8080}
         depends_on:
