@@ -1,0 +1,21 @@
+/// Export related messages and enums of the SnowballR app.
+
+syntax = "proto3";
+package snowballr;
+
+// Request to export a project.
+message ExportRequest {
+  string id = 1;
+  string format = 3;
+}
+
+// Response of the exported project.
+message ExportResponse {
+  bytes data = 1;
+  string file_name = 2;
+}
+
+// Response of available export formats.
+message AvailableExportFormatsResponse {
+  repeated string formats = 1;
+}
