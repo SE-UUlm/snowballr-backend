@@ -2,13 +2,16 @@ package se.uulm.snowballr.backend.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.viascom.nanoid.NanoId
+import se.uulm.snowballr.backend.access.ICriterionAccessChecker
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.access.IUserAccessChecker
 import se.uulm.snowballr.backend.auth.PasswordUtils
 import se.uulm.snowballr.backend.env.EnvReader
+import se.uulm.snowballr.backend.fetcher.IFetcherManager
 import se.uulm.snowballr.backend.formatting.daysToHumanReadable
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.mail.IEmailManager
+import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.UserIdentifierType
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.user.User
@@ -16,8 +19,10 @@ import se.uulm.snowballr.backend.model.dto.user.UserField
 import se.uulm.snowballr.backend.model.dto.user.UserSettingsWithCriteria
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateUserException
+import se.uulm.snowballr.backend.model.exception.failedprecondition.EntityNotActiveException
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
+import se.uulm.snowballr.backend.model.incoming.user.UpdateUserSettingsRequest
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
@@ -53,6 +58,14 @@ interface IUserService {
     suspend fun updateUser(request: UpdateUserRequest, fields: Set<UserField>): User
 
     /**
+     * Service implementation of [SnowballRService.updateUserSettings].
+     */
+    suspend fun updateUserSettings(
+        request: UpdateUserSettingsRequest,
+        fields: Set<UserField>,
+    ): UserSettingsWithCriteria
+
+    /**
      * Service implementation of [SnowballRService.softDeleteUser].
      */
     suspend fun softDeleteUser(userId: UUID)
@@ -80,9 +93,11 @@ interface IUserService {
  * @param criterionRepo The repository responsible for managing persistence operations for criteria.
  * @param verificationTokenRepo The repository responsible for managing persistence operations for verification tokens.
  * @param emailManager The manager responsible for sending emails.
+ * @param fetcherManager The manager that provides the available fetchers.
  * @param envReader The environment reader that provides access to configuration values.
  * @param accessChecker Interface for checking access permissions for users based on defined rules.
  * @param projectAccessChecker Interface for checking access permissions for projects based on defined rules.
+ * @param criterionAccessChecker Interface for checking access permissions for criteria based on defined rules.
  */
 @Suppress("LongParameterList")
 class UserService(
@@ -91,9 +106,11 @@ class UserService(
     private val criterionRepo: ICriterionTableRepo,
     private val verificationTokenRepo: IVerificationTokenTableRepo,
     private val emailManager: IEmailManager,
+    private val fetcherManager: IFetcherManager,
     private val envReader: EnvReader,
     private val accessChecker: IUserAccessChecker,
     private val projectAccessChecker: IProjectAccessChecker,
+    private val criterionAccessChecker: ICriterionAccessChecker,
 ) : IUserService {
     companion object {
         private const val VERIFICATION_TOKEN_LENGTH = 48
@@ -154,25 +171,60 @@ class UserService(
 
     override suspend fun updateUser(request: UpdateUserRequest, fields: Set<UserField>): User =
         withUser(userRepo) { currentUser ->
+            val updateFields = fields.filter { it.isUserUpdateField }.toSet()
+
             val targetUser = userRepo.getUserById(request.userId).getOrThrow()
 
             accessChecker.isAllowedToUpdateUser(currentUser, targetUser)
 
             // If the role is changed, the requesting user must be a server admin.
-            if (fields.contains(UserField.ROLE)) {
+            if (updateFields.contains(UserField.ROLE)) {
                 accessChecker.isAllowedToUpdateUserRole(currentUser, request.userId)
             }
 
             // If the email is changed, there must not yet exist an account with that email address.
-            if (fields.contains(UserField.EMAIL) && userRepo.doesUserExistByEmail(request.email)) {
+            if (updateFields.contains(UserField.EMAIL) && userRepo.doesUserExistByEmail(request.email)) {
                 throw DuplicateUserException(request.email)
             }
 
             val updateData = mergeUserUpdateWithUser(targetUser, request)
-            val updatedUser = userRepo.updateUser(updateData, fields)
-            logger.info { "User ${targetUser.id} updated: ${fields.joinToString()}" }
+            val updatedUser = userRepo.updateUser(updateData, updateFields)
+            logger.info { "User ${targetUser.id} updated: ${updateFields.joinToString()}" }
             updatedUser
         }
+
+    override suspend fun updateUserSettings(
+        request: UpdateUserSettingsRequest,
+        fields: Set<UserField>,
+    ): UserSettingsWithCriteria = withUser(userRepo) { currentUser ->
+        if (!currentUser.isActiveAndConfirmed) {
+            throw EntityNotActiveException(EntityType.USER, currentUser.id)
+        }
+
+        val updateFields = fields.filter { it.isSettingsField }.toSet()
+        var finalRequest = request
+
+        // Default criteria are cloned into new projects, so they must be the current user's own user criteria.
+        if (updateFields.contains(UserField.CRITERIA_IDS)) {
+            request.criteriaIds.forEach { criterionId ->
+                val criterion = criterionRepo.getCriterionById(criterionId).getOrThrow()
+                criterionAccessChecker.isAllowedToUseAsDefaultCriterion(currentUser, criterion)
+            }
+        }
+
+        // Default fetchers are copied into new projects, so they are sanitized the same way as project fetchers.
+        if (updateFields.contains(UserField.FETCHERS)) {
+            finalRequest = finalRequest.copy(fetchers = sanitizeFetchersMap(fetcherManager, request.fetchers))
+        }
+
+        val updateData = mergeUserSettingsUpdateWithUser(currentUser, finalRequest)
+        val updatedUser = userRepo.updateUser(updateData, updateFields)
+        val defaultUserCriteria = criterionRepo.getCriteriaByIds(updatedUser.settings.criteriaIds)
+
+        logger.info { "User ${currentUser.id} updated: ${updateFields.joinToString()}" }
+
+        UserSettingsWithCriteria(updatedUser.settings, defaultUserCriteria)
+    }
 
     override suspend fun softDeleteUser(userId: UUID) = withUser(userRepo) { currentUser ->
         val targetUser = userRepo.getUserById(userId).getOrThrow()
@@ -211,4 +263,25 @@ class UserService(
         role = request.role,
         status = request.status,
     )
+
+    private fun mergeUserSettingsUpdateWithUser(user: User, request: UpdateUserSettingsRequest): User {
+        var userSettings = user.settings
+        var projectSettings = userSettings.defaultProjectSettings
+
+        projectSettings = projectSettings.copy(
+            similarityThreshold = request.similarityThreshold,
+            snowballingType = request.snowballingType,
+            reviewMaybeAllowed = request.reviewMaybeAllowed,
+            reviewDecisionMatrix = request.decisionMatrix,
+            fetchers = request.fetchers,
+        )
+        userSettings = userSettings.copy(
+            areHotkeysShown = request.areHotkeysShown,
+            isReviewModeEnabled = request.isReviewModeEnabled,
+            criteriaIds = request.criteriaIds,
+            defaultProjectSettings = projectSettings,
+        )
+
+        return user.copy(settings = userSettings)
+    }
 }

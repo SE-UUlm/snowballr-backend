@@ -47,6 +47,7 @@ import se.uulm.snowballr.backend.model.incoming.projectmember.UpdateProjectMembe
 import se.uulm.snowballr.backend.model.incoming.review.CreateReviewRequest
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
+import se.uulm.snowballr.backend.model.incoming.user.UpdateUserSettingsRequest
 import se.uulm.snowballr.backend.model.parseUUID
 import se.uulm.snowballr.backend.scheduler.SchedulerManager
 import se.uulm.snowballr.backend.service.IAuthenticationService
@@ -342,7 +343,44 @@ class SnowballRServer(
 
         override suspend fun updateUserSettings(
             request: UserSettingsOuterClass.UserSettings.Update,
-        ): UserSettingsOuterClass.UserSettings = super.updateUserSettings(request)
+        ): UserSettingsOuterClass.UserSettings {
+            val paths = FieldMaskUtil.normalize(request.mask).pathsList
+            val fields = paths.map { userFieldFromGrpc(it) }.toSet()
+
+            val settings = request.userSettings
+            val projectSettings = settings.defaultProjectSettings
+
+            val hasUnspecifiedSnowballingType = projectSettings.snowballingType ==
+                ProjectOuterClass.SnowballingType.SNOWBALLING_TYPE_UNSPECIFIED
+            val snowballingType =
+                if (!fields.contains(UserField.SNOWBALLING_TYPE) && hasUnspecifiedSnowballingType) {
+                    SnowballingType.BOTH
+                } else {
+                    snowballingTypeFromGrpc(projectSettings.snowballingType)
+                }
+
+            return userService.updateUserSettings(
+                UpdateUserSettingsRequest(
+                    areHotkeysShown = settings.showHotkeys,
+                    isReviewModeEnabled = settings.reviewMode,
+                    // Only converted if part of the update, since they are only validated in that case.
+                    criteriaIds = if (fields.contains(UserField.CRITERIA_IDS)) {
+                        settings.defaultCriteria.criteriaList.map { parseUUID(it.id, EntityType.CRITERION) }
+                    } else {
+                        emptyList()
+                    },
+                    similarityThreshold = projectSettings.similarityThreshold,
+                    decisionMatrix = reviewDecisionMatrixFromGrpc(
+                        projectSettings.decisionMatrix,
+                        includePatterns = fields.contains(UserField.DECISION_MATRIX_PATTERNS),
+                    ),
+                    fetchers = projectSettings.fetchersMap.mapValues { it.value.optionsMap },
+                    snowballingType = snowballingType,
+                    reviewMaybeAllowed = projectSettings.reviewMaybeAllowed,
+                ),
+                fields,
+            ).toGrpc()
+        }
 
         override suspend fun getReadingList(request: Base.Nothing): PaperOuterClass.Paper.List =
             readingListService.getReadingList().toGrpc()

@@ -15,14 +15,7 @@ import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateU
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
 
 class UpdateUserTest : UserServiceTest() {
-    private fun getExampleRequest(user: User) = UpdateUserRequest(
-        userId = user.id,
-        firstName = user.firstName,
-        lastName = user.lastName,
-        email = user.email,
-        role = user.role,
-        status = user.status,
-    )
+    private fun getExampleRequest(user: User) = UpdateUserRequest.fromUser(user)
 
     @Test
     fun `When retrieving user fails, then a TestSpecificException is thrown`() = runTest {
@@ -112,7 +105,7 @@ class UpdateUserTest : UserServiceTest() {
         val otherUser = DataBuilder.createExampleUser()
 
         val request = getExampleRequest(otherUser)
-        val fields = setOf(UserField.FIRST_NAME, UserField.LAST_NAME, UserField.ROLE, UserField.STATUS)
+        val fields = setOf(UserField.FIRST_NAME, UserField.LAST_NAME, UserField.ROLE)
 
         mockCurrentUser(currentUser)
         coEvery { userRepoMock.getUserById(otherUser.id) } returns Result.success(otherUser)
@@ -160,5 +153,25 @@ class UpdateUserTest : UserServiceTest() {
             assertThrows<DuplicateUserException> { service.updateUser(request, setOf(UserField.EMAIL)) }
 
             coVerify(exactly = 0) { userRepoMock.updateUser(any(), any()) }
+        }
+
+    @Test
+    fun `When a user updates themselves with all fields, then only the user update fields are passed to the repo`() =
+        runTest {
+            val user = DataBuilder.createExampleUser()
+
+            val request = getExampleRequest(user)
+            val fields = UserField.entries.filter { it.isUserUpdateField }.toSet()
+
+            mockCurrentUser(user)
+            coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
+            coJustRun { userAccessCheckerMock.isAllowedToUpdateUser(user, user) }
+            coJustRun { userAccessCheckerMock.isAllowedToUpdateUserRole(user, user.id) }
+            coEvery { userRepoMock.doesUserExistByEmail(user.email) } returns false
+            coEvery { userRepoMock.updateUser(user, fields) } returns user
+
+            service.updateUser(request, UserField.entries.toSet())
+
+            coVerify(exactly = 1) { userRepoMock.updateUser(user, fields) }
         }
 }
