@@ -47,7 +47,7 @@ RUN apk add --no-cache curl && \
 FROM ghcr.io/astral-sh/uv:0.13.6 AS uv
 
 # Stage 4: Run the application
-FROM eclipse-temurin:25-jre-alpine-3.23 AS final
+FROM eclipse-temurin:27-jre-alpine-3.24 AS final
 
 WORKDIR /app
 
