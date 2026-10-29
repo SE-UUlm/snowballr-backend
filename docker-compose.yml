@@ -9,7 +9,7 @@ services:
         ports:
             - "5432:5432"
         volumes:
-            - ./db-data:/var/lib/postgresql/data
+            - db-data:/var/lib/postgresql/data
         healthcheck:
             test: "pg_isready -U postgres"
             start_period: 4s # wait 4s to let db get ready for accepting connections
@@ -185,3 +185,7 @@ services:
             - --run_tls_server=false # Don't require TLS
             - --server_http_debug_port=${WEB_PORT:-8081} # Proxy listens on this port inside the container
             - --backend_max_call_recv_msg_size=10485760 # Increase max message size to 10MB
+
+volumes:
+    # PostgreSQL data, managed by Docker (remove with `docker compose down -v`)
+    db-data:
