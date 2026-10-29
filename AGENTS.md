@@ -126,9 +126,8 @@ Full rules in wiki/Logging.md. The points most easily got wrong:
 - Ask first: apiVersion changes, database schema or migration changes, CI workflow edits, Docker image or compose
   profile
   changes, dependency additions, changes to fetcher contract or plugin loading rules.
-- Never do: commit secrets or real credentials; edit generated build artifacts under build/; modify db-data/; change
-  .env
-  with production values; bypass security warnings for fetchers.
+- Never do: commit secrets or real credentials; edit generated build artifacts under build/; modify or remove the
+  db-data Docker volume; change .env with production values; bypass security warnings for fetchers.
 
 ## Commands (run from repo root)
 
