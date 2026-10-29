@@ -136,8 +136,6 @@ kotlin {
         freeCompilerArgs.addAll(
             // Handle nullability annotations as strict
             "-Xjsr305=strict",
-            // Annotations are applied to both the constructor parameter and the property (interop)
-            "-Xannotation-default-target=param-property",
         )
     }
     jvmToolchain(25)
@@ -258,7 +256,7 @@ val tsClientDir: Provider<Directory> = layout.buildDirectory.dir("generated/ts-c
 openApiGenerate {
     generatorName.set("typescript-fetch")
     inputSpec.set(committedApiSpec.asFile.absolutePath)
-    outputDir.set(tsClientDir.map { it.asFile.absolutePath })
+    outputDir.set(tsClientDir)
     validateSpec.set(true)
     gitUserId.set("SE-UUlm")
     gitRepoId.set("snowballr-backend")
@@ -371,6 +369,15 @@ kover {
 
 detekt {
     config.from("detekt.yml")
+}
+
+// detekt must run with the Kotlin version it was compiled with, not the project's (or Spring Boot's managed) version
+configurations.matching { it.name == "detekt" }.configureEach {
+    resolutionStrategy.eachDependency {
+        if (requested.group == "org.jetbrains.kotlin") {
+            useVersion(dev.detekt.gradle.plugin.getSupportedKotlinVersion())
+        }
+    }
 }
 
 // https://github.com/grpc/grpc-kotlin/tree/master/compiler
@@ -535,7 +542,8 @@ tasks.withType<DependencyUpdatesTask> {
         return isSemVer.not()
     }
 
+    // Only allow non-stable candidates for dependencies that are already on a non-stable version (e.g. detekt)
     rejectVersionIf {
-        isNonStable(candidate.version)
+        isNonStable(candidate.version) && !isNonStable(currentVersion)
     }
 }

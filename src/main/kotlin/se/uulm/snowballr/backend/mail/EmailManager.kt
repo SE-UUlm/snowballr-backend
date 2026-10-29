@@ -1,9 +1,11 @@
 package se.uulm.snowballr.backend.mail
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import jakarta.mail.Message
 import org.simplejavamail.MailException
 import org.simplejavamail.api.mailer.Mailer
 import org.simplejavamail.email.EmailBuilder
+import org.simplejavamail.recipient.RecipientBuilder
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.email.EmailTemplate
@@ -91,7 +93,12 @@ class EmailManager(
 
             val email = EmailBuilder
                 .startingBlank()
-                .to(to)
+                .withRecipients(
+                    RecipientBuilder()
+                        .withAddress(to)
+                        .withType(Message.RecipientType.TO)
+                        .build(),
+                )
                 .from(envReader.env.smtp.smtpSenderName, envReader.env.smtp.smtpSenderEmail)
                 .withSubject(data.subject)
                 .withHTMLText(htmlBody)
