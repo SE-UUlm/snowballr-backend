@@ -55,81 +55,81 @@ private class ExceptionCall<ReqT, RespT>(
             // We check the cause and depending on its type return the correct status code
             val cause = status.cause
             if (cause != null) {
-                newStatus = handleException(cause)
+                newStatus = statusFor(cause)
             }
         }
 
         super.close(newStatus, trailers)
     }
+}
 
-    /**
-     * Returns a status for the passed [Throwable], which then can be returned to the user.
-     */
-    private fun handleException(throwable: Throwable): Status = when (throwable) {
-        // Handle all specific application exceptions
-        is SnowballRException -> getStatusForSnowballRException(throwable)
+/**
+ * Returns a status for the passed [Throwable], which then can be returned to the user.
+ */
+internal fun statusFor(throwable: Throwable): Status = when (throwable) {
+    // Handle all specific application exceptions
+    is SnowballRException -> getStatusForSnowballRException(throwable)
 
-        // Handle specific unexpected exceptions
-        is IllegalArgumentException -> getStatusForSpecificUnexpectedException(Status.INVALID_ARGUMENT, throwable)
-        is NoSuchElementException -> getStatusForSpecificUnexpectedException(Status.NOT_FOUND, throwable)
-        is IllegalStateException -> getStatusForSpecificUnexpectedException(Status.FAILED_PRECONDITION, throwable)
+    // Handle specific unexpected exceptions
+    is IllegalArgumentException -> getStatusForSpecificUnexpectedException(Status.INVALID_ARGUMENT, throwable)
+    is NoSuchElementException -> getStatusForSpecificUnexpectedException(Status.NOT_FOUND, throwable)
+    is IllegalStateException -> getStatusForSpecificUnexpectedException(Status.FAILED_PRECONDITION, throwable)
 
-        // Handle the rest of unexpected exceptions
-        else -> getStatusForUnexpectedException(throwable)
+    // Handle the rest of unexpected exceptions
+    else -> getStatusForUnexpectedException(throwable)
+}
+
+/**
+ * The [SnowballRException]s are deliberately thrown in this application, e.g., when preconditions aren't met.
+ */
+private fun getStatusForSnowballRException(exception: SnowballRException): Status {
+    val status = when (exception) {
+        is AlreadyExistsException -> Status.ALREADY_EXISTS
+        is FailedPreconditionException -> Status.FAILED_PRECONDITION
+        is InternalException -> Status.INTERNAL
+        is InvalidArgumentException -> Status.INVALID_ARGUMENT
+        is NotFoundException -> Status.NOT_FOUND
+        is UnauthenticatedException -> Status.UNAUTHENTICATED
+        is UnauthorizedException -> Status.PERMISSION_DENIED
+        is UnauthorizedFetcherPathException -> Status.INTERNAL
+    }.withDescription(exception.message).withCause(exception.cause)
+
+    val logMessage = {
+        "gRPC call failed due to ${exception::class.qualifiedName ?: "<unknown class>"} with status: " +
+            "${status.code}. Message: ${status.description ?: "<no message>"}"
     }
 
-    /**
-     * The [SnowballRException]s are deliberately thrown in this application, e.g., when preconditions aren't met.
-     */
-    private fun getStatusForSnowballRException(exception: SnowballRException): Status {
-        val status = when (exception) {
-            is AlreadyExistsException -> Status.ALREADY_EXISTS
-            is FailedPreconditionException -> Status.FAILED_PRECONDITION
-            is InternalException -> Status.INTERNAL
-            is InvalidArgumentException -> Status.INVALID_ARGUMENT
-            is NotFoundException -> Status.NOT_FOUND
-            is UnauthenticatedException -> Status.UNAUTHENTICATED
-            is UnauthorizedException -> Status.PERMISSION_DENIED
-            is UnauthorizedFetcherPathException -> Status.INTERNAL
-        }.withDescription(exception.message).withCause(exception.cause)
-
-        val logMessage = {
-            "gRPC call failed due to ${exception::class.qualifiedName ?: "<unknown class>"} with status: " +
-                "${status.code}. Message: ${status.description ?: "<no message>"}"
-        }
-
-        when (exception) {
-            is InternalException, is UnauthorizedFetcherPathException -> logger.error(exception, logMessage)
-            is AlreadyExistsException,
-            is FailedPreconditionException,
-            is InvalidArgumentException,
-            is NotFoundException,
-            is UnauthenticatedException,
-            is UnauthorizedException,
-            -> logger.debug(logMessage)
-        }
-        logger.trace { exception.stackTraceToString() }
-        return status
+    when (exception) {
+        is InternalException, is UnauthorizedFetcherPathException -> logger.error(exception, logMessage)
+        is AlreadyExistsException,
+        is FailedPreconditionException,
+        is InvalidArgumentException,
+        is NotFoundException,
+        is UnauthenticatedException,
+        is UnauthorizedException,
+        -> logger.debug(logMessage)
     }
+    logger.trace { exception.stackTraceToString() }
+    return status
+}
 
-    /**
-     * Specific unexpected exceptions point to missing exception handling in this application.
-     * They are logged as warning so that they can be handled in the future.
-     */
-    private fun getStatusForSpecificUnexpectedException(status: Status, exception: Exception): Status {
-        logger.warn(exception) {
-            "gRPC call failed due to unexpected ${exception::class.simpleName ?: "<unknown class>"} " +
-                "with message: ${exception.message ?: "<no message>"}."
-        }
-        return status.withDescription(exception.message).withCause(exception.cause)
+/**
+ * Specific unexpected exceptions point to missing exception handling in this application.
+ * They are logged as warning so that they can be handled in the future.
+ */
+private fun getStatusForSpecificUnexpectedException(status: Status, exception: Exception): Status {
+    logger.warn(exception) {
+        "gRPC call failed due to unexpected ${exception::class.simpleName ?: "<unknown class>"} " +
+            "with message: ${exception.message ?: "<no message>"}."
     }
+    return status.withDescription(exception.message).withCause(exception.cause)
+}
 
-    /**
-     * All other unexpected exceptions point to bugs or missing exception handling in this application.
-     * Therefore, they are logged as error.
-     */
-    private fun getStatusForUnexpectedException(throwable: Throwable): Status {
-        logger.error(throwable) { "gRPC call failed due to an unexpected exception" }
-        return Status.INTERNAL.withDescription("An unexpected error occurred")
-    }
+/**
+ * All other unexpected exceptions point to bugs or missing exception handling in this application.
+ * Therefore, they are logged as error.
+ */
+private fun getStatusForUnexpectedException(throwable: Throwable): Status {
+    logger.error(throwable) { "gRPC call failed due to an unexpected exception" }
+    return Status.INTERNAL.withDescription("An unexpected error occurred")
 }

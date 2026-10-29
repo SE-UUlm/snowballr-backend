@@ -3,7 +3,7 @@ package se.uulm.snowballr.backend.service
 import io.github.oshai.kotlinlogging.KotlinLogging
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.access.IProjectMemberAccessChecker
-import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
+import se.uulm.snowballr.backend.grpc.SnowballRService
 import se.uulm.snowballr.backend.model.dto.projectmember.InvitationToken
 import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 import se.uulm.snowballr.backend.model.dto.projectmember.ProjectMemberWithUser

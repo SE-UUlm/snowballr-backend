@@ -41,7 +41,11 @@ import java.io.File
  * than pulling in the real database-backed module, a minimal Koin module of mocks is started for the lifetime of
  * this class - just enough to satisfy the bean wiring without touching a database.
  */
-@SpringBootTest(classes = [SnowballRApplication::class])
+@SpringBootTest(
+    classes = [SnowballRApplication::class],
+    // Bind the gRPC server to a free port, so the test doesn't depend on 9090 being available
+    properties = ["spring.grpc.server.port=0"],
+)
 @AutoConfigureMockMvc
 @Tag("openapi")
 class OpenApiContractTest(@Autowired private val mvc: MockMvc) {
@@ -99,7 +103,6 @@ class OpenApiContractTest(@Autowired private val mvc: MockMvc) {
         fun startTestKoin() {
             val envReader = mockk<EnvReader>()
             every { envReader.env.miscellaneous.authBypassEnabled } returns true
-            every { envReader.env.http.port } returns 8080
 
             startKoin {
                 modules(
