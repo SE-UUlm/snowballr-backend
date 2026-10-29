@@ -9,6 +9,7 @@ import se.uulm.snowballr.backend.context.RequestContext
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion
 import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
+import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import se.uulm.snowballr.backend.service.BaseServiceTest
 import se.uulm.snowballr.backend.service.CriterionService
@@ -22,12 +23,14 @@ sealed class CriterionServiceTest : BaseServiceTest {
     val userRepoMock = mockk<IUserTableRepo>()
     val criterionAccessCheckerMock = mockk<ICriterionAccessChecker>()
     val projectAccessCheckerMock = mockk<IProjectAccessChecker>()
+    val projectRepoMock = mockk<IProjectTableRepo>()
 
     private val allMocks = arrayOf(
         criterionRepoMock,
         userRepoMock,
         criterionAccessCheckerMock,
         projectAccessCheckerMock,
+        projectRepoMock,
     )
 
     val service = CriterionService(
@@ -35,6 +38,7 @@ sealed class CriterionServiceTest : BaseServiceTest {
         userRepo = userRepoMock,
         accessChecker = criterionAccessCheckerMock,
         projectAccessChecker = projectAccessCheckerMock,
+        projectRepo = projectRepoMock,
     )
 
     override fun getAllMocks(): Array<Any> = allMocks
