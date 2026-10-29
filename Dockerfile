@@ -24,7 +24,7 @@ RUN --mount=type=cache,target=/root/.gradle \
     gradle shadowJar --no-daemon --stacktrace
 
 # Stage 2: Download grpc-health-probe (runs in parallel with build)
-FROM alpine:3.21 AS grpc-health-probe
+FROM alpine:3.24 AS grpc-health-probe
 
 ARG GRPC_HEALTH_PROBE_VERSION
 
