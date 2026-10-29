@@ -29,10 +29,11 @@ The fastest way to get started is to use the provided Docker setup.
     ```
 
 > [!INFO]
-> If you encounter a permission-denied error regarding the plugin directory not
-> being writable, make sure to execute `chmod o+wr plugins` on the created
-> directory once. In some cases, Docker's created volumes aren't writable for
-> the user within the container.
+> The `plugins` directory is part of the repository, so it is owned by your user
+> and writable for the container user (UID `1000`). If you encounter a
+> permission-denied error regarding the plugin directory not being writable
+> (e.g., your UID is not `1000`), make sure to execute `chmod o+wr plugins`
+> once.
 
 The proxy is used to enable gRPC-Web support for the backend. It listens on the port specified by the `WEB_PORT`
 environment variable (default: `8081`).
