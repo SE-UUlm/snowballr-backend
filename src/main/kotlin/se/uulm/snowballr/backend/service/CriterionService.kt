@@ -6,9 +6,11 @@ import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionField
+import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
+import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
 import java.util.UUID
 
@@ -34,6 +36,11 @@ interface ICriterionService {
      * Service implementation of [SnowballRService.getAllCriteriaForProject].
      */
     suspend fun getAllCriteriaForProject(projectId: UUID): List<Criterion.ProjectCriterion>
+
+    /**
+     * Service implementation of [SnowballRService.deleteCriterion].
+     */
+    suspend fun deleteCriterion(criterionId: UUID)
 }
 
 /**
@@ -51,12 +58,14 @@ interface ICriterionService {
  * @param userRepo Interface for operations related to user management.
  * @param accessChecker Interface for checking access permissions for criteria based on defined rules.
  * @param projectAccessChecker Interface for checking access permissions for projects based on defined rules.
+ * @param projectRepo Interface for operations related to project management.
  */
 class CriterionService(
     private val repo: ICriterionTableRepo,
     private val userRepo: IUserTableRepo,
     private val accessChecker: ICriterionAccessChecker,
     private val projectAccessChecker: IProjectAccessChecker,
+    private val projectRepo: IProjectTableRepo,
 ) : ICriterionService {
     override suspend fun getCriterionById(criterionId: UUID): Criterion = withUser(userRepo) { currentUser ->
         val criterion = repo.getCriterionById(criterionId).getOrThrow()
@@ -97,4 +106,21 @@ class CriterionService(
 
             repo.getAllProjectCriteria(projectId)
         }
+
+    override suspend fun deleteCriterion(criterionId: UUID) = withUser(userRepo) { currentUser ->
+        val criterion = repo.getCriterionById(criterionId).getOrThrow()
+
+        accessChecker.isAllowedToUpdateCriterion(currentUser, criterion)
+
+        if (criterion is Criterion.ProjectCriterion && !canDeleteProjectCriterion(criterion.projectId)) {
+            throw FailedPreconditionException("The criterion is already associated with at least one review")
+        }
+
+        repo.deleteCriterionById(criterionId)
+    }
+
+    private suspend fun canDeleteProjectCriterion(projectId: UUID): Boolean {
+        val project = projectRepo.getProjectById(projectId).getOrThrow()
+        return !project.areSlrSettingsLocked
+    }
 }

@@ -4,7 +4,6 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
-import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.core.isNull
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import se.uulm.snowballr.backend.db.IDatabase
@@ -63,13 +62,6 @@ interface ICriterionTableRepo {
     suspend fun updateCriterion(request: UpdateCriterionRequest, fields: Set<CriterionField>): Criterion
 
     /**
-     * Deletes a list of criteria from the database based on their IDs.
-     *
-     * @param ids A list of [UUID]s for the criteria to be deleted.
-     */
-    suspend fun deleteCriteriaByIds(ids: List<UUID>)
-
-    /**
      * Deletes all user criteria associated with a specific user.
      *
      * @param userId The unique identifier of the user whose criteria are to be deleted.
@@ -92,6 +84,13 @@ interface ICriterionTableRepo {
      * @return A list of [Criterion] objects associated with the given project.
      */
     suspend fun getAllProjectCriteria(projectId: UUID): List<Criterion.ProjectCriterion>
+
+    /**
+     * Deletes the criterion associated with the specified ID.
+     *
+     * @param id The unique identifier of the criterion that is to be deleted.
+     */
+    suspend fun deleteCriterionById(id: UUID)
 }
 
 /**
@@ -143,14 +142,6 @@ class CriterionTableRepo(
             }
         }
 
-    override suspend fun deleteCriteriaByIds(ids: List<UUID>) {
-        val deletedIds = db.query {
-            CriterionTable.deleteWhere { CriterionTable.id inList ids }
-        }
-
-        logger.info { "Deleted $deletedIds criteria." }
-    }
-
     override suspend fun deleteUserCriteriaByUserId(userId: UUID) {
         val deletedIds = db.query {
             CriterionTable.deleteWhere {
@@ -174,6 +165,12 @@ class CriterionTableRepo(
     override suspend fun getAllProjectCriteria(projectId: UUID): List<Criterion.ProjectCriterion> = db.query {
         CriterionTable.getEntities(ResultRow::toProjectCriterion) {
             CriterionTable.projectId eq projectId
+        }
+    }
+
+    override suspend fun deleteCriterionById(id: UUID) {
+        db.query {
+            CriterionTable.deleteWhere { CriterionTable.id eq id }
         }
     }
 }

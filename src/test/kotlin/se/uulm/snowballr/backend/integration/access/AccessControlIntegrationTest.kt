@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.integration.access
 
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -106,6 +107,27 @@ class AccessControlIntegrationTest : IntegrationTest() {
                     criterionService.updateCriterion(request, setOf(CriterionField.NAME))
                 }
             }
+        }
+
+        @Test
+        fun `When a non-admin member tries to delete a criterion, then access is denied`() = runTest {
+            val (project, member) = setupProjectWithMember()
+
+            val criterion = criterionService.createCriterion(
+                CreateCriterionRequest(
+                    tag = "AC",
+                    name = "Admin Criterion",
+                    description = "Created by admin",
+                    category = CriterionCategory.INCLUSION,
+                    projectId = project.id,
+                ),
+            )
+
+            actAsUser(member.id) {
+                assertThrows<UnauthorizedException> { criterionService.deleteCriterion(criterion.id) }
+            }
+
+            assertEquals(criterion.id, criterionService.getCriterionById(criterion.id).id)
         }
     }
 
