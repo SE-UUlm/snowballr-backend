@@ -44,7 +44,7 @@ RUN apk add --no-cache curl && \
     && chmod +x /grpc_health_probe
 
 # Stage 3: Provide uv binary
-FROM ghcr.io/astral-sh/uv:0.11.7 AS uv
+FROM ghcr.io/astral-sh/uv:0.13.6 AS uv
 
 # Stage 4: Run the application
 FROM eclipse-temurin:25-jre-alpine-3.23 AS final
