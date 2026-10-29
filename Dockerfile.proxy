@@ -1,4 +1,4 @@
-FROM alpine:3.22.0 AS final
+FROM alpine:3.24.3 AS final
 
 # Asset IDs of v0.14.0 release of grpcwebproxy
 # https://github.com/improbable-eng/grpc-web/releases/tag/v0.14.0
