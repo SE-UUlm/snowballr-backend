@@ -217,7 +217,7 @@ If there isn't already a service for the entity associated with your use case, a
 1. Register the implementation in `serviceLayerDeps()` in
    [Module.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/Module.kt)
    and inject the service interface directly into `SnowballRService` in
-   [SnowballRServer.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/grpc/SnowballRServer.kt).
+   [SnowballRService.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/grpc/SnowballRService.kt).
 
 2. Create an entity-specific `ExampleServiceTest` base class in the service test package, as described on the
    [Testing](https://github.com/SE-UUlm/snowballr-backend/wiki/Testing#service) page.
