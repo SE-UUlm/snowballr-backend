@@ -32,7 +32,6 @@ kotlinx-serialization-json = "1.12.0"
 nanoid = "2.0.1"
 git-versioning = "7.0.0"
 undercouch-download = "5.7.0"
-sonarqube = "7.5.0.8588"
 ben-manes-versions = "0.66.0"
 spring-boot = "4.1.2"
 spring-dep-man = "1.1.7"
@@ -117,7 +116,6 @@ shadow-jar = { id = "com.gradleup.shadow", version.ref = "shadow-jar" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 git-versioning = { id = "me.qoomon.git-versioning", version.ref = "git-versioning" }
 undercouch-download = { id = "de.undercouch.download", version.ref = "undercouch-download" }
-sonarqube = { id = "org.sonarqube", version.ref = "sonarqube" }
 ben-manes-versions = { id = "io.github.ben-manes.versions", version.ref = "ben-manes-versions" }
 spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
 spring-framework-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
