@@ -12,6 +12,7 @@ import se.uulm.snowballr.backend.model.dto.criterion.Criterion
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion.ProjectCriterion
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion.UserCriterion
 import se.uulm.snowballr.backend.model.dto.user.User
+import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.failedprecondition.EntityNotActiveException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedCreateException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadException
@@ -26,7 +27,7 @@ interface ICriterionAccessChecker {
      *
      * Conditions for project criteria:
      * - The user is a project admin of the project the criterion is being created in, **OR** a server admin.
-     * - The project is active (not archived or deleted).
+     * - The project is active (not archived or deleted), but settings are not locked.
      *
      * Conditions for user criteria:
      * - none
@@ -35,6 +36,8 @@ interface ICriterionAccessChecker {
      * @param request The request to create a criterion.
      * @throws UnauthorizedCreateException if the user is not allowed to create a criterion.
      * @throws EntityNotActiveException if the project (case of project criterion) is not active.
+     * @throws FailedPreconditionException if the project (case of project criterion) is active, but the settings are
+     * locked.
      */
     suspend fun isAllowedToCreateCriterion(currentUser: User, request: CreateCriterionRequest)
 
@@ -57,12 +60,15 @@ interface ICriterionAccessChecker {
      * Conditions:
      * - The criterion is a user criterion created by the current user, **OR** a project criterion created in a project
      * the user is a project admin of, **OR** the user is a server admin.
-     * - Additionally, if the criterion is a project criterion, the project must be active (not archived or deleted).
+     * - Additionally, if the criterion is a project criterion, the project must be active (not archived or deleted)
+     * and the settings must not be locked.
      *
      * @param currentUser The user for whom the access check is being performed.
      * @param criterion The criterion that is being accessed.
      * @throws UnauthorizedUpdateException if the user is not allowed to update the criterion.
-     * @throws EntityNotActiveException if the criterion is a project criterion and the project is not active.
+     * @throws EntityNotActiveException if the project (case of project criterion) is not active.
+     * @throws FailedPreconditionException if the project (case of project criterion) is active, but the settings are
+     * locked.
      */
     suspend fun isAllowedToUpdateCriterion(currentUser: User, criterion: Criterion)
 

@@ -179,7 +179,7 @@ class CriterionIntegrationTest : IntegrationTest() {
         }
 
         @Test
-        fun `When a criterion is deleted in a locked project, then the deletion is fails and the criterion is kept`() =
+        fun `When a criterion is deleted in a locked project, then the deletion fails and the criterion is kept`() =
             runTest {
                 val (project, projectPaper) = setupProjectAndPaperForReview()
                 val criterion = createProjectCriterion(project.id)

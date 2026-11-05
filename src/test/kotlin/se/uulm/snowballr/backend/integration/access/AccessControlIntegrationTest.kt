@@ -64,7 +64,7 @@ class AccessControlIntegrationTest : IntegrationTest() {
     @Nested
     inner class CriterionAccess {
         @Test
-        fun `When a non-admin member tries to create a criterion, then access is denied`() = runTest {
+        fun `When a non-admin member tries to create a project criterion, then access is denied`() = runTest {
             val (project, member) = setupProjectWithMember()
 
             val request = CreateCriterionRequest(
@@ -81,7 +81,7 @@ class AccessControlIntegrationTest : IntegrationTest() {
         }
 
         @Test
-        fun `When a non-admin member tries to update a criterion, then access is denied`() = runTest {
+        fun `When a non-admin member tries to update a project criterion, then access is denied`() = runTest {
             val (project, member) = setupProjectWithMember()
 
             val criterion = criterionService.createCriterion(
@@ -110,7 +110,7 @@ class AccessControlIntegrationTest : IntegrationTest() {
         }
 
         @Test
-        fun `When a non-admin member tries to delete a criterion, then access is denied`() = runTest {
+        fun `When a non-admin member tries to delete a project criterion, then access is denied`() = runTest {
             val (project, member) = setupProjectWithMember()
 
             val criterion = criterionService.createCriterion(

@@ -55,18 +55,17 @@ class DeleteCriterionTest : CriterionServiceTest() {
     }
 
     @Test
-    fun `When a user criterion is deleted, then the criterion is deleted without checking review associations`() =
-        runTest {
-            val user = DataBuilder.createExampleUser()
-            val criterion = DataBuilder.createExampleUserCriterion(createdBy = user.id)
+    fun `When a user criterion can be deleted, then the criterion is deleted`() = runTest {
+        val user = DataBuilder.createExampleUser()
+        val criterion = DataBuilder.createExampleUserCriterion(createdBy = user.id)
 
-            mockCurrentUser(user)
-            coEvery { criterionRepoMock.getCriterionById(criterion.id) } returns Result.success(criterion)
-            coJustRun { criterionAccessCheckerMock.isAllowedToUpdateCriterion(user, criterion) }
-            coJustRun { criterionRepoMock.deleteCriterionById(criterion.id) }
+        mockCurrentUser(user)
+        coEvery { criterionRepoMock.getCriterionById(criterion.id) } returns Result.success(criterion)
+        coJustRun { criterionAccessCheckerMock.isAllowedToUpdateCriterion(user, criterion) }
+        coJustRun { criterionRepoMock.deleteCriterionById(criterion.id) }
 
-            service.deleteCriterion(criterion.id)
+        service.deleteCriterion(criterion.id)
 
-            coVerify(exactly = 1) { criterionRepoMock.deleteCriterionById(criterion.id) }
-        }
+        coVerify(exactly = 1) { criterionRepoMock.deleteCriterionById(criterion.id) }
+    }
 }
