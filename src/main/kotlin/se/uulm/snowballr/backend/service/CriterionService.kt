@@ -6,6 +6,8 @@ import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionField
+import se.uulm.snowballr.backend.model.dto.user.User
+import se.uulm.snowballr.backend.model.dto.user.UserField
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
@@ -80,6 +82,11 @@ class CriterionService(
                 val owner = request.projectId?.let { "project $it" } ?: "the user's defaults"
                 "Criterion ${criterion.id} ('${criterion.tag}') created for $owner"
             }
+
+            if (criterion is Criterion.UserCriterion) {
+                addCriterionToUserSettings(currentUser, criterion)
+            }
+
             criterion
         }
 
@@ -106,7 +113,26 @@ class CriterionService(
 
         accessChecker.isAllowedToDeleteCriterion(currentUser, criterion)
 
+        if (criterion is Criterion.UserCriterion) {
+            val criterionOwner = userRepo.getUserById(criterion.createdBy).getOrThrow()
+            removeCriterionFromUserSettings(criterionOwner, criterion)
+        }
+
         repo.deleteCriterionById(criterionId)
-        logger.info { "Criterion ${criterion.id} deleted" }
+        logger.info { "Criterion $criterionId deleted" }
+    }
+
+    private suspend fun addCriterionToUserSettings(criterionOwner: User, criterion: Criterion.UserCriterion) {
+        val updatedCriteria = criterionOwner.settings.criteriaIds + criterion.id
+        val updatedSettings = criterionOwner.settings.copy(criteriaIds = updatedCriteria)
+        userRepo.updateUser(criterionOwner.copy(settings = updatedSettings), setOf(UserField.CRITERIA_IDS))
+        logger.info { "Criterion ${criterion.id} added to settings of user ${criterionOwner.id}" }
+    }
+
+    private suspend fun removeCriterionFromUserSettings(criterionOwner: User, criterion: Criterion.UserCriterion) {
+        val updatedCriteria = criterionOwner.settings.criteriaIds.filterNot { it == criterion.id }
+        val updatedSettings = criterionOwner.settings.copy(criteriaIds = updatedCriteria)
+        userRepo.updateUser(criterionOwner.copy(settings = updatedSettings), setOf(UserField.CRITERIA_IDS))
+        logger.info { "Criterion ${criterion.id} removed from settings of user ${criterionOwner.id}" }
     }
 }

@@ -8,6 +8,7 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
+import se.uulm.snowballr.backend.model.dto.user.UserField
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import java.util.UUID
 
@@ -66,13 +67,15 @@ class CreateCriterionTest : CriterionServiceTest() {
     fun `When a user creates a user criterion and has access, then the created criterion has the correct values`() =
         runTest {
             val user = DataBuilder.createExampleUser()
+            val criterion = DataBuilder.createExampleUserCriterion(createdBy = user.id)
+            val updatedUser = user.copy(settings = user.settings.copy(criteriaIds = listOf(criterion.id)))
 
-            val criterion = DataBuilder.createExampleUserCriterion()
             val request = getUserCriterionRequest()
 
             mockCurrentUser(user)
             coEvery { criterionRepoMock.createCriterion(request, user.id) } returns criterion
             coJustRun { criterionAccessCheckerMock.isAllowedToCreateCriterion(user, request) }
+            coJustRun { userRepoMock.updateUser(updatedUser, setOf(UserField.CRITERIA_IDS)) }
 
             val result = service.createCriterion(request)
 
