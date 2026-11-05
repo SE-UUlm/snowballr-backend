@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.integration.IntegrationTest
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
@@ -134,6 +135,22 @@ class CriterionIntegrationTest : IntegrationTest() {
                 )
             }
         }
+
+        @Test
+        fun `When a criterion is created for a user, then it appears in the user's settings`() = runTest {
+            val criterion = criterionService.createCriterion(
+                CreateCriterionRequest(
+                    tag = "TC",
+                    name = "Criterion name",
+                    description = "A test criterion",
+                    category = CriterionCategory.INCLUSION,
+                    projectId = null,
+                ),
+            )
+
+            val criteriaIds = userService.getCurrentUser().settings.criteriaIds
+            assertEquals(listOf(criterion.id), criteriaIds)
+        }
     }
 
     @Nested
@@ -211,5 +228,48 @@ class CriterionIntegrationTest : IntegrationTest() {
         fun `When a non-existing criterion is deleted, then a NotFoundException is thrown`() = runTest {
             assertThrows<NotFoundException> { criterionService.deleteCriterion(UUID.randomUUID()) }
         }
+
+        @Test
+        fun `When a user criterion is deleted, then it is also removed from the user's settings`() = runTest {
+            val criterion = criterionService.createCriterion(
+                CreateCriterionRequest(
+                    tag = "TC",
+                    name = "Criterion name",
+                    description = "A test criterion",
+                    category = CriterionCategory.INCLUSION,
+                    projectId = null,
+                ),
+            )
+
+            criterionService.deleteCriterion(criterion.id)
+
+            val updatedCriteriaIds = userService.getCurrentUser().settings.criteriaIds
+            assertEquals(0, updatedCriteriaIds.size)
+        }
+
+        @Test
+        fun `When a server admin deletes another user's criterion, then it is also removed from the other user's settings`() =
+            runTest {
+                val criterionOwner = addUser(DataBuilder.createExampleUser(email = "criterion.owner@example.com"))
+
+                val criterion = actAsUser(criterionOwner.id) {
+                    criterionService.createCriterion(
+                        CreateCriterionRequest(
+                            tag = "TC",
+                            name = "Criterion name",
+                            description = "A test criterion",
+                            category = CriterionCategory.INCLUSION,
+                            projectId = null,
+                        ),
+                    )
+                }
+
+                criterionService.deleteCriterion(criterion.id)
+
+                actAsUser(criterionOwner.id) {
+                    val criteriaIds = userService.getCurrentUser().settings.criteriaIds
+                    assertEquals(0, criteriaIds.size)
+                }
+            }
     }
 }
