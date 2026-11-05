@@ -31,7 +31,7 @@ class DeleteCriterionTest : CriterionServiceTest() {
         mockCurrentUser(user)
         coEvery { criterionRepoMock.getCriterionById(criterion.id) } returns Result.success(criterion)
         coEvery {
-            criterionAccessCheckerMock.isAllowedToUpdateCriterion(user, criterion)
+            criterionAccessCheckerMock.isAllowedToDeleteCriterion(user, criterion)
         } throws TestSpecificException()
 
         assertThrows<TestSpecificException> { service.deleteCriterion(criterion.id) }
@@ -46,7 +46,7 @@ class DeleteCriterionTest : CriterionServiceTest() {
 
         mockCurrentUser(user)
         coEvery { criterionRepoMock.getCriterionById(criterion.id) } returns Result.success(criterion)
-        coJustRun { criterionAccessCheckerMock.isAllowedToUpdateCriterion(user, criterion) }
+        coJustRun { criterionAccessCheckerMock.isAllowedToDeleteCriterion(user, criterion) }
         coJustRun { criterionRepoMock.deleteCriterionById(criterion.id) }
 
         service.deleteCriterion(criterion.id)
@@ -61,7 +61,7 @@ class DeleteCriterionTest : CriterionServiceTest() {
 
         mockCurrentUser(user)
         coEvery { criterionRepoMock.getCriterionById(criterion.id) } returns Result.success(criterion)
-        coJustRun { criterionAccessCheckerMock.isAllowedToUpdateCriterion(user, criterion) }
+        coJustRun { criterionAccessCheckerMock.isAllowedToDeleteCriterion(user, criterion) }
         coJustRun { criterionRepoMock.deleteCriterionById(criterion.id) }
 
         service.deleteCriterion(criterion.id)

@@ -15,6 +15,7 @@ import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.failedprecondition.EntityNotActiveException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedCreateException
+import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedExceptionFactory
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedUpdateException
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
@@ -73,6 +74,24 @@ interface ICriterionAccessChecker {
     suspend fun isAllowedToUpdateCriterion(currentUser: User, criterion: Criterion)
 
     /**
+     * Checks whether the current user is allowed to update the target criterion.
+     *
+     * Conditions:
+     * - The criterion is a user criterion created by the current user, **OR** a project criterion created in a project
+     * the user is a project admin of, **OR** the user is a server admin.
+     * - Additionally, if the criterion is a project criterion, the project must be active (not archived or deleted)
+     * and the settings must not be locked.
+     *
+     * @param currentUser The user for whom the access check is being performed.
+     * @param criterion The criterion that is being accessed.
+     * @throws UnauthorizedUpdateException if the user is not allowed to update the criterion.
+     * @throws EntityNotActiveException if the project (case of project criterion) is not active.
+     * @throws FailedPreconditionException if the project (case of project criterion) is active, but the settings are
+     * locked.
+     */
+    suspend fun isAllowedToDeleteCriterion(currentUser: User, criterion: Criterion)
+
+    /**
      * Checks whether the current user is allowed to use the target criterion as a default criterion in their settings.
      *
      * Conditions:
@@ -109,17 +128,11 @@ class CriterionAccessChecker(
     }
 
     override suspend fun isAllowedToUpdateCriterion(currentUser: User, criterion: Criterion) {
-        isCreatorOfCriterion()
-            .orElse(isUserAdminInProjectOfCriterion())
-            .orElse(isServerAdmin().forTarget())
-            .orElseThrow { user, target ->
-                UnauthorizedUpdateException(user.id, target.id, EntityType.CRITERION)
-            }
-            .checkFor(currentUser, criterion)
+        isAllowedToUpdateOrDeleteCriterion(currentUser, criterion, AccessType.UPDATE)
+    }
 
-        if (criterion is ProjectCriterion) {
-            projectAccessChecker.isProjectActiveButNotLockedById().checkFor(currentUser, criterion.projectId)
-        }
+    override suspend fun isAllowedToDeleteCriterion(currentUser: User, criterion: Criterion) {
+        isAllowedToUpdateOrDeleteCriterion(currentUser, criterion, AccessType.DELETE)
     }
 
     override suspend fun isAllowedToUseAsDefaultCriterion(currentUser: User, criterion: Criterion) {
@@ -151,5 +164,23 @@ class CriterionAccessChecker(
     private suspend fun isProjectAdmin(projectId: UUID, userId: UUID): Boolean {
         val projectMembers = projectMemberRepo.getAllProjectAdmins(projectId)
         return projectMembers.any { it.userId == userId }
+    }
+
+    private suspend fun isAllowedToUpdateOrDeleteCriterion(
+        currentUser: User,
+        criterion: Criterion,
+        accessType: AccessType,
+    ) {
+        isCreatorOfCriterion()
+            .orElse(isUserAdminInProjectOfCriterion())
+            .orElse(isServerAdmin().forTarget())
+            .orElseThrow { user, target ->
+                UnauthorizedExceptionFactory.createForAccessType(accessType, user.id, target.id, EntityType.CRITERION)
+            }
+            .checkFor(currentUser, criterion)
+
+        if (criterion is ProjectCriterion) {
+            projectAccessChecker.isProjectActiveButNotLockedById().checkFor(currentUser, criterion.projectId)
+        }
     }
 }

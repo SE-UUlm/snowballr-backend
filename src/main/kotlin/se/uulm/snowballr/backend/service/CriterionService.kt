@@ -104,7 +104,7 @@ class CriterionService(
     override suspend fun deleteCriterion(criterionId: UUID) = withUser(userRepo) { currentUser ->
         val criterion = repo.getCriterionById(criterionId).getOrThrow()
 
-        accessChecker.isAllowedToUpdateCriterion(currentUser, criterion)
+        accessChecker.isAllowedToDeleteCriterion(currentUser, criterion)
 
         repo.deleteCriterionById(criterionId)
         logger.info { "Criterion ${criterion.id} deleted" }
