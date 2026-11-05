@@ -36,7 +36,7 @@ interface ICriterionAccessChecker {
      *
      * @param currentUser The user for whom the access check is being performed.
      * @param request The request to create a criterion.
-     * @throws ProjectNotFoundException if the project (case of project criterion is not active).
+     * @throws ProjectNotFoundException if the project (case of project criterion) does not exist.
      * @throws UnauthorizedCreateException if the user is not allowed to create a criterion.
      * @throws EntityNotActiveException if the project (case of project criterion) is not active.
      * @throws FailedPreconditionException if the project (case of project criterion) is active, but the settings are

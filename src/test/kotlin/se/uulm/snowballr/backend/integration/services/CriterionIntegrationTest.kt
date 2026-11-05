@@ -15,6 +15,7 @@ import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.NotFoundException
+import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
@@ -116,6 +117,21 @@ class CriterionIntegrationTest : IntegrationTest() {
 
             assertThrows<FailedPreconditionException> {
                 createProjectCriterion(lockedProject.id)
+            }
+        }
+
+        @Test
+        fun `When a criterion is created for a non-existing project, then the creation fails`() = runTest {
+            assertThrows<ProjectNotFoundException> {
+                criterionService.createCriterion(
+                    CreateCriterionRequest(
+                        tag = "TC",
+                        name = "Criterion name",
+                        description = "A test criterion",
+                        category = CriterionCategory.INCLUSION,
+                        projectId = UUID.randomUUID(),
+                    ),
+                )
             }
         }
     }

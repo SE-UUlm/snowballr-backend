@@ -100,7 +100,7 @@ class CriterionAccessCheckerTest {
             }
 
         @Test
-        fun `When isProjectExistent and isProjectOrServerAdmin allows, but isProjectActiveById denies access, then access is denied`() =
+        fun `When isProjectExistent and isProjectOrServerAdmin allows, but isProjectActiveButNotLockedById denies access, then access is denied`() =
             runTest {
                 val user = DataBuilder.createExampleUser()
                 val request = getProjectCriterionRequest()
