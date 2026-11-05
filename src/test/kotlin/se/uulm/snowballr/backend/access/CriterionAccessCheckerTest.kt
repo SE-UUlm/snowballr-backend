@@ -12,10 +12,12 @@ import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.access.rules.AccessRule
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedUpdateException
+import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import java.util.UUID
 
@@ -29,38 +31,46 @@ class CriterionAccessCheckerTest {
     private val failureAccessRule = AccessRule<UUID> { _, _ -> throw UnauthorizedTestException() }
 
     @Nested
-    inner class IsAllowedToCreateProjectCriterion {
+    inner class IsAllowedToCreateCriterion {
+        private fun getProjectCriterionRequest() = CreateCriterionRequest(
+            tag = "Tag",
+            name = "Criterion",
+            description = "Description",
+            category = CriterionCategory.EXCLUSION,
+            projectId = UUID.randomUUID(),
+        )
+
         @Test
         fun `When isProjectOrServerAdmin and isProjectActiveById both allow access, then access is allowed`() =
             runTest {
                 val user = DataBuilder.createExampleUser()
-                val projectId = UUID.randomUUID()
+                val request = getProjectCriterionRequest()
 
                 every {
                     projectAccessChecker.isProjectOrServerAdmin(AccessType.CREATE, EntityType.CRITERION)
                 } returns successAccessRule
                 every { projectAccessChecker.isProjectActiveById() } returns successAccessRule
 
-                assertDoesNotThrow { accessChecker.isAllowedToCreateProjectCriterion(user, projectId) }
+                assertDoesNotThrow { accessChecker.isAllowedToCreateCriterion(user, request) }
             }
 
         @Test
         fun `When isProjectOrServerAdmin denies access, then access is denied`() = runTest {
             val user = DataBuilder.createExampleUser()
-            val projectId = UUID.randomUUID()
+            val request = getProjectCriterionRequest()
 
             every {
                 projectAccessChecker.isProjectOrServerAdmin(AccessType.CREATE, EntityType.CRITERION)
             } returns failureAccessRule
 
-            assertThrows<UnauthorizedTestException> { accessChecker.isAllowedToCreateProjectCriterion(user, projectId) }
+            assertThrows<UnauthorizedTestException> { accessChecker.isAllowedToCreateCriterion(user, request) }
         }
 
         @Test
         fun `When isProjectActiveById allows, but isProjectOrServerAdmin denies access, then access is denied`() =
             runTest {
                 val user = DataBuilder.createExampleUser()
-                val projectId = UUID.randomUUID()
+                val request = getProjectCriterionRequest()
 
                 every {
                     projectAccessChecker.isProjectOrServerAdmin(AccessType.CREATE, EntityType.CRITERION)
@@ -68,7 +78,7 @@ class CriterionAccessCheckerTest {
                 every { projectAccessChecker.isProjectActiveById() } returns successAccessRule
 
                 assertThrows<UnauthorizedTestException> {
-                    accessChecker.isAllowedToCreateProjectCriterion(user, projectId)
+                    accessChecker.isAllowedToCreateCriterion(user, request)
                 }
             }
     }

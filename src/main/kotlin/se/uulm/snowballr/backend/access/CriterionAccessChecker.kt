@@ -16,23 +16,27 @@ import se.uulm.snowballr.backend.model.exception.failedprecondition.EntityNotAct
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedCreateException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedUpdateException
+import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import java.util.UUID
 
 interface ICriterionAccessChecker {
     /**
-     * Checks whether the current user is allowed to create a project criterion.
+     * Checks whether the current user is allowed to create a criterion.
      *
-     * Conditions:
+     * Conditions for project criteria:
      * - The user is a project admin of the project the criterion is being created in, **OR** a server admin.
      * - The project is active (not archived or deleted).
      *
+     * Conditions for user criteria:
+     * - none
+     *
      * @param currentUser The user for whom the access check is being performed.
-     * @param projectId The ID of the project the criterion is being created in.
-     * @throws UnauthorizedCreateException if the user is not allowed to create a project criterion.
-     * @throws EntityNotActiveException if the project is not active.
+     * @param request The request to create a criterion.
+     * @throws UnauthorizedCreateException if the user is not allowed to create a criterion.
+     * @throws EntityNotActiveException if the project (case of project criterion) is not active.
      */
-    suspend fun isAllowedToCreateProjectCriterion(currentUser: User, projectId: UUID)
+    suspend fun isAllowedToCreateCriterion(currentUser: User, request: CreateCriterionRequest)
 
     /**
      * Checks whether the current user is allowed to read the target criterion.
@@ -80,10 +84,12 @@ class CriterionAccessChecker(
     private val projectMemberRepo: IProjectMemberTableRepo,
     private val projectAccessChecker: IProjectAccessChecker,
 ) : ICriterionAccessChecker {
-    override suspend fun isAllowedToCreateProjectCriterion(currentUser: User, projectId: UUID) {
+    override suspend fun isAllowedToCreateCriterion(currentUser: User, request: CreateCriterionRequest) {
+        if (request.projectId == null) return
+
         projectAccessChecker.isProjectOrServerAdmin(AccessType.CREATE, EntityType.CRITERION)
-            .checkFor(currentUser, projectId)
-        projectAccessChecker.isProjectActiveById().checkFor(currentUser, projectId)
+            .checkFor(currentUser, request.projectId)
+        projectAccessChecker.isProjectActiveById().checkFor(currentUser, request.projectId)
     }
 
     override suspend fun isAllowedToReadCriterion(currentUser: User, criterion: Criterion) {

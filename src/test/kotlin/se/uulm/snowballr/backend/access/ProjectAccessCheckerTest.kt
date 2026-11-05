@@ -339,7 +339,7 @@ class ProjectAccessCheckerTest {
         }
 
         @Test
-        fun `When the project exists and is active, then the check passes`() = runTest {
+        fun `When the project exists and has status ACTIVE, then the check passes`() = runTest {
             val user = DataBuilder.createExampleUser()
             val projectId = UUID.randomUUID()
             val project = DataBuilder.createExampleProject(
@@ -351,6 +351,21 @@ class ProjectAccessCheckerTest {
 
             assertDoesNotThrow { accessChecker.isProjectActiveById().checkFor(user, projectId) }
         }
+
+        @Test
+        fun `When the project exists and has status ACTIVE_LOCKED, then an EntityNotActiveException is thrown`() =
+            runTest {
+                val user = DataBuilder.createExampleUser()
+                val projectId = UUID.randomUUID()
+                val project = DataBuilder.createExampleProject(
+                    id = projectId,
+                    status = ProjectStatus.ACTIVE_LOCKED,
+                )
+
+                coEvery { projectRepo.getProjectById(projectId) } returns Result.success(project)
+
+                assertThrows<EntityNotActiveException> { accessChecker.isProjectActiveById().checkFor(user, projectId) }
+            }
 
         @Test
         fun `When the project exists but is deleted, then an EntityNotActiveException is thrown`() = runTest {

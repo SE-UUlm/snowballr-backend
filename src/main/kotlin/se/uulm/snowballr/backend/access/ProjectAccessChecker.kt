@@ -10,6 +10,7 @@ import se.uulm.snowballr.backend.access.rules.orElse
 import se.uulm.snowballr.backend.access.rules.orElseThrow
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
@@ -106,7 +107,7 @@ interface IProjectAccessChecker {
     fun isProjectExistent(): AccessRule<UUID>
 
     /**
-     * Check whether a project with the given ID is active (or active, but settings are locked).
+     * Check whether a project with the given ID is active (but not active with locked settings).
      *
      * @throws EntityNotActiveException if the project is not active.
      */
@@ -177,7 +178,7 @@ class ProjectAccessChecker(
 
     override fun isProjectActiveById() = AccessRule<UUID> { _, projectId ->
         val project = projectRepo.getProjectById(projectId).getOrNull()
-        project != null && project.isActive
+        project != null && project.status == ProjectStatus.ACTIVE
     }.orElseThrow { _, projectId -> EntityNotActiveException(EntityType.PROJECT, projectId) }
 
     override fun isProjectOrServerAdmin(accessType: AccessType, entityType: EntityType) = isProjectAdmin()
