@@ -49,7 +49,7 @@ class CriterionAccessCheckerTest {
                 every {
                     projectAccessChecker.isProjectOrServerAdmin(AccessType.CREATE, EntityType.CRITERION)
                 } returns successAccessRule
-                every { projectAccessChecker.isProjectActiveById() } returns successAccessRule
+                every { projectAccessChecker.isProjectActiveButNotLockedById() } returns successAccessRule
 
                 assertDoesNotThrow { accessChecker.isAllowedToCreateCriterion(user, request) }
             }
@@ -75,7 +75,7 @@ class CriterionAccessCheckerTest {
                 every {
                     projectAccessChecker.isProjectOrServerAdmin(AccessType.CREATE, EntityType.CRITERION)
                 } returns failureAccessRule
-                every { projectAccessChecker.isProjectActiveById() } returns successAccessRule
+                every { projectAccessChecker.isProjectActiveButNotLockedById() } returns successAccessRule
 
                 assertThrows<UnauthorizedTestException> {
                     accessChecker.isAllowedToCreateCriterion(user, request)
@@ -159,7 +159,7 @@ class CriterionAccessCheckerTest {
             val criterion = DataBuilder.createExampleProjectCriterion(projectId = projectId)
 
             coEvery { projectMemberRepo.getAllProjectAdmins(projectId) } returns listOf(projectAdmin)
-            coEvery { projectAccessChecker.isProjectActiveById() } returns successAccessRule
+            coEvery { projectAccessChecker.isProjectActiveButNotLockedById() } returns successAccessRule
 
             assertDoesNotThrow { accessChecker.isAllowedToUpdateCriterion(user, criterion) }
         }
@@ -176,7 +176,7 @@ class CriterionAccessCheckerTest {
             val criterion = DataBuilder.createExampleProjectCriterion(projectId = projectId)
 
             coEvery { projectMemberRepo.getAllProjectAdmins(projectId) } returns listOf(projectAdmin)
-            coEvery { projectAccessChecker.isProjectActiveById() } returns failureAccessRule
+            coEvery { projectAccessChecker.isProjectActiveButNotLockedById() } returns failureAccessRule
 
             assertThrows<UnauthorizedTestException> { accessChecker.isAllowedToUpdateCriterion(user, criterion) }
         }

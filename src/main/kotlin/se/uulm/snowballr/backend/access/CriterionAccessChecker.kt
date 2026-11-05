@@ -89,7 +89,7 @@ class CriterionAccessChecker(
 
         projectAccessChecker.isProjectOrServerAdmin(AccessType.CREATE, EntityType.CRITERION)
             .checkFor(currentUser, request.projectId)
-        projectAccessChecker.isProjectActiveById().checkFor(currentUser, request.projectId)
+        projectAccessChecker.isProjectActiveButNotLockedById().checkFor(currentUser, request.projectId)
     }
 
     override suspend fun isAllowedToReadCriterion(currentUser: User, criterion: Criterion) {
@@ -112,7 +112,7 @@ class CriterionAccessChecker(
             .checkFor(currentUser, criterion)
 
         if (criterion is ProjectCriterion) {
-            projectAccessChecker.isProjectActiveById().checkFor(currentUser, criterion.projectId)
+            projectAccessChecker.isProjectActiveButNotLockedById().checkFor(currentUser, criterion.projectId)
         }
     }
 
