@@ -62,41 +62,54 @@ class CriterionAccessCheckerTest {
         )
 
         @Test
-        fun `When isProjectOrServerAdmin and isProjectActiveById both allow access, then access is allowed`() =
-            runTest {
-                val user = DataBuilder.createExampleUser()
-                val request = getProjectCriterionRequest()
-
-                every {
-                    projectAccessChecker.isProjectOrServerAdmin(AccessType.CREATE, EntityType.CRITERION)
-                } returns successAccessRule
-                every { projectAccessChecker.isProjectActiveButNotLockedById() } returns successAccessRule
-
-                assertDoesNotThrow { accessChecker.isAllowedToCreateCriterion(user, request) }
-            }
-
-        @Test
-        fun `When isProjectOrServerAdmin denies access, then access is denied`() = runTest {
+        fun `When all checks allow access, then access is allowed`() = runTest {
             val user = DataBuilder.createExampleUser()
             val request = getProjectCriterionRequest()
 
+            every { projectAccessChecker.isProjectExistent() } returns successAccessRule
             every {
                 projectAccessChecker.isProjectOrServerAdmin(AccessType.CREATE, EntityType.CRITERION)
-            } returns failureAccessRule
+            } returns successAccessRule
+            every { projectAccessChecker.isProjectActiveButNotLockedById() } returns successAccessRule
+
+            assertDoesNotThrow { accessChecker.isAllowedToCreateCriterion(user, request) }
+        }
+
+        @Test
+        fun `When isProjectExistent denies access, then access is denied`() = runTest {
+            val user = DataBuilder.createExampleUser()
+            val request = getProjectCriterionRequest()
+
+            every { projectAccessChecker.isProjectExistent() } returns failureAccessRule
 
             assertThrows<UnauthorizedTestException> { accessChecker.isAllowedToCreateCriterion(user, request) }
         }
 
         @Test
-        fun `When isProjectActiveById allows, but isProjectOrServerAdmin denies access, then access is denied`() =
+        fun `When isProjectExistent allows, but isProjectOrServerAdmin denies access, then access is denied`() =
             runTest {
                 val user = DataBuilder.createExampleUser()
                 val request = getProjectCriterionRequest()
 
+                every { projectAccessChecker.isProjectExistent() } returns successAccessRule
                 every {
                     projectAccessChecker.isProjectOrServerAdmin(AccessType.CREATE, EntityType.CRITERION)
                 } returns failureAccessRule
-                every { projectAccessChecker.isProjectActiveButNotLockedById() } returns successAccessRule
+
+                assertThrows<UnauthorizedTestException> { accessChecker.isAllowedToCreateCriterion(user, request) }
+            }
+
+        @Test
+        fun `When isProjectExistent and isProjectOrServerAdmin allows, but isProjectActiveById denies access, then access is denied`() =
+            runTest {
+                val user = DataBuilder.createExampleUser()
+                val request = getProjectCriterionRequest()
+
+                every { projectAccessChecker.isProjectExistent() } returns successAccessRule
+                every {
+                    projectAccessChecker.isProjectOrServerAdmin(AccessType.CREATE, EntityType.CRITERION)
+                } returns successAccessRule
+                every { projectAccessChecker.isProjectActiveButNotLockedById() } returns failureAccessRule
 
                 assertThrows<UnauthorizedTestException> {
                     accessChecker.isAllowedToCreateCriterion(user, request)

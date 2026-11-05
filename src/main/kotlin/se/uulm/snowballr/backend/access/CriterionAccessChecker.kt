@@ -14,6 +14,7 @@ import se.uulm.snowballr.backend.model.dto.criterion.Criterion.UserCriterion
 import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.failedprecondition.EntityNotActiveException
+import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedCreateException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedExceptionFactory
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadException
@@ -35,6 +36,7 @@ interface ICriterionAccessChecker {
      *
      * @param currentUser The user for whom the access check is being performed.
      * @param request The request to create a criterion.
+     * @throws ProjectNotFoundException if the project (case of project criterion is not active).
      * @throws UnauthorizedCreateException if the user is not allowed to create a criterion.
      * @throws EntityNotActiveException if the project (case of project criterion) is not active.
      * @throws FailedPreconditionException if the project (case of project criterion) is active, but the settings are
@@ -112,6 +114,7 @@ class CriterionAccessChecker(
     override suspend fun isAllowedToCreateCriterion(currentUser: User, request: CreateCriterionRequest) {
         if (request.projectId == null) return
 
+        projectAccessChecker.isProjectExistent().checkFor(currentUser, request.projectId)
         projectAccessChecker.isProjectOrServerAdmin(AccessType.CREATE, EntityType.CRITERION)
             .checkFor(currentUser, request.projectId)
         projectAccessChecker.isProjectActiveButNotLockedById().checkFor(currentUser, request.projectId)
