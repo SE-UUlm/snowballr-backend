@@ -17,24 +17,12 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.git.versioning)
     alias(libs.plugins.undercouch.download)
-    alias(libs.plugins.sonarqube)
     alias(libs.plugins.ben.manes.versions)
     alias(libs.plugins.spring)
     alias(libs.plugins.spring.framework.boot)
     alias(libs.plugins.spring.dep.management)
     alias(libs.plugins.openapi.generator)
     application
-}
-
-sonar {
-    properties {
-        property("sonar.projectKey", "snowballr-backend")
-        property("sonar.projectName", "SnowballR Backend")
-        property(
-            "sonar.coverage.jacoco.xmlReportPaths",
-            layout.buildDirectory.file("coverageXml/report.xml").get().asFile.path,
-        )
-    }
 }
 
 group = "se.uulm.snowballr.backend"
