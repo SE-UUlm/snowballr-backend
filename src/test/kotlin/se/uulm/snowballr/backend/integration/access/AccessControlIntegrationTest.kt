@@ -129,6 +129,24 @@ class AccessControlIntegrationTest : IntegrationTest() {
 
             assertEquals(criterion.id, criterionService.getCriterionById(criterion.id).id)
         }
+
+        @Test
+        fun `When a user tries to delete another user's criterion, then access is denied`() = runTest {
+            val criterion = criterionService.createCriterion(
+                CreateCriterionRequest(
+                    tag = "AC",
+                    name = "Admin Criterion",
+                    description = "Created by admin",
+                    category = CriterionCategory.INCLUSION,
+                    projectId = null,
+                ),
+            )
+
+            val otherUser = addUser(DataBuilder.createExampleUser())
+            actAsUser(otherUser.id) {
+                assertThrows<UnauthorizedException> { criterionService.deleteCriterion(criterion.id) }
+            }
+        }
     }
 
     @Nested
