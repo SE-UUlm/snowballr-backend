@@ -81,6 +81,20 @@ class CriterionAccessCheckerTest {
                     accessChecker.isAllowedToCreateCriterion(user, request)
                 }
             }
+
+        @Test
+        fun `When a user criterion is passed, then it is unconditionally allowed`() = runTest {
+            val user = DataBuilder.createExampleUser()
+            val request = CreateCriterionRequest(
+                tag = "Tag",
+                name = "Criterion",
+                description = "Description",
+                category = CriterionCategory.EXCLUSION,
+                projectId = null,
+            )
+
+            accessChecker.isAllowedToCreateCriterion(user, request)
+        }
     }
 
     @Nested

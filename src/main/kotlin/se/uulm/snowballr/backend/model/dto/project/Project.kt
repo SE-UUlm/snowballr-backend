@@ -48,12 +48,4 @@ data class Project(
      */
     @get:JsonIgnore
     val isDeleted get() = this.status == ProjectStatus.DELETED
-
-    /**
-     * Whether the project's SLR settings are locked.
-     *
-     * This is the case if the status is [ProjectStatus.ACTIVE_LOCKED].
-     */
-    @get:JsonIgnore
-    val areSlrSettingsLocked get() = this.status == ProjectStatus.ACTIVE_LOCKED
 }
