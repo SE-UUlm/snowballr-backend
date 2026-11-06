@@ -5,6 +5,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.tuple
 import org.jetbrains.exposed.v1.core.ReferenceOption
 import org.jetbrains.exposed.v1.core.dao.id.java.UUIDTable
+import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -34,7 +35,9 @@ import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectSettingRequest
+import se.uulm.snowballr.backend.repository.RepositoryHelper.assignCriterionToReview
 import se.uulm.snowballr.backend.repository.RepositoryHelper.assignUserToProject
+import se.uulm.snowballr.backend.repository.RepositoryHelper.insertCriterionAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertPaperAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectPaperAndGetId
@@ -47,6 +50,7 @@ import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.ReviewTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
+import se.uulm.snowballr.backend.table.association.ReviewHasCriterionTable
 import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
 import java.sql.SQLException
@@ -66,6 +70,7 @@ class ProjectTableRepoTest :
             PaperTable,
             ReviewTable,
             CriterionTable,
+            ReviewHasCriterionTable,
             ProjectDeleteBlockerTable,
         ),
         true,
@@ -733,6 +738,28 @@ class ProjectTableRepoTest :
             }
 
         @Test
+        fun `When a cleared project has a criterion associated with a review, then it is hard-deleted`() = runTest {
+            val projectId = insertProjectAndGetId(
+                name = "Reviewed Project",
+                status = ProjectStatus.DELETED,
+                deletedAt = defaultThresholdDate.minusDays(1),
+                createdBy = testUserId,
+            )
+            val paperId = insertPaperAndGetId()
+            val projectPaperId =
+                insertProjectPaperAndGetId(paperId = paperId, projectId = projectId, createdBy = testUserId)
+            val reviewId = insertReviewAndGetId(projectPaperId, userId = testUserId)
+            val criterionId = insertCriterionAndGetId(projectId = projectId, createdBy = testUserId)
+            assignCriterionToReview(reviewId, criterionId)
+            repo.clearSoftDeletedProjects(defaultThresholdDate)
+
+            repo.hardDeleteClearedProjects()
+
+            assertResultFailure<NotFoundException>(repo.getProjectById(projectId))
+            assertResultFailure<NotFoundException>(criterionRepo.getCriterionById(criterionId))
+        }
+
+        @Test
         fun `When a cleared project is still referenced by a restrict foreign key, then hard delete is skipped`() =
             runTest {
                 val projectId = insertProjectAndGetId(
@@ -753,6 +780,40 @@ class ProjectTableRepoTest :
 
                 val project = assertResultSuccess(repo.getProjectById(projectId))
                 assertEquals(ProjectStatus.CLEARED, project.status)
+            }
+
+        @Test
+        fun `When the hard delete of a project with a reviewed criterion is skipped, then the association is kept`() =
+            runTest {
+                val projectId = insertProjectAndGetId(
+                    name = "Blocked Reviewed Project",
+                    status = ProjectStatus.DELETED,
+                    deletedAt = defaultThresholdDate.minusDays(1),
+                    createdBy = testUserId,
+                )
+                val paperId = insertPaperAndGetId()
+                val projectPaperId =
+                    insertProjectPaperAndGetId(paperId = paperId, projectId = projectId, createdBy = testUserId)
+                val reviewId = insertReviewAndGetId(projectPaperId, userId = testUserId)
+                val criterionId = insertCriterionAndGetId(projectId = projectId, createdBy = testUserId)
+                assignCriterionToReview(reviewId, criterionId)
+                repo.clearSoftDeletedProjects(defaultThresholdDate)
+
+                db.query {
+                    ProjectDeleteBlockerTable.insert {
+                        it[ProjectDeleteBlockerTable.projectId] = projectId
+                    }
+                }
+
+                repo.hardDeleteClearedProjects()
+
+                assertResultSuccess(repo.getProjectById(projectId))
+                val associationCount = db.query {
+                    ReviewHasCriterionTable.selectAll()
+                        .where { ReviewHasCriterionTable.criterionId eq criterionId }
+                        .count()
+                }
+                assertEquals(1L, associationCount)
             }
     }
 
