@@ -18,19 +18,47 @@ import se.uulm.snowballr.backend.model.dto.criterion.CriterionField
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
+import se.uulm.snowballr.backend.repository.RepositoryHelper.assignCriterionToReview
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertCriterionAndGetId
+import se.uulm.snowballr.backend.repository.RepositoryHelper.insertPaperAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGetId
+import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectPaperAndGetId
+import se.uulm.snowballr.backend.repository.RepositoryHelper.insertReviewAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertUserAndGetId
 import se.uulm.snowballr.backend.table.CriterionTable
+import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.ProjectTable
+import se.uulm.snowballr.backend.table.ReviewTable
+import se.uulm.snowballr.backend.table.association.ProjectPaperTable
+import se.uulm.snowballr.backend.table.association.ReviewHasCriterionTable
 import se.uulm.snowballr.backend.utils.GrpcEnumSourceTest
 import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
 import java.sql.SQLException
 import java.util.UUID
 
-class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTable), true) {
+class CriterionTableRepoTest : RepositoryTest(
+    arrayOf(
+        ReviewHasCriterionTable,
+        CriterionTable,
+        ProjectTable,
+        PaperTable,
+        ProjectPaperTable,
+        ReviewTable,
+    ),
+    true,
+) {
     private val repo = CriterionTableRepo(db)
+
+    private suspend fun insertReviewForProjectAndGetId(projectId: UUID): UUID {
+        val paperId = insertPaperAndGetId()
+        val projectPaperId = insertProjectPaperAndGetId(
+            paperId = paperId,
+            projectId = projectId,
+            createdBy = testUserId,
+        )
+        return insertReviewAndGetId(projectPaperId, userId = testUserId)
+    }
 
     @Nested
     inner class GetCriterionById {
@@ -308,41 +336,47 @@ class CriterionTableRepoTest : RepositoryTest(arrayOf(CriterionTable, ProjectTab
     }
 
     @Nested
-    inner class DeleteCriteriaByIds {
-        @Test
-        fun `When a list of criteria IDs is given, then all matching criteria should be deleted`() = runTest {
-            val criterionId1 = insertCriterionAndGetId(createdBy = testUserId)
-            val criterionId2 = insertCriterionAndGetId(createdBy = testUserId)
-            val criterionId3 = insertCriterionAndGetId(createdBy = testUserId)
-
-            val idsToDelete = listOf(criterionId1, criterionId3)
-
-            repo.deleteCriteriaByIds(idsToDelete)
-
-            assertResultFailure<NotFoundException>(repo.getCriterionById(criterionId1))
-            assertResultFailure<NotFoundException>(repo.getCriterionById(criterionId3))
-            assertResultSuccess(repo.getCriterionById(criterionId2))
-        }
-
-        @Test
-        fun `When an empty list of criteria IDs is given, then no criteria should be deleted`() = runTest {
-            val criterionId1 = insertCriterionAndGetId(createdBy = testUserId)
-
-            val idsToDelete = emptyList<UUID>()
-
-            repo.deleteCriteriaByIds(idsToDelete)
-
-            assertResultSuccess(repo.getCriterionById(criterionId1))
-        }
-    }
-
-    @Nested
     inner class DeleteUserCriteriaByUserId {
         @Test
         fun `When a user ID is given, then all user criteria associated with this user should be deleted`() = runTest {
             val criterionId = insertCriterionAndGetId(createdBy = testUserId)
 
             repo.deleteUserCriteriaByUserId(testUserId)
+
+            assertResultFailure<NotFoundException>(repo.getCriterionById(criterionId))
+        }
+    }
+
+    @Nested
+    inner class DeleteCriterionById {
+        @Test
+        fun `When a criterion ID is given, then only the matching criterion is deleted`() = runTest {
+            val criterionId1 = insertCriterionAndGetId(createdBy = testUserId)
+            val criterionId2 = insertCriterionAndGetId(createdBy = testUserId)
+
+            repo.deleteCriterionById(criterionId1)
+
+            assertResultFailure<NotFoundException>(repo.getCriterionById(criterionId1))
+            assertResultSuccess(repo.getCriterionById(criterionId2))
+        }
+
+        @Test
+        fun `When a non-existing criterion ID is given, then no criterion is deleted`() = runTest {
+            val criterionId = insertCriterionAndGetId(createdBy = testUserId)
+
+            repo.deleteCriterionById(UUID.randomUUID())
+
+            assertResultSuccess(repo.getCriterionById(criterionId))
+        }
+
+        @Test
+        fun `When a criterion associated with a review is deleted, then the association is deleted too`() = runTest {
+            val projectId = insertProjectAndGetId(createdBy = testUserId)
+            val reviewId = insertReviewForProjectAndGetId(projectId)
+            val criterionId = insertCriterionAndGetId(projectId = projectId, createdBy = testUserId)
+            assignCriterionToReview(reviewId, criterionId)
+
+            repo.deleteCriterionById(criterionId)
 
             assertResultFailure<NotFoundException>(repo.getCriterionById(criterionId))
         }

@@ -38,7 +38,7 @@ class CreateCriterionTest : CriterionServiceTest() {
             val request = getProjectCriterionRequest(project.id)
 
             mockCurrentUser(user)
-            coJustRun { criterionAccessCheckerMock.isAllowedToCreateProjectCriterion(user, project.id) }
+            coJustRun { criterionAccessCheckerMock.isAllowedToCreateCriterion(user, request) }
             coEvery { criterionRepoMock.createCriterion(request, user.id) } returns criterion
 
             val result = service.createCriterion(request)
@@ -56,7 +56,7 @@ class CreateCriterionTest : CriterionServiceTest() {
 
             mockCurrentUser(user)
             coEvery {
-                criterionAccessCheckerMock.isAllowedToCreateProjectCriterion(user, project.id)
+                criterionAccessCheckerMock.isAllowedToCreateCriterion(user, request)
             } throws TestSpecificException()
 
             assertThrows<TestSpecificException> { service.createCriterion(request) }
@@ -72,6 +72,7 @@ class CreateCriterionTest : CriterionServiceTest() {
 
             mockCurrentUser(user)
             coEvery { criterionRepoMock.createCriterion(request, user.id) } returns criterion
+            coJustRun { criterionAccessCheckerMock.isAllowedToCreateCriterion(user, request) }
 
             val result = service.createCriterion(request)
 

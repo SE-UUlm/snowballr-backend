@@ -11,35 +11,15 @@ import se.uulm.snowballr.backend.model.dto.project.ProjectField
 import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
-import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.review.CreateReviewRequest
-import se.uulm.snowballr.backend.model.outgoing.project.ProjectResponse
-import se.uulm.snowballr.backend.model.outgoing.projectpaper.ProjectPaperResponse
 
 class ReviewIntegrationTest : IntegrationTest() {
-    private suspend fun setupProjectAndPaper(): Pair<ProjectResponse, ProjectPaperResponse> {
-        var project = projectService.createProject(CreateProjectRequest(name = "Review Test Project"))
-        val paper = createPaper()
-        val projectPaper = projectPaperService.addPaperToProject(project.id, paper.id, 0)
-
-        val modifiedProject = project.copy(
-            settings = project.settings.copy(
-                reviewDecisionMatrix = project.settings.reviewDecisionMatrix.copy(numberOfReviewers = 1),
-            ),
-        )
-        val projectUpdate = UpdateProjectRequest.fromProjectResponse(modifiedProject)
-
-        project = projectService.updateProject(projectUpdate, setOf(ProjectField.NUMBER_OF_REVIEWERS))
-
-        return project to projectPaper
-    }
-
     @Nested
     inner class CreateReview {
         @Test
         fun `When a review is created, then it appears in the reviews list for the project paper`() = runTest {
-            val (_, projectPaper) = setupProjectAndPaper()
+            val (_, projectPaper) = setupProjectAndPaperForReview()
 
             reviewService.createReview(
                 CreateReviewRequest(
@@ -55,7 +35,7 @@ class ReviewIntegrationTest : IntegrationTest() {
 
         @Test
         fun `When a review is created, then it can be retrieved by ID`() = runTest {
-            val (_, projectPaper) = setupProjectAndPaper()
+            val (_, projectPaper) = setupProjectAndPaperForReview()
 
             val review = reviewService.createReview(
                 CreateReviewRequest(
@@ -73,7 +53,7 @@ class ReviewIntegrationTest : IntegrationTest() {
 
         @Test
         fun `When an accepted review is created, then the paper decision is updated to accepted`() = runTest {
-            val (_, projectPaper) = setupProjectAndPaper()
+            val (_, projectPaper) = setupProjectAndPaperForReview()
 
             reviewService.createReview(
                 CreateReviewRequest(
@@ -89,7 +69,7 @@ class ReviewIntegrationTest : IntegrationTest() {
 
         @Test
         fun `When a declined review is created, then the paper decision is updated to declined`() = runTest {
-            val (_, projectPaper) = setupProjectAndPaper()
+            val (_, projectPaper) = setupProjectAndPaperForReview()
 
             reviewService.createReview(
                 CreateReviewRequest(
@@ -105,7 +85,7 @@ class ReviewIntegrationTest : IntegrationTest() {
 
         @Test
         fun `When a paper is added to a project, then it initially has an unreviewed decision`() = runTest {
-            val (_, projectPaper) = setupProjectAndPaper()
+            val (_, projectPaper) = setupProjectAndPaperForReview()
 
             val fetchedProjectPaper = projectPaperService.getProjectPaperById(projectPaper.id)
             assertEquals(PaperDecision.UNREVIEWED, fetchedProjectPaper.decision)
@@ -113,7 +93,7 @@ class ReviewIntegrationTest : IntegrationTest() {
 
         @Test
         fun `When a review is submitted, then the SLR settings cannot be changed anymore`() = runTest {
-            val (project, projectPaper) = setupProjectAndPaper()
+            val (project, projectPaper) = setupProjectAndPaperForReview()
 
             reviewService.createReview(
                 CreateReviewRequest(
@@ -136,7 +116,7 @@ class ReviewIntegrationTest : IntegrationTest() {
     inner class AddPaperToProject {
         @Test
         fun `When a paper is added to a project, then it appears in the project's paper list`() = runTest {
-            val (project, projectPaper) = setupProjectAndPaper()
+            val (project, projectPaper) = setupProjectAndPaperForReview()
 
             val papers = projectPaperService.getAllProjectPapersForProject(project.id)
 
@@ -145,7 +125,7 @@ class ReviewIntegrationTest : IntegrationTest() {
 
         @Test
         fun `When a paper is added to a project, then it can be retrieved by its project paper ID`() = runTest {
-            val (_, projectPaper) = setupProjectAndPaper()
+            val (_, projectPaper) = setupProjectAndPaperForReview()
 
             val fetched = projectPaperService.getProjectPaperById(projectPaper.id)
             assertEquals(projectPaper.id, fetched.id)

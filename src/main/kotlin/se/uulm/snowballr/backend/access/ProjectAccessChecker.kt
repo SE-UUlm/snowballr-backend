@@ -10,6 +10,7 @@ import se.uulm.snowballr.backend.access.rules.orElse
 import se.uulm.snowballr.backend.access.rules.orElseThrow
 import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.UnauthorizedException
@@ -106,12 +107,16 @@ interface IProjectAccessChecker {
     fun isProjectExistent(): AccessRule<UUID>
 
     /**
-     * Check whether a project with the given ID is active (or active, but settings are locked).
+     * Check whether a project with the given ID is active (but not active with locked settings).
      *
-     * @throws EntityNotActiveException if the project is not active.
+     * Conditions:
+     * - The project exists and is active, but not locked, i.e., its status is [ProjectStatus.ACTIVE]
+     *
+     * @throws EntityNotActiveException if the project does not exist or is not active.
+     * @throws FailedPreconditionException if the project is active but its settings are locked.
      */
     @CheckReturnValue
-    fun isProjectActiveById(): AccessRule<UUID>
+    fun isProjectActiveButNotLockedById(): AccessRule<UUID>
 
     /**
      * Check whether the current user is an admin of the specified project or alternatively a server admin.
@@ -175,16 +180,38 @@ class ProjectAccessChecker(
         project != null && (!project.isDeleted || user.isServerAdmin)
     }.orElseThrow { _, projectId -> ProjectNotFoundException(projectId) }
 
-    override fun isProjectActiveById() = AccessRule<UUID> { _, projectId ->
-        val project = projectRepo.getProjectById(projectId).getOrNull()
-        project != null && project.isActive
-    }.orElseThrow { _, projectId -> EntityNotActiveException(EntityType.PROJECT, projectId) }
+    override fun isProjectActiveButNotLockedById() = isProjectActive()
+        .orElseThrow { _, projectId -> EntityNotActiveException(EntityType.PROJECT, projectId) }
+        .andAlso(
+            isProjectNotLocked()
+                .orElseThrow { _, projectId ->
+                    FailedPreconditionException("The settings of the project with ID '$projectId' are locked.")
+                },
+        )
 
     override fun isProjectOrServerAdmin(accessType: AccessType, entityType: EntityType) = isProjectAdmin()
         .orElse(isServerAdmin().forTarget())
         .orElseThrow { currentUser, targetId ->
             UnauthorizedExceptionFactory.createForAccessType(accessType, currentUser.id, targetId, entityType)
         }
+
+    /**
+     * Check whether a specific project exists and is active, i.e., its status is [ProjectStatus.ACTIVE] or
+     * [ProjectStatus.ACTIVE_LOCKED].
+     */
+    @CheckReturnValue
+    private fun isProjectActive() = AccessRule<UUID> { _, projectId ->
+        projectRepo.getProjectById(projectId).getOrNull()?.isActive == true
+    }
+
+    /**
+     * Check whether the settings of a specific project are not locked, i.e., its status is not
+     * [ProjectStatus.ACTIVE_LOCKED].
+     */
+    @CheckReturnValue
+    private fun isProjectNotLocked() = AccessRule<UUID> { _, projectId ->
+        projectRepo.getProjectById(projectId).getOrNull()?.status != ProjectStatus.ACTIVE_LOCKED
+    }
 
     /**
      * Check whether the requesting user is a member of a specific project.

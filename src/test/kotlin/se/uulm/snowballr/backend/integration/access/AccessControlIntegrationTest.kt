@@ -1,6 +1,7 @@
 package se.uulm.snowballr.backend.integration.access
 
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -63,7 +64,7 @@ class AccessControlIntegrationTest : IntegrationTest() {
     @Nested
     inner class CriterionAccess {
         @Test
-        fun `When a non-admin member tries to create a criterion, then access is denied`() = runTest {
+        fun `When a non-admin member tries to create a project criterion, then access is denied`() = runTest {
             val (project, member) = setupProjectWithMember()
 
             val request = CreateCriterionRequest(
@@ -80,7 +81,7 @@ class AccessControlIntegrationTest : IntegrationTest() {
         }
 
         @Test
-        fun `When a non-admin member tries to update a criterion, then access is denied`() = runTest {
+        fun `When a non-admin member tries to update a project criterion, then access is denied`() = runTest {
             val (project, member) = setupProjectWithMember()
 
             val criterion = criterionService.createCriterion(
@@ -105,6 +106,45 @@ class AccessControlIntegrationTest : IntegrationTest() {
                 assertThrows<UnauthorizedException> {
                     criterionService.updateCriterion(request, setOf(CriterionField.NAME))
                 }
+            }
+        }
+
+        @Test
+        fun `When a non-admin member tries to delete a project criterion, then access is denied`() = runTest {
+            val (project, member) = setupProjectWithMember()
+
+            val criterion = criterionService.createCriterion(
+                CreateCriterionRequest(
+                    tag = "AC",
+                    name = "Admin Criterion",
+                    description = "Created by admin",
+                    category = CriterionCategory.INCLUSION,
+                    projectId = project.id,
+                ),
+            )
+
+            actAsUser(member.id) {
+                assertThrows<UnauthorizedException> { criterionService.deleteCriterion(criterion.id) }
+            }
+
+            assertEquals(criterion.id, criterionService.getCriterionById(criterion.id).id)
+        }
+
+        @Test
+        fun `When a user tries to delete another user's criterion, then access is denied`() = runTest {
+            val criterion = criterionService.createCriterion(
+                CreateCriterionRequest(
+                    tag = "AC",
+                    name = "Admin Criterion",
+                    description = "Created by admin",
+                    category = CriterionCategory.INCLUSION,
+                    projectId = null,
+                ),
+            )
+
+            val otherUser = addUser(DataBuilder.createExampleUser())
+            actAsUser(otherUser.id) {
+                assertThrows<UnauthorizedException> { criterionService.deleteCriterion(criterion.id) }
             }
         }
     }

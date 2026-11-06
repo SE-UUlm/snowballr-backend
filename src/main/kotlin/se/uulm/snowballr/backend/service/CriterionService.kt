@@ -34,6 +34,11 @@ interface ICriterionService {
      * Service implementation of [SnowballRService.getAllCriteriaForProject].
      */
     suspend fun getAllCriteriaForProject(projectId: UUID): List<Criterion.ProjectCriterion>
+
+    /**
+     * Service implementation of [SnowballRService.deleteCriterion].
+     */
+    suspend fun deleteCriterion(criterionId: UUID)
 }
 
 /**
@@ -68,9 +73,7 @@ class CriterionService(
 
     override suspend fun createCriterion(request: CreateCriterionRequest): Criterion =
         withUser(userRepo) { currentUser ->
-            if (request.projectId != null) {
-                accessChecker.isAllowedToCreateProjectCriterion(currentUser, request.projectId)
-            }
+            accessChecker.isAllowedToCreateCriterion(currentUser, request)
 
             val criterion = repo.createCriterion(request, currentUser.id)
             logger.info {
@@ -97,4 +100,13 @@ class CriterionService(
 
             repo.getAllProjectCriteria(projectId)
         }
+
+    override suspend fun deleteCriterion(criterionId: UUID) = withUser(userRepo) { currentUser ->
+        val criterion = repo.getCriterionById(criterionId).getOrThrow()
+
+        accessChecker.isAllowedToDeleteCriterion(currentUser, criterion)
+
+        repo.deleteCriterionById(criterionId)
+        logger.info { "Criterion ${criterion.id} deleted" }
+    }
 }

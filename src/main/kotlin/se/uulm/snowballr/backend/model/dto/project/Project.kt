@@ -34,7 +34,7 @@ data class Project(
     val archivedBy: UUID?,
 ) {
     /**
-     * Checks whether the project is active.
+     * Whether the project is active.
      *
      * A project is considered active if its status is either [ProjectStatus.ACTIVE] or [ProjectStatus.ACTIVE_LOCKED].
      */
@@ -42,7 +42,7 @@ data class Project(
     val isActive get() = this.status == ProjectStatus.ACTIVE || this.status == ProjectStatus.ACTIVE_LOCKED
 
     /**
-     * Checks whether the project is deleted.
+     * Whether the project is deleted.
      *
      * A project is considered deleted if its status is [ProjectStatus.DELETED].
      */

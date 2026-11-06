@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.access
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -327,7 +328,7 @@ class ProjectAccessCheckerTest {
     }
 
     @Nested
-    inner class IsProjectActiveById {
+    inner class IsProjectActiveButNotLockedById {
         @Test
         fun `When the project doesn't exist, then an EntityNotActiveException is thrown`() = runTest {
             val user = DataBuilder.createExampleUser()
@@ -335,11 +336,13 @@ class ProjectAccessCheckerTest {
 
             coEvery { projectRepo.getProjectById(projectId) } returns Result.failure(TestSpecificException())
 
-            assertThrows<EntityNotActiveException> { accessChecker.isProjectActiveById().checkFor(user, projectId) }
+            assertThrows<EntityNotActiveException> {
+                accessChecker.isProjectActiveButNotLockedById().checkFor(user, projectId)
+            }
         }
 
         @Test
-        fun `When the project exists and is active, then the check passes`() = runTest {
+        fun `When the project exists and has status ACTIVE, then the check passes`() = runTest {
             val user = DataBuilder.createExampleUser()
             val projectId = UUID.randomUUID()
             val project = DataBuilder.createExampleProject(
@@ -349,8 +352,26 @@ class ProjectAccessCheckerTest {
 
             coEvery { projectRepo.getProjectById(projectId) } returns Result.success(project)
 
-            assertDoesNotThrow { accessChecker.isProjectActiveById().checkFor(user, projectId) }
+            assertDoesNotThrow { accessChecker.isProjectActiveButNotLockedById().checkFor(user, projectId) }
         }
+
+        @Test
+        fun `When the project exists and has status ACTIVE_LOCKED, then a FailedPreconditionException is thrown`() =
+            runTest {
+                val user = DataBuilder.createExampleUser()
+                val projectId = UUID.randomUUID()
+                val project = DataBuilder.createExampleProject(
+                    id = projectId,
+                    status = ProjectStatus.ACTIVE_LOCKED,
+                )
+
+                coEvery { projectRepo.getProjectById(projectId) } returns Result.success(project)
+
+                val exception = assertThrows<FailedPreconditionException> {
+                    accessChecker.isProjectActiveButNotLockedById().checkFor(user, projectId)
+                }
+                assertEquals(FailedPreconditionException::class, exception::class)
+            }
 
         @Test
         fun `When the project exists but is deleted, then an EntityNotActiveException is thrown`() = runTest {
@@ -363,7 +384,9 @@ class ProjectAccessCheckerTest {
 
             coEvery { projectRepo.getProjectById(projectId) } returns Result.success(project)
 
-            assertThrows<EntityNotActiveException> { accessChecker.isProjectActiveById().checkFor(user, projectId) }
+            assertThrows<EntityNotActiveException> {
+                accessChecker.isProjectActiveButNotLockedById().checkFor(user, projectId)
+            }
         }
     }
 

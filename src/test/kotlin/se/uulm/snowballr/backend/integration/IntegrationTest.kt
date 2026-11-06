@@ -40,12 +40,16 @@ import se.uulm.snowballr.backend.mail.EmailManager
 import se.uulm.snowballr.backend.mail.IEmailManager
 import se.uulm.snowballr.backend.mailServiceDeps
 import se.uulm.snowballr.backend.model.dto.paper.ExternalId
+import se.uulm.snowballr.backend.model.dto.project.ProjectField
 import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.incoming.paper.CreatePaperRequest
+import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
+import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.outgoing.paper.PaperResponse
 import se.uulm.snowballr.backend.model.outgoing.project.ProjectResponse
+import se.uulm.snowballr.backend.model.outgoing.projectpaper.ProjectPaperResponse
 import se.uulm.snowballr.backend.repository.RepositoryHelper
 import se.uulm.snowballr.backend.repositoryLayerDeps
 import se.uulm.snowballr.backend.service.IAuthenticationService
@@ -271,4 +275,21 @@ open class IntegrationTest : KoinTest {
      */
     protected suspend fun addToProject(project: ProjectResponse, paper: PaperResponse) =
         projectPaperService.addPaperToProject(project.id, paper.id, 0)
+
+    protected suspend fun setupProjectAndPaperForReview(): Pair<ProjectResponse, ProjectPaperResponse> {
+        var project = projectService.createProject(CreateProjectRequest(name = "Review Test Project"))
+        val paper = createPaper()
+        val projectPaper = projectPaperService.addPaperToProject(project.id, paper.id, 0)
+
+        val modifiedProject = project.copy(
+            settings = project.settings.copy(
+                reviewDecisionMatrix = project.settings.reviewDecisionMatrix.copy(numberOfReviewers = 1),
+            ),
+        )
+        val projectUpdate = UpdateProjectRequest.fromProjectResponse(modifiedProject)
+
+        project = projectService.updateProject(projectUpdate, setOf(ProjectField.NUMBER_OF_REVIEWERS))
+
+        return project to projectPaper
+    }
 }
