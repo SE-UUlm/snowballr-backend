@@ -8,62 +8,37 @@ on:
         tags: ["v*.*.*"]
 
 jobs:
-    publish-alpha:
-        name: Publish alpha (PR preview)
+    publish:
+        # Channels: alpha for PR previews, beta for develop, latest for release tags
+        name: Publish ${{ matrix.client }} client (${{ github.ref_type == 'tag' && 'latest' || github.event_name == 'pull_request' && 'alpha' || 'beta' }})
         # We skip publishing when triggered by a Dependabot update
-        if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
+        if: >-
+            github.actor != 'dependabot[bot]' && (
+              github.event_name == 'pull_request' ||
+              github.ref == 'refs/heads/develop' ||
+              github.ref_type == 'tag')
         runs-on: ubuntu-latest
         permissions:
             id-token: write # Required for OIDC
             contents: read
+        strategy:
+            # Each client is published independently, so one failing does not block the other
+            fail-fast: false
+            matrix:
+                client: [rest, grpc]
+        env:
+            CHANNEL: ${{ github.ref_type == 'tag' && 'latest' || github.event_name == 'pull_request' && 'alpha' || 'beta' }}
         steps:
-            - name: Checkout PR branch
+            - name: Checkout repository
               uses: actions/checkout@v7
               with:
+                  # PR head branch for previews; empty on push, which checks out the triggering ref
                   ref: ${{ github.head_ref }}
                   fetch-depth: 0
                   fetch-tags: true
 
             - name: Publish NPM Package
-              uses: ./.github/workflows/publish-api-client
+              uses: ./.github/workflows/publish-client
               with:
-                  channel: alpha
-
-    publish-beta:
-        name: Publish beta (develop)
-        # We skip publishing when triggered by a Dependabot update
-        if: github.event_name == 'push' && github.ref == 'refs/heads/develop' && github.actor != 'dependabot[bot]'
-        runs-on: ubuntu-latest
-        permissions:
-            id-token: write # Required for OIDC
-            contents: read
-        steps:
-            - name: Checkout repository
-              uses: actions/checkout@v7
-              with:
-                  fetch-depth: 0
-                  fetch-tags: true
-
-            - name: Publish NPM Package
-              uses: ./.github/workflows/publish-api-client
-              with:
-                  channel: beta
-
-    publish-stable:
-        name: Publish stable (tag)
-        if: github.ref_type == 'tag'
-        runs-on: ubuntu-latest
-        permissions:
-            id-token: write # Required for OIDC
-            contents: read
-        steps:
-            - name: Checkout repository
-              uses: actions/checkout@v7
-              with:
-                  fetch-depth: 0
-                  fetch-tags: true
-
-            - name: Publish NPM Package
-              uses: ./.github/workflows/publish-api-client
-              with:
-                  channel: latest
+                  client: ${{ matrix.client }}
+                  channel: ${{ env.CHANNEL }}

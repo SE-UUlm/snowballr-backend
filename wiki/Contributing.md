@@ -376,7 +376,7 @@ The alpha/beta version numbers (e.g. `0.1.1-alpha.a3f9c2e`) are produced by the 
 `build.gradle.kts`: the patch version of the last `vX.Y.Z` tag is bumped by one and suffixed with the channel name and
 the short commit hash.
 
-To build the client locally, use the `buildTsClient` Gradle task.
+To build the client locally, use the `buildTsRestClient` Gradle task.
 
 ## Fetcher Orchestration Progress
 

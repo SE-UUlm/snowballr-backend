@@ -1,0 +1,35 @@
+{
+    "name": "@se-uulm/snowballr-grpc-client",
+    "version": "0.0.0",
+    "description": "gRPC API client for the SnowballR Web Application.",
+    "keywords": [
+        "api",
+        "protobuf",
+        "grpc"
+    ],
+    "homepage": "https://github.com/SE-UUlm/snowballr-backend/tree/develop/api/grpc#readme",
+    "bugs": {
+        "url": "https://github.com/SE-UUlm/snowballr-backend/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/SE-UUlm/snowballr-backend.git"
+    },
+    "license": "GPL-3.0-or-later",
+    "author": "SnowballR",
+    "type": "module",
+    "main": "dist/",
+    "files": [
+        "dist/",
+        "README.md",
+        "LICENSE",
+        "CHANGELOG.md"
+    ],
+    "scripts": {
+        "compile": "node_modules/.bin/protoc --ts_out dist/ --ts_opt generate_dependencies --proto_path proto/ proto/main.proto",
+        "prepack": "npm run compile"
+    },
+    "devDependencies": {
+        "@protobuf-ts/plugin": "^2.11.1"
+    }
+}

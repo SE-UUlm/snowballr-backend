@@ -242,15 +242,29 @@ tasks.register<Test>("createApiSpec") {
     reports.junitXml.required.set(false)
 }
 
+/**
+ * Runs `npm pkg set` in [dir] and fails the build if npm exits with a non-zero code.
+ */
+fun npmPkgSet(dir: File, vararg fields: String) {
+    val exitCode = ProcessBuilder("npm", "pkg", "set", *fields)
+        .directory(dir)
+        .inheritIO()
+        .start()
+        .waitFor()
+    if (exitCode != 0) {
+        throw GradleException("`npm pkg set ${fields.joinToString(" ")}` in $dir failed with exit code $exitCode")
+    }
+}
+
 // The committed OpenAPI spec is the single source of truth for the generated frontend client.
 // `openApiGenerate` turns it into a publishable TypeScript npm package.
 val committedApiSpec: RegularFile = layout.projectDirectory.file("api/openapi.json")
-val tsClientDir: Provider<Directory> = layout.buildDirectory.dir("generated/ts-client")
+val tsRestClientDir: Provider<Directory> = layout.buildDirectory.dir("generated/ts-rest-client")
 
 openApiGenerate {
     generatorName.set("typescript-fetch")
     inputSpec.set(committedApiSpec.asFile.absolutePath)
-    outputDir.set(tsClientDir)
+    outputDir.set(tsRestClientDir)
     validateSpec.set(true)
     gitUserId.set("SE-UUlm")
     gitRepoId.set("snowballr-backend")
@@ -274,39 +288,66 @@ tasks.named("openApiGenerate") {
     inputs.file(committedApiSpec)
 }
 
-tasks.register<Exec>("buildTsClient") {
+tasks.register<Exec>("buildTsRestClient") {
     dependsOn("openApiGenerate")
-    description = "Installs npm dependencies for the generated TypeScript client and builds it"
+    description = "Installs npm dependencies for the generated TypeScript REST client and builds it"
     group = "publishing"
-    workingDir = tsClientDir.get().asFile
+    workingDir = tsRestClientDir.get().asFile
     commandLine("npm", "install")
-
-    fun copyToPackage(fileName: String) {
-        val sourceFile = layout.projectDirectory.file(fileName)
-        val targetFile = tsClientDir.get().asFile.resolve(fileName)
-
-        sourceFile.asFile.copyTo(targetFile, overwrite = true)
-    }
 
     // Copy the license and changelog to the package to make it ready for publishing
     doFirst {
-        copyToPackage("LICENSE")
-        copyToPackage("CHANGELOG.md")
+        copy {
+            from(".")
+            into(tsRestClientDir.get())
+            include("LICENSE")
+            include("CHANGELOG.md")
+        }
 
         // Restrict the published package contents to the compiled output and docs (source code is omitted).
-        ProcessBuilder(
-            "npm", "pkg", "set",
+        npmPkgSet(
+            tsRestClientDir.get().asFile,
             "description=API client for the SnowballR Web Application",
             "author=SnowballR",
             "files[0]=dist",
             "files[1]=README.md",
             "files[2]=LICENSE",
             "files[3]=CHANGELOG.md",
+            "repository[url]=git+https://github.com/SE-UUlm/snowballr-backend.git"
         )
-            .directory(tsClientDir.get().asFile)
-            .inheritIO()
-            .start()
-            .waitFor()
+    }
+}
+
+val tsGrpcClientDir: Provider<Directory> = layout.buildDirectory.dir("generated/ts-grpc-client")
+
+tasks.register<Exec>("buildTsGrpcClient") {
+    description = "Installs npm dependencies for the generated TypeScript gRPC client and builds it"
+    group = "publishing"
+    workingDir = tsGrpcClientDir.get().asFile
+    commandLine("npm", "install")
+    mkdir("${tsGrpcClientDir.get()}/dist")
+
+    // Copy all required files to the package to make it ready for publishing
+    doFirst {
+        copy {
+            into(tsGrpcClientDir.get())
+
+            from("api/grpc") {
+                include("package.json")
+                include("proto/*.proto")
+                include("README.md")
+            }
+
+            from(".") {
+                include("LICENSE")
+                include("CHANGELOG.md")
+            }
+        }
+
+        npmPkgSet(
+            tsGrpcClientDir.get().asFile,
+            "version=${project.version}"
+        )
     }
 }
 
