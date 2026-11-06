@@ -1,0 +1,35 @@
+{
+    "name": "snowballr-api",
+    "version": "0.16.1",
+    "description": "API for the SnowballR Web Application.",
+    "main": "dist/",
+    "type": "module",
+    "scripts": {
+        "compile": "protoc --ts_out ./dist/ --ts_opt generate_dependencies --proto_path ../proto/ ../proto/main.proto"
+    },
+    "files": [
+        "dist",
+        "README.md",
+        "LICENSE",
+        "CHANGELOG.md"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "git+ssh://git@github.com/SE-UUlm/snowballr-backend.git"
+    },
+    "keywords": [
+        "api",
+        "protobuf",
+        "grpc"
+    ],
+    "author": "SnowballR",
+    "license": "GPL-3.0-or-later",
+    "bugs": {
+        "url": "https://github.com/SE-UUlm/snowballr-backend/issues"
+    },
+    "homepage": "https://github.com/SE-UUlm/snowballr-backend/tree/develop/api/grpc#readme",
+    "devDependencies": {
+        "@protobuf-ts/plugin": "^2.11.1",
+        "ts-protoc-gen": "^0.15.0"
+    }
+}

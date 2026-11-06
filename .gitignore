@@ -68,3 +68,9 @@ db-data
 
 ### Logs ###
 *.log
+
+### API ###
+api/grpc/npm-package/node_modules/
+api/grpc/npm-package/dist/*
+!api/grpc/npm-package/dist/.gitkeep
+api/grpc/npm-package/package-lock.json

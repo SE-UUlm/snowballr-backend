@@ -1,0 +1,30 @@
+name: Publish the gRPC API Client
+description: Publishes the TS gRPC Client to the specified channel on NPM
+inputs:
+    channel:
+        description: The NPM channel where the package should be published
+        required: true
+runs:
+    using: composite
+    steps:
+        - name: Setup Node.js
+          uses: actions/setup-node@v7
+          with:
+              node-version: 24
+              registry-url: "https://registry.npmjs.org"
+
+        - name: Install dependencies and build package
+          shell: bash
+          run: cd api/grpc/npm-package && npm i && npm run compile
+
+        - name: Verify that package content exists
+          shell: bash
+          run: ls -la cd api/grpc/npm-package/dist | grep -E ".ts"
+
+        - name: Copy documents to package directory
+          shell: bash
+          run: cp api/grpc/README.md LICENSE CHANGELOG.md ./api/grpc/npm-package/
+
+        - name: Publish NPM package
+          shell: bash
+          run: cd api/grpc/npm-package && npm publish --access public --tag ${{ inputs.channel }}

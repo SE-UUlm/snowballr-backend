@@ -24,8 +24,13 @@ jobs:
                   fetch-depth: 0
                   fetch-tags: true
 
-            - name: Publish NPM Package
+            - name: Publish REST NPM Package
               uses: ./.github/workflows/publish-api-client
+              with:
+                  channel: alpha
+
+            - name: Publish gRPC NPM Package
+              uses: ./.github/workflows/publish-grpc-client
               with:
                   channel: alpha
 
@@ -44,8 +49,13 @@ jobs:
                   fetch-depth: 0
                   fetch-tags: true
 
-            - name: Publish NPM Package
+            - name: Publish REST NPM Package
               uses: ./.github/workflows/publish-api-client
+              with:
+                  channel: beta
+
+            - name: Publish gRPC NPM Package
+              uses: ./.github/workflows/publish-grpc-client
               with:
                   channel: beta
 
@@ -63,7 +73,12 @@ jobs:
                   fetch-depth: 0
                   fetch-tags: true
 
-            - name: Publish NPM Package
+            - name: Publish REST NPM Package
               uses: ./.github/workflows/publish-api-client
+              with:
+                  channel: latest
+
+            - name: Publish gRPC NPM Package
+              uses: ./.github/workflows/publish-grpc-client
               with:
                   channel: latest
