@@ -29,10 +29,12 @@ object ReviewHasCriterionTable : CompositeIdTable("review_has_criterion") {
     /**
      * Reference to the associated criterion.
      *
-     * - `onDelete=CASCADE` so that the entity is deleted when the criterion is deleted
+     * - `onDelete=RESTRICT` so that a criterion cannot be deleted if an associated entity exists. Note that this also
+     *   applies when the criterion is deleted via the project cascade, so these associations must be deleted before
+     *   the project is hard-deleted (see `ProjectTableRepo.attemptToDeleteProject`).
      * - `onUpdate=CASCADE` so that when the criterion ID is updated, the foreign key ID is updated too
      */
-    val criterionId = reference("criterion_id", CriterionTable, ReferenceOption.CASCADE, ReferenceOption.CASCADE)
+    val criterionId = reference("criterion_id", CriterionTable, ReferenceOption.RESTRICT, ReferenceOption.CASCADE)
 
     init {
         addIdColumn(reviewId)

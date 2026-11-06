@@ -9,6 +9,10 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
+import se.uulm.snowballr.backend.repository.FOREIGN_KEY_CONSTRAINT_VIOLATION_SQL_STATE
+import se.uulm.snowballr.backend.repository.UNIQUE_CONSTRAINT_VIOLATION_SQL_STATE
+import java.sql.SQLException
 
 class DeleteCriterionTest : CriterionServiceTest() {
     @Test
@@ -67,5 +71,35 @@ class DeleteCriterionTest : CriterionServiceTest() {
         service.deleteCriterion(criterion.id)
 
         coVerify(exactly = 1) { criterionRepoMock.deleteCriterionById(criterion.id) }
+    }
+
+    @Test
+    fun `When a criterion is still selected in a review, then a FailedPreconditionException is thrown`() = runTest {
+        val user = DataBuilder.createExampleUser()
+        val criterion = DataBuilder.createExampleProjectCriterion()
+
+        mockCurrentUser(user)
+        coEvery { criterionRepoMock.getCriterionById(criterion.id) } returns Result.success(criterion)
+        coJustRun { criterionAccessCheckerMock.isAllowedToDeleteCriterion(user, criterion) }
+        coEvery {
+            criterionRepoMock.deleteCriterionById(criterion.id)
+        } throws SQLException("FK violation", FOREIGN_KEY_CONSTRAINT_VIOLATION_SQL_STATE)
+
+        assertThrows<FailedPreconditionException> { service.deleteCriterion(criterion.id) }
+    }
+
+    @Test
+    fun `When deleting a criterion fails for another SQL reason, then the SQLException is rethrown`() = runTest {
+        val user = DataBuilder.createExampleUser()
+        val criterion = DataBuilder.createExampleProjectCriterion()
+
+        mockCurrentUser(user)
+        coEvery { criterionRepoMock.getCriterionById(criterion.id) } returns Result.success(criterion)
+        coJustRun { criterionAccessCheckerMock.isAllowedToDeleteCriterion(user, criterion) }
+        coEvery {
+            criterionRepoMock.deleteCriterionById(criterion.id)
+        } throws SQLException("Other violation", UNIQUE_CONSTRAINT_VIOLATION_SQL_STATE)
+
+        assertThrows<SQLException> { service.deleteCriterion(criterion.id) }
     }
 }
