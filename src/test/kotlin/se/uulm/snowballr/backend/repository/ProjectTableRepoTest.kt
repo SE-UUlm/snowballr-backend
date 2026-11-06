@@ -30,7 +30,9 @@ import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectSettingRequest
+import se.uulm.snowballr.backend.repository.RepositoryHelper.assignCriterionToReview
 import se.uulm.snowballr.backend.repository.RepositoryHelper.assignUserToProject
+import se.uulm.snowballr.backend.repository.RepositoryHelper.insertCriterionAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertPaperAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectPaperAndGetId
@@ -42,6 +44,7 @@ import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.ReviewTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
+import se.uulm.snowballr.backend.table.association.ReviewHasCriterionTable
 import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
 import java.sql.SQLException
@@ -61,6 +64,7 @@ class ProjectTableRepoTest :
             PaperTable,
             ReviewTable,
             CriterionTable,
+            ReviewHasCriterionTable,
             ProjectDeleteBlockerTable,
         ),
         true,
@@ -666,6 +670,28 @@ class ProjectTableRepoTest :
                 assertThat(project2.name).isNotEmpty()
                 assertResultSuccess(criterionRepo.getCriterionById(criterionId2))
             }
+
+        @Test
+        fun `When a cleared project has a criterion associated with a review, then it is hard-deleted`() = runTest {
+            val projectId = insertProjectAndGetId(
+                name = "Reviewed Project",
+                status = ProjectStatus.DELETED,
+                deletedAt = defaultThresholdDate.minusDays(1),
+                createdBy = testUserId,
+            )
+            val paperId = insertPaperAndGetId()
+            val projectPaperId =
+                insertProjectPaperAndGetId(paperId = paperId, projectId = projectId, createdBy = testUserId)
+            val reviewId = insertReviewAndGetId(projectPaperId, userId = testUserId)
+            val criterionId = insertCriterionAndGetId(projectId = projectId, createdBy = testUserId)
+            assignCriterionToReview(reviewId, criterionId)
+            repo.clearSoftDeletedProjects(defaultThresholdDate)
+
+            repo.hardDeleteClearedProjects()
+
+            assertResultFailure<NotFoundException>(repo.getProjectById(projectId))
+            assertResultFailure<NotFoundException>(criterionRepo.getCriterionById(criterionId))
+        }
 
         @Test
         fun `When a cleared project is still referenced by a restrict foreign key, then hard delete is skipped`() =

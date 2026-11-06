@@ -2,8 +2,10 @@ package se.uulm.snowballr.backend.repository
 
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.jetbrains.exposed.v1.exceptions.ExposedSQLException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertInstanceOf
@@ -370,15 +372,14 @@ class CriterionTableRepoTest : RepositoryTest(
         }
 
         @Test
-        fun `When a criterion associated with a review is deleted, then the association is deleted too`() = runTest {
+        fun `When a criterion is associated with a review, then it cannot be deleted`() = runTest {
             val projectId = insertProjectAndGetId(createdBy = testUserId)
             val reviewId = insertReviewForProjectAndGetId(projectId)
             val criterionId = insertCriterionAndGetId(projectId = projectId, createdBy = testUserId)
             assignCriterionToReview(reviewId, criterionId)
 
-            repo.deleteCriterionById(criterionId)
-
-            assertResultFailure<NotFoundException>(repo.getCriterionById(criterionId))
+            val exception = assertThrows<ExposedSQLException> { repo.deleteCriterionById(criterionId) }
+            assertTrue(exception.isForeignKeyConstraintViolation())
         }
     }
 
