@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.exception.NotFoundException
+import se.uulm.snowballr.backend.model.exception.invalidargument.CriteriaNotInProjectException
 import se.uulm.snowballr.backend.model.incoming.review.CreateReviewRequest
 import se.uulm.snowballr.backend.repository.RepositoryHelper.assignCriterionToReview
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertCriterionAndGetId
@@ -229,7 +230,7 @@ class ReviewTableRepoTest : RepositoryTest(
                 insertProjectPaperAndGetId(paperId = paperId, projectId = projectId, createdBy = testUserId)
             val userId = insertUserAndGetId(email = "existing.reviewer@example.com")
 
-            val review = repo.createReview(createReviewRequest(projectPaperId), userId)
+            val review = repo.createReview(createReviewRequest(projectPaperId), projectId, userId).getOrThrow()
 
             assertEquals(projectPaperId, review.projectPaperId)
             assertEquals(ReviewDecision.ACCEPTED, review.decision)
@@ -245,7 +246,7 @@ class ReviewTableRepoTest : RepositoryTest(
                     insertProjectPaperAndGetId(paperId = paperId, projectId = projectId, createdBy = testUserId)
 
                 assertThrows<SQLException> {
-                    repo.createReview(createReviewRequest(projectPaperId), UUID.randomUUID())
+                    repo.createReview(createReviewRequest(projectPaperId), projectId, UUID.randomUUID())
                 }
             }
 
@@ -259,7 +260,7 @@ class ReviewTableRepoTest : RepositoryTest(
                 val userId = insertUserAndGetId(email = "double.reviewing.user@example.com")
                 insertReviewAndGetId(projectPaperId, userId)
 
-                assertThrows<SQLException> { repo.createReview(createReviewRequest(projectPaperId), userId) }
+                assertThrows<SQLException> { repo.createReview(createReviewRequest(projectPaperId), projectId, userId) }
             }
 
         @Test
@@ -274,11 +275,71 @@ class ReviewTableRepoTest : RepositoryTest(
 
                 val createReviewWithCriteriaRequest = createReviewRequest(projectPaperId, listOf(selectedCriterion))
 
-                val review = repo.createReview(createReviewWithCriteriaRequest, userId)
+                val review = repo.createReview(createReviewWithCriteriaRequest, projectId, userId).getOrThrow()
 
                 val selectedCriteria = reviewHasCriterionRepo.getSelectedCriteriaIdsForReviewById(review.id)
                 assertThat(selectedCriteria).hasSize(1)
                 assertContains(selectedCriteria, selectedCriterion)
+            }
+
+        @Test
+        fun `When a review is created with a criterion of another project, then a CriteriaNotInProjectException is returned and nothing is stored`() =
+            runTest {
+                val projectId = insertProjectAndGetId(createdBy = testUserId)
+                val otherProjectId = insertProjectAndGetId(createdBy = testUserId)
+                val projectPaperId = insertProjectPaperAndGetId(
+                    paperId = insertPaperAndGetId(),
+                    projectId = projectId,
+                    createdBy = testUserId,
+                )
+                val projectCriterion = insertCriterionAndGetId(projectId = projectId, createdBy = testUserId)
+                val foreignCriterion = insertCriterionAndGetId(projectId = otherProjectId, createdBy = testUserId)
+                val request = createReviewRequest(projectPaperId, listOf(projectCriterion, foreignCriterion))
+
+                val result = repo.createReview(request, projectId, testUserId)
+
+                assertResultFailure<CriteriaNotInProjectException>(result)
+                assertThat(repo.getAllReviewsForProjectPaper(projectPaperId)).isEmpty()
+            }
+
+        @Test
+        fun `When a review is created with a user criterion, then a CriteriaNotInProjectException is returned`() =
+            runTest {
+                val projectId = insertProjectAndGetId(createdBy = testUserId)
+                val projectPaperId = insertProjectPaperAndGetId(
+                    paperId = insertPaperAndGetId(),
+                    projectId = projectId,
+                    createdBy = testUserId,
+                )
+                val userCriterion = insertCriterionAndGetId(projectId = null, createdBy = testUserId)
+
+                val result = repo.createReview(
+                    createReviewRequest(projectPaperId, listOf(userCriterion)),
+                    projectId,
+                    testUserId,
+                )
+
+                assertResultFailure<CriteriaNotInProjectException>(result)
+            }
+
+        @Test
+        fun `When a review is created with a non-existing criterion, then a CriteriaNotInProjectException is returned`() =
+            runTest {
+                val projectId = insertProjectAndGetId(createdBy = testUserId)
+                val projectPaperId = insertProjectPaperAndGetId(
+                    paperId = insertPaperAndGetId(),
+                    projectId = projectId,
+                    createdBy = testUserId,
+                )
+
+                val result =
+                    repo.createReview(
+                        createReviewRequest(projectPaperId, listOf(UUID.randomUUID())),
+                        projectId,
+                        testUserId,
+                    )
+
+                assertResultFailure<CriteriaNotInProjectException>(result)
             }
     }
 }

@@ -14,5 +14,6 @@ object ReviewValidator {
         ensureIdValidity("project_paper_id", request.projectPaperId)
         ensureEnumNotUnspecified("decision", request.decision)
         ensureIdListValidity("selected_criteria_ids", request.selectedCriteriaIdsList)
+        ensureIdListDistinct("selected_criteria_ids", request.selectedCriteriaIdsList)
     }.toEitherNel()
 }

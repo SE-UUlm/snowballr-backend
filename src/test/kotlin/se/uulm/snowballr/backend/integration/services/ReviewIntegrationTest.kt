@@ -7,16 +7,73 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.integration.IntegrationTest
+import se.uulm.snowballr.backend.model.dto.criterion.Criterion
+import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.dto.project.ProjectField
 import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
+import se.uulm.snowballr.backend.model.exception.invalidargument.CriteriaNotInProjectException
+import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
+import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.review.CreateReviewRequest
+import java.util.UUID
 
 class ReviewIntegrationTest : IntegrationTest() {
     @Nested
     inner class CreateReview {
+        private suspend fun createCriterion(projectId: UUID?): Criterion = criterionService.createCriterion(
+            CreateCriterionRequest(
+                tag = "TC",
+                name = "Test Criterion",
+                description = "A test criterion",
+                category = CriterionCategory.EXCLUSION,
+                projectId = projectId,
+            ),
+        )
+
+        private fun declineRequest(projectPaperId: UUID, criterion: Criterion) = CreateReviewRequest(
+            projectPaperId = projectPaperId,
+            decision = ReviewDecision.DECLINED,
+            selectedCriteriaIds = listOf(criterion.id),
+        )
+
+        @Test
+        fun `When a review selects a criterion of the same project, then the criterion is stored with the review`() =
+            runTest {
+                val (project, projectPaper) = setupProjectAndPaperForReview()
+                val criterion = createCriterion(project.id)
+
+                val review = reviewService.createReview(declineRequest(projectPaper.id, criterion))
+
+                val fetched = reviewService.getReviewById(review.id)
+                assertEquals(listOf(criterion.id), fetched.selectedCriteriaIds)
+            }
+
+        @Test
+        fun `When a review selects a criterion of another project, then the creation fails and no review is stored`() =
+            runTest {
+                val (_, projectPaper) = setupProjectAndPaperForReview()
+                val otherProject = projectService.createProject(CreateProjectRequest(name = "Other Project"))
+                val foreignCriterion = createCriterion(otherProject.id)
+
+                assertThrows<CriteriaNotInProjectException> {
+                    reviewService.createReview(declineRequest(projectPaper.id, foreignCriterion))
+                }
+                assertTrue(reviewService.getAllReviewsForProjectPaper(projectPaper.id).isEmpty())
+            }
+
+        @Test
+        fun `When a review selects a user criterion, then the creation fails`() = runTest {
+            val (_, projectPaper) = setupProjectAndPaperForReview()
+            val userCriterion = createCriterion(projectId = null)
+
+            assertThrows<CriteriaNotInProjectException> {
+                reviewService.createReview(declineRequest(projectPaper.id, userCriterion))
+            }
+        }
+
         @Test
         fun `When a review is created, then it appears in the reviews list for the project paper`() = runTest {
             val (_, projectPaper) = setupProjectAndPaperForReview()

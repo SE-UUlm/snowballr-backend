@@ -5,6 +5,7 @@ import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.access.IReviewAccessChecker
 import se.uulm.snowballr.backend.fetcher.IFetcherOrchestrator
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
+import se.uulm.snowballr.backend.model.dto.criterion.Criterion
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.dto.project.ProjectField
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
@@ -120,10 +121,11 @@ class ReviewService(
                 )
             }
 
-            val review = repo.createReview(request, currentUser.id)
-            val selectedCriteriaIds = reviewHasCriterionRepo.getSelectedCriteriaIdsForReviewById(review.id)
+            val review = repo.createReview(request, project.id, currentUser.id).getOrThrow()
 
-            val hasSelectedExclusionCriterion = hasSelectedHardExclusionCriterion(project.id, selectedCriteriaIds)
+            val projectCriteria = criterionRepo.getAllProjectCriteria(project.id)
+            val hasSelectedExclusionCriterion =
+                hasSelectedHardExclusionCriterion(projectCriteria, request.selectedCriteriaIds)
 
             val decision = if (hasSelectedExclusionCriterion && review.doesDeclinePaper) {
                 PaperDecision.DECLINED
@@ -142,15 +144,18 @@ class ReviewService(
             logger.info {
                 "Review ${review.id} created for project paper ${request.projectPaperId} (${review.decision})"
             }
-            ReviewResponse.fromReviewAndIds(review, selectedCriteriaIds)
+            ReviewResponse.fromReviewAndIds(review, request.selectedCriteriaIds)
         }
 
-    private suspend fun hasSelectedHardExclusionCriterion(projectId: UUID, selectedCriteriaIds: List<UUID>): Boolean {
-        val hardExclusionCriteria = criterionRepo.getAllProjectCriteria(projectId)
+    private fun hasSelectedHardExclusionCriterion(
+        projectCriteria: List<Criterion.ProjectCriterion>,
+        selectedCriteriaIds: List<UUID>,
+    ): Boolean {
+        val hardExclusionCriteriaIds = projectCriteria
             .filter { criterion -> criterion.category == CriterionCategory.HARD_EXCLUSION }
-            .map { criterion -> criterion.id }
+            .mapTo(HashSet()) { criterion -> criterion.id }
 
-        return selectedCriteriaIds.any { id -> hardExclusionCriteria.contains(id) }
+        return selectedCriteriaIds.any { id -> id in hardExclusionCriteriaIds }
     }
 
     /**
@@ -180,12 +185,12 @@ class ReviewService(
         if (reviews.size == decisionMatrix.numberOfReviewers) {
             val counts = reviews.groupingBy { it.decision }.eachCount()
 
-            for (pattern in decisionMatrix.patterns) {
-                val doesFoundMatch = pattern.entries.all { entry ->
+            for ((decision, entries) in decisionMatrix.patterns) {
+                val doesFoundMatch = entries.all { entry ->
                     (counts[entry.decision] ?: 0) >= entry.count
                 }
                 if (doesFoundMatch) {
-                    return pattern.decision
+                    return decision
                 }
             }
 
