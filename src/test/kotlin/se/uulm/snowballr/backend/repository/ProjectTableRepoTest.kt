@@ -2,9 +2,11 @@ package se.uulm.snowballr.backend.repository
 
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.tuple
 import org.jetbrains.exposed.v1.core.ReferenceOption
 import org.jetbrains.exposed.v1.core.dao.id.java.UUIDTable
 import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
@@ -19,12 +21,14 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.isBetweenWithDelta
+import se.uulm.snowballr.backend.model.dto.criterion.CriterionCategory
 import se.uulm.snowballr.backend.model.dto.project.DecisionMatrixPattern
 import se.uulm.snowballr.backend.model.dto.project.ProjectField
 import se.uulm.snowballr.backend.model.dto.project.ProjectSettings
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.project.ReviewDecisionMatrix
 import se.uulm.snowballr.backend.model.dto.project.SnowballingType
+import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
@@ -36,6 +40,7 @@ import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGet
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectPaperAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertReviewAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertUserAndGetId
+import se.uulm.snowballr.backend.repository.association.ProjectMemberTableRepo
 import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.ProjectTable
@@ -67,6 +72,7 @@ class ProjectTableRepoTest :
     ) {
     private val repo = ProjectTableRepo(db)
     private val criterionRepo = CriterionTableRepo(db)
+    private val projectMemberRepo = ProjectMemberTableRepo(db)
 
     private val defaultThresholdDate = OffsetDateTime.now().minusDays(30)
 
@@ -161,6 +167,65 @@ class ProjectTableRepoTest :
                 val projectSettings = DataBuilder.createExampleProjectSettings()
 
                 assertThrows<SQLException> { repo.createProject(request, UUID.randomUUID(), projectSettings) }
+            }
+
+        @Test
+        fun `When a project is created, then the creator is added as project admin`() = runTest {
+            val request = CreateProjectRequest(name = "Test Project")
+
+            val project = repo.createProject(request, testUserId, DataBuilder.createExampleProjectSettings())
+
+            val members = projectMemberRepo.getProjectMembers(project.id)
+            assertThat(members).singleElement().satisfies({
+                assertEquals(testUserId, it.userId)
+                assertEquals(MemberRole.ADMIN, it.role)
+            })
+        }
+
+        @Test
+        fun `When a project is created with criteria to clone, then they are copied as project criteria`() = runTest {
+            val request = CreateProjectRequest(name = "Test Project")
+            val criteria = listOf(
+                DataBuilder.createExampleUserCriterion(tag = "A", name = "Criterion A", createdBy = testUserId),
+                DataBuilder.createExampleUserCriterion(
+                    tag = "B",
+                    name = "Criterion B",
+                    category = CriterionCategory.EXCLUSION,
+                    createdBy = testUserId,
+                ),
+            )
+
+            val project = repo.createProject(request, testUserId, DataBuilder.createExampleProjectSettings(), criteria)
+
+            val projectCriteria = criterionRepo.getAllProjectCriteria(project.id)
+            assertThat(projectCriteria)
+                .extracting({ it.tag }, { it.name }, { it.description }, { it.category }, { it.createdBy })
+                .containsExactlyInAnyOrder(
+                    *criteria.map { tuple(it.tag, it.name, it.description, it.category, testUserId) }.toTypedArray(),
+                )
+            // The cloned criteria are new entities and not the original user criteria
+            assertThat(projectCriteria.map { it.id }).doesNotContainAnyElementsOf(criteria.map { it.id })
+        }
+
+        @Test
+        fun `When cloning a criterion fails, then neither the project nor any criterion or member is persisted`() =
+            runTest {
+                val request = CreateProjectRequest(name = "Test Project")
+                val criteria = listOf(
+                    DataBuilder.createExampleUserCriterion(tag = "Valid", createdBy = testUserId),
+                    // PostgreSQL rejects NUL characters in text columns, which makes the batch insert fail
+                    DataBuilder.createExampleUserCriterion(tag = "Invalid\u0000", createdBy = testUserId),
+                )
+
+                assertThrows<SQLException> {
+                    repo.createProject(request, testUserId, DataBuilder.createExampleProjectSettings(), criteria)
+                }
+
+                assertThat(repo.getAllProjects()).isEmpty()
+                db.query {
+                    assertEquals(0, CriterionTable.selectAll().count())
+                    assertEquals(0, ProjectMemberTable.selectAll().count())
+                }
             }
     }
 

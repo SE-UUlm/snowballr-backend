@@ -363,12 +363,6 @@ class SnowballRServer(
                 UpdateUserSettingsRequest(
                     areHotkeysShown = settings.showHotkeys,
                     isReviewModeEnabled = settings.reviewMode,
-                    // Only converted if part of the update, since they are only validated in that case.
-                    criteriaIds = if (fields.contains(UserField.CRITERIA_IDS)) {
-                        settings.defaultCriteria.criteriaList.map { parseUUID(it.id, EntityType.CRITERION) }
-                    } else {
-                        emptyList()
-                    },
                     similarityThreshold = projectSettings.similarityThreshold,
                     decisionMatrix = reviewDecisionMatrixFromGrpc(
                         projectSettings.decisionMatrix,

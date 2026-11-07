@@ -224,7 +224,6 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
         @Suppress("CyclomaticComplexMethod", "LongMethod")
         fun `When a user is updated, then only the specified field is updated`(field: UserField) = runTest {
             val userId = insertUserAndGetId(email = "test.user@example.com")
-            val criterionId = UUID.randomUUID()
             val fetchers: FetcherMap = mapOf(
                 "foo" to emptyMap(),
             )
@@ -239,7 +238,6 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
                 status = UserStatus.DELETED,
                 areHotkeysShown = false,
                 isReviewModeEnabled = true,
-                criteriaIds = listOf(criterionId),
                 defaultProjectSettings = ProjectSettings(
                     similarityThreshold = 0.5F,
                     snowballingType = SnowballingType.FORWARD,
@@ -266,7 +264,6 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
                 UserField.STATUS -> assertEquals(UserStatus.DELETED, updatedUser.status)
                 UserField.ARE_HOTKEYS_SHOWN -> assertFalse(updatedSettings.areHotkeysShown)
                 UserField.IS_REVIEW_MODE_ENABLED -> assertTrue(updatedSettings.isReviewModeEnabled)
-                UserField.CRITERIA_IDS -> assertThat(updatedSettings.criteriaIds).containsExactly(criterionId)
                 UserField.SIMILARITY_THRESHOLD -> assertEquals(0.5F, updatedProjectSettings.similarityThreshold)
                 UserField.SNOWBALLING_TYPE ->
                     assertEquals(SnowballingType.FORWARD, updatedProjectSettings.snowballingType)
@@ -288,7 +285,6 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
                     UserField.STATUS -> assertEquals(UserStatus.ACTIVE, updatedUser.status)
                     UserField.ARE_HOTKEYS_SHOWN -> assertTrue(updatedSettings.areHotkeysShown)
                     UserField.IS_REVIEW_MODE_ENABLED -> assertFalse(updatedSettings.isReviewModeEnabled)
-                    UserField.CRITERIA_IDS -> assertThat(updatedSettings.criteriaIds).isEmpty()
                     UserField.SIMILARITY_THRESHOLD -> assertEquals(0.85F, updatedProjectSettings.similarityThreshold)
                     UserField.SNOWBALLING_TYPE ->
                         assertEquals(SnowballingType.BOTH, updatedProjectSettings.snowballingType)

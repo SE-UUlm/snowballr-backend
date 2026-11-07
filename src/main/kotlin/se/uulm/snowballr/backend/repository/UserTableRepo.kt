@@ -283,7 +283,6 @@ class UserTableRepo(
                     UserField.STATUS -> it[status] = userData.status
                     UserField.ARE_HOTKEYS_SHOWN -> it[areHotkeysShown] = settings.areHotkeysShown
                     UserField.IS_REVIEW_MODE_ENABLED -> it[reviewModeEnabled] = settings.isReviewModeEnabled
-                    UserField.CRITERIA_IDS -> it[criteriaIds] = settings.criteriaIds
                     UserField.SIMILARITY_THRESHOLD -> it[similarityThreshold] = projectSettings.similarityThreshold
                     UserField.SNOWBALLING_TYPE -> it[snowballingType] = projectSettings.snowballingType
                     UserField.REVIEW_MAYBE_ALLOWED -> it[reviewMaybeAllowed] = projectSettings.reviewMaybeAllowed
@@ -326,7 +325,6 @@ class UserTableRepo(
             it[passwordHash] = ""
             it[role] = UserRole.DEFAULT
             it[status] = UserStatus.CLEARED
-            it[criteriaIds] = emptyList()
             it[fetchers] = emptyMap()
             it[modifiedAt] = OffsetDateTime.now()
         }

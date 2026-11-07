@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.repository
 
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.jetbrains.exposed.v1.core.ResultRow
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Nested
@@ -31,10 +32,13 @@ import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.ReviewTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.table.association.ReviewHasCriterionTable
+import se.uulm.snowballr.backend.table.toCriterion
 import se.uulm.snowballr.backend.utils.GrpcEnumSourceTest
 import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
 import java.sql.SQLException
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import java.util.UUID
 
 class CriterionTableRepoTest : RepositoryTest(
@@ -208,80 +212,52 @@ class CriterionTableRepoTest : RepositoryTest(
                 assertThat(userCriteria).doesNotContain(userCriterion2)
                 assertThat(userCriteria).doesNotContain(projectCriterion)
             }
+
+        @Test
+        fun `When all criteria are requested, then they are ordered by their creation date in descending order`() =
+            runTest {
+                suspend fun createCriterionWithDate(criterionName: String, year: Int) = db.query {
+                    CriterionTable.insertAndGet(ResultRow::toCriterion) {
+                        it[tag] = criterionName
+                        it[name] = criterionName
+                        it[description] = criterionName
+                        it[category] = CriterionCategory.EXCLUSION
+                        it[projectId] = null
+                        it[createdBy] = testUserId
+                        it[createdAt] = OffsetDateTime.of(year, 1, 1, 1, 1, 1, 0, ZoneOffset.UTC)
+                    }
+                }
+
+                val second = createCriterionWithDate("Second", 2021)
+                val third = createCriterionWithDate("Third", 2020)
+                val first = createCriterionWithDate("First", 2022)
+
+                val userCriteria = repo.getAllUserCriteria(testUserId) as List<Criterion>
+                assertThat(userCriteria).containsExactly(first, second, third)
+            }
     }
 
     @Nested
-    inner class GetCriteriaByIds {
+    inner class CountUserCriteria {
         @Test
-        fun `When all criteria of the given ids are requested and exist, then all those criteria are returned`() =
+        fun `When a user has no user criteria, then zero is returned`() = runTest {
+            assertEquals(0L, repo.countUserCriteria(testUserId))
+        }
+
+        @Test
+        fun `When user criteria are counted, then only the user criteria of the according user are counted`() =
             runTest {
+                val otherUserId = insertUserAndGetId("other@email.com")
                 val projectId = insertProjectAndGetId(createdBy = testUserId)
-                val baseRequest = CreateCriterionRequest(
-                    tag = "Test Tag",
-                    name = "Test Criterion",
-                    description = "Test Description",
-                    category = CriterionCategory.EXCLUSION,
-                    projectId = null,
-                )
-                val projectCriterionRequest = baseRequest.copy(projectId = projectId)
 
-                val userCriterion = repo.createCriterion(baseRequest, testUserId)
-                val projectCriterion = repo.createCriterion(projectCriterionRequest, testUserId)
+                insertCriterionAndGetId(createdBy = testUserId)
+                insertCriterionAndGetId(createdBy = testUserId)
+                insertCriterionAndGetId(createdBy = otherUserId)
+                insertCriterionAndGetId(projectId = projectId, createdBy = testUserId)
 
-                val userCriteria = repo.getCriteriaByIds(listOf(userCriterion.id, projectCriterion.id))
-
-                assertThat(userCriteria).hasSize(2)
-                assertThat(userCriteria).containsExactlyInAnyOrder(userCriterion, projectCriterion)
+                assertEquals(2L, repo.countUserCriteria(testUserId))
+                assertEquals(1L, repo.countUserCriteria(otherUserId))
             }
-
-        @Test
-        fun `When all criteria of the given ids are requested but not all criteria exist, then only the existent criteria are returned`() =
-            runTest {
-                val request = CreateCriterionRequest(
-                    tag = "Test Tag",
-                    name = "Test Criterion",
-                    description = "Test Description",
-                    category = CriterionCategory.EXCLUSION,
-                    projectId = null,
-                )
-
-                val userCriterion = repo.createCriterion(request, testUserId)
-
-                val userCriteria = repo.getCriteriaByIds(listOf(userCriterion.id, UUID.randomUUID()))
-
-                assertThat(userCriteria).hasSize(1)
-                assertThat(userCriteria).containsExactlyInAnyOrder(userCriterion)
-            }
-
-        @Test
-        fun `When all the input list is empty, then an empty list is returned`() = runTest {
-            val userCriteria = repo.getCriteriaByIds(emptyList())
-            assertThat(userCriteria).isEmpty()
-        }
-
-        @Test
-        fun `When no criteria of the input list exist, then an empty list is returned`() = runTest {
-            val userCriteria = repo.getCriteriaByIds(listOf(UUID.randomUUID()))
-            assertThat(userCriteria).isEmpty()
-        }
-
-        @Test
-        fun `When the input list contains duplicated ids, then every criterion is returned only once`() = runTest {
-            val request = CreateCriterionRequest(
-                tag = "Test Tag",
-                name = "Test Criterion",
-                description = "Test Description",
-                category = CriterionCategory.EXCLUSION,
-                projectId = null,
-            )
-
-            val userCriterion = repo.createCriterion(request, testUserId)
-
-            val userCriteria = repo.getCriteriaByIds(listOf(userCriterion.id, userCriterion.id))
-
-            assertThat(userCriteria).hasSize(1)
-            assertThat(userCriteria).containsExactlyInAnyOrder(userCriterion)
-        }
     }
 
     @Nested

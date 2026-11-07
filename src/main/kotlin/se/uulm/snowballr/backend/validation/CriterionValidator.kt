@@ -83,27 +83,6 @@ object CriterionValidator {
         ) { _, _, _, _, _ -> }
     }
 
-    /**
-     * Validates an existing [criterion], which therefore must have a valid ID.
-     */
-    fun validateCriterion(criterion: Criterion): EitherNel<ValidationIssue, Unit> = either {
-        zipOrAccumulate(
-            { ensureIdValidity(FIELD_ID, criterion.id) },
-            {
-                ensureTextFieldValidity(FIELD_TAG, criterion.tag, TAG_MAX_LENGTH)
-            },
-            {
-                ensureTextFieldValidity(FIELD_NAME, criterion.name, NAME_MAX_LENGTH)
-            },
-            {
-                ensureTextFieldValidity(FIELD_DESCRIPTION, criterion.description, DESCRIPTION_MAX_LENGTH)
-            },
-            {
-                ensureEnumNotUnspecified(FIELD_CATEGORY, criterion.category)
-            },
-        ) { _, _, _, _, _ -> }
-    }
-
     fun getGrpcPathsForCriterionField(field: CriterionField) = when (field) {
         CriterionField.TAG -> "criterion.tag"
         CriterionField.NAME -> "criterion.name"

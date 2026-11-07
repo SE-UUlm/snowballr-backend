@@ -2,10 +2,12 @@ package se.uulm.snowballr.backend.repository
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.exposed.v1.core.ResultRow
+import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.isNull
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion
@@ -45,12 +47,21 @@ interface ICriterionTableRepo {
     suspend fun createCriterion(request: CreateCriterionRequest, userId: UUID): Criterion
 
     /**
-     * Retrieves all criteria associated with a specific user.
+     * Retrieves all criteria associated with a specific user in descending order by their creation date, i.e., newest
+     * first.
      *
      * @param userId The unique identifier of the user for whom the criteria are being retrieved.
      * @return A list of [Criterion] objects associated with the given user.
      */
     suspend fun getAllUserCriteria(userId: UUID): List<Criterion>
+
+    /**
+     * Counts the user criteria of a specific user, i.e., the criteria created by the user that belong to no project.
+     *
+     * @param userId The unique identifier of the user whose user criteria are counted.
+     * @return The number of user criteria of the given user.
+     */
+    suspend fun countUserCriteria(userId: UUID): Long
 
     /**
      * Updates an existent criterion in the database with the provided new information.
@@ -67,15 +78,6 @@ interface ICriterionTableRepo {
      * @param userId The unique identifier of the user whose criteria are to be deleted.
      */
     suspend fun deleteUserCriteriaByUserId(userId: UUID)
-
-    /**
-     * Retrieves a list of criteria based on their unique identifiers.
-     *
-     * @param ids A list of unique identifiers (UUIDs) for the criteria to be fetched.
-     * @return A list of [Criterion] objects corresponding to the provided IDs.
-     *         If no criteria are found for certain IDs, they may be excluded from the result.
-     */
-    suspend fun getCriteriaByIds(ids: List<UUID>): List<Criterion>
 
     /**
      * Retrieves all criteria associated with a specific project.
@@ -152,14 +154,17 @@ class CriterionTableRepo(
         logger.info { "Deleted $deletedIds user criteria." }
     }
 
-    override suspend fun getCriteriaByIds(ids: List<UUID>): List<Criterion> = db.query {
-        CriterionTable.getEntitiesByIds(ids, ResultRow::toCriterion)
+    override suspend fun getAllUserCriteria(userId: UUID): List<Criterion.UserCriterion> = db.query {
+        CriterionTable.selectAll()
+            .where { CriterionTable.createdBy eq userId and CriterionTable.projectId.isNull() }
+            .orderBy(CriterionTable.createdAt to SortOrder.DESC)
+            .map(ResultRow::toUserCriterion)
     }
 
-    override suspend fun getAllUserCriteria(userId: UUID): List<Criterion.UserCriterion> = db.query {
-        CriterionTable.getEntities(ResultRow::toUserCriterion) {
-            CriterionTable.createdBy eq userId and CriterionTable.projectId.isNull()
-        }
+    override suspend fun countUserCriteria(userId: UUID): Long = db.query {
+        CriterionTable.selectAll()
+            .where { CriterionTable.createdBy eq userId and CriterionTable.projectId.isNull() }
+            .count()
     }
 
     override suspend fun getAllProjectCriteria(projectId: UUID): List<Criterion.ProjectCriterion> = db.query {

@@ -243,13 +243,16 @@ open class IntegrationTest : KoinTest {
     /**
      * Runs code as another user. This enables making requests as another user to test external events.
      *
+     * @param T The return value of [block] that is returned by this function.
      * @param userId The ID of the user that should execute the requests in [block].
      * @param block The code that is executed on behalf of the user with the passed [userId].
+     * @return The result of [block].
      */
-    protected suspend fun actAsUser(userId: UUID, block: suspend () -> Unit) {
+    protected suspend fun <T> actAsUser(userId: UUID, block: suspend () -> T): T {
         RequestContext.current().userId = userId
-        block()
+        val result = block()
         RequestContext.current().userId = testUserId
+        return result
     }
 
     private suspend fun inviteHelper(

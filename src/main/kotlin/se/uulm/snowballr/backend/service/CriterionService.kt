@@ -6,6 +6,7 @@ import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionField
+import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
@@ -63,6 +64,13 @@ class CriterionService(
     private val accessChecker: ICriterionAccessChecker,
     private val projectAccessChecker: IProjectAccessChecker,
 ) : ICriterionService {
+    companion object {
+        /**
+         * The maximum number of user criteria a single user can have. All of them are cloned into every new project.
+         */
+        const val MAX_USER_CRITERIA_COUNT = 50
+    }
+
     override suspend fun getCriterionById(criterionId: UUID): Criterion = withUser(userRepo) { currentUser ->
         val criterion = repo.getCriterionById(criterionId).getOrThrow()
 
@@ -75,11 +83,18 @@ class CriterionService(
         withUser(userRepo) { currentUser ->
             accessChecker.isAllowedToCreateCriterion(currentUser, request)
 
+            if (request.projectId == null && repo.countUserCriteria(currentUser.id) >= MAX_USER_CRITERIA_COUNT) {
+                throw FailedPreconditionException(
+                    "A user cannot have more than $MAX_USER_CRITERIA_COUNT user criteria.",
+                )
+            }
+
             val criterion = repo.createCriterion(request, currentUser.id)
             logger.info {
                 val owner = request.projectId?.let { "project $it" } ?: "the user's defaults"
                 "Criterion ${criterion.id} ('${criterion.tag}') created for $owner"
             }
+
             criterion
         }
 
@@ -107,6 +122,6 @@ class CriterionService(
         accessChecker.isAllowedToDeleteCriterion(currentUser, criterion)
 
         repo.deleteCriterionById(criterionId)
-        logger.info { "Criterion ${criterion.id} deleted" }
+        logger.info { "Criterion $criterionId deleted" }
     }
 }

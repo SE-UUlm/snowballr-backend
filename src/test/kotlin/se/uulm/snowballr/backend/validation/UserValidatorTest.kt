@@ -9,16 +9,12 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import se.uulm.snowballr.backend.model.BlankField
-import se.uulm.snowballr.backend.model.CompositeIssue
 import se.uulm.snowballr.backend.model.EnumUnspecified
 import se.uulm.snowballr.backend.model.InvalidEmail
 import se.uulm.snowballr.backend.model.InvalidFieldMask
 import se.uulm.snowballr.backend.model.InvalidId
-import se.uulm.snowballr.backend.model.MultipleOccurrences
 import se.uulm.snowballr.backend.model.TooLongField
-import se.uulm.snowballr.backend.model.TooLongList
 import se.uulm.snowballr.backend.model.dto.user.UserField
-import se.uulm.snowballr.backend.validation.UserValidator.MAX_CRITERIA_COUNT
 import se.uulm.snowballr.backend.validation.UserValidator.getGrpcPathsForUserField
 import snowballr.CriterionOuterClass.Criterion
 import snowballr.CriterionOuterClass.CriterionCategory
@@ -304,78 +300,15 @@ class UserValidatorTest {
         }
 
         @Test
-        fun `When the default criteria list is too long, then a 'TooLongList' issue is returned`() {
-            val criteria = mutableListOf<Criterion>()
-            (1..MAX_CRITERIA_COUNT + 1).forEach { _ ->
-                criteria.add(validCriterionBuilder.build())
-            }
+        fun `When the field mask contains the default criteria, then the 'InvalidFieldMask' issue is returned`() {
+            // The default criteria are derived from the user's criteria and cannot be updated via the settings.
             val request = validUpdateRequestBuilder
-                .setUserSettings(
-                    validSettingsBuilder.setDefaultCriteria(Criterion.List.newBuilder().addAllCriteria(criteria)),
-                )
+                .setMask(FieldMaskUtil.fromStringList(listOf("user_settings.default_criteria")))
                 .build()
 
             val result = validateRequest(request)
 
-            assertInvalidResult<TooLongList>(result)
-        }
-
-        @Test
-        fun `When a default criterion has an empty ID and the criteria are specified in the field mask, then an issue is returned`() {
-            val request = validUpdateRequestBuilder
-                .setUserSettings(
-                    validSettingsBuilder.setDefaultCriteria(
-                        Criterion.List.newBuilder().addCriteria(validCriterionBuilder.clone().setId("")),
-                    ),
-                )
-                .build()
-
-            val result = validateRequest(request)
-
-            assertInvalidResult<CompositeIssue>(result)
-        }
-
-        @Test
-        fun `When a default criterion has an empty ID but the criteria are not specified in the field mask, then no issue is returned`() {
-            val request = validUpdateRequestBuilder
-                .setUserSettings(
-                    validSettingsBuilder.setDefaultCriteria(
-                        Criterion.List.newBuilder().addCriteria(validCriterionBuilder.clone().setId("")),
-                    ),
-                )
-                .setMask(FieldMaskUtil.fromStringList(listOf(getGrpcPathsForUserField(UserField.ARE_HOTKEYS_SHOWN))))
-                .build()
-
-            val result = validateRequest(request)
-
-            EitherAssert.assertThat(result).isRight()
-        }
-
-        @Test
-        fun `When the default criteria list contains a criterion twice, then a 'MultipleOccurrences' issue is returned`() {
-            val criterion = validCriterionBuilder.build()
-            val request = validUpdateRequestBuilder
-                .setUserSettings(
-                    validSettingsBuilder.setDefaultCriteria(
-                        Criterion.List.newBuilder().addAllCriteria(listOf(criterion, criterion)),
-                    ),
-                )
-                .build()
-
-            val result = validateRequest(request)
-
-            assertInvalidResult<MultipleOccurrences>(result)
-        }
-
-        @Test
-        fun `When the criteria list is empty, then no issue is returned`() {
-            val request = validUpdateRequestBuilder
-                .setUserSettings(validSettingsBuilder.clearDefaultCriteria())
-                .build()
-
-            val result = validateRequest(request)
-
-            EitherAssert.assertThat(result).isRight()
+            assertInvalidResult<InvalidFieldMask>(result)
         }
     }
 }
