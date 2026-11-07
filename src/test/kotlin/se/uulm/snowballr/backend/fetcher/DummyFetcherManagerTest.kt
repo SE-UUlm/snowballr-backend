@@ -10,11 +10,8 @@ import kotlin.random.Random
 class DummyFetcherManagerTest {
     private fun FetcherPaper.doi() = externalIds.single { it.type == ExternalIdType.DOI }.value
 
-    private suspend fun search(
-        query: String,
-        fetcher: String = "d-1",
-        random: Random = Random(0),
-    ) = DummyFetcherManager(random).searchPapers(fetcher, query, emptyMap())
+    private suspend fun search(query: String, fetcher: String = "d-1", random: Random = Random(0)) =
+        DummyFetcherManager(random).searchPapers(fetcher, query, emptyMap())
 
     @Test
     fun `When searching papers, then every title contains the trimmed search query`() = runTest {
