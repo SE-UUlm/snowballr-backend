@@ -2,10 +2,12 @@ package se.uulm.snowballr.backend.repository
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.exposed.v1.core.ResultRow
+import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.isNull
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.selectAll
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion
@@ -45,7 +47,8 @@ interface ICriterionTableRepo {
     suspend fun createCriterion(request: CreateCriterionRequest, userId: UUID): Criterion
 
     /**
-     * Retrieves all criteria associated with a specific user.
+     * Retrieves all criteria associated with a specific user in descending order by their creation date, i.e., newest
+     * first.
      *
      * @param userId The unique identifier of the user for whom the criteria are being retrieved.
      * @return A list of [Criterion] objects associated with the given user.
@@ -144,9 +147,10 @@ class CriterionTableRepo(
     }
 
     override suspend fun getAllUserCriteria(userId: UUID): List<Criterion.UserCriterion> = db.query {
-        CriterionTable.getEntities(ResultRow::toUserCriterion) {
-            CriterionTable.createdBy eq userId and CriterionTable.projectId.isNull()
-        }
+        CriterionTable.selectAll()
+            .where { CriterionTable.createdBy eq userId and CriterionTable.projectId.isNull() }
+            .orderBy(CriterionTable.createdAt to SortOrder.DESC)
+            .map(ResultRow::toUserCriterion)
     }
 
     override suspend fun getAllProjectCriteria(projectId: UUID): List<Criterion.ProjectCriterion> = db.query {

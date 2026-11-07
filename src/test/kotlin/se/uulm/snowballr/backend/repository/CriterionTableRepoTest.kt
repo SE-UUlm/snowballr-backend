@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.repository
 
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.jetbrains.exposed.v1.core.ResultRow
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Nested
@@ -31,10 +32,13 @@ import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.ReviewTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
 import se.uulm.snowballr.backend.table.association.ReviewHasCriterionTable
+import se.uulm.snowballr.backend.table.toCriterion
 import se.uulm.snowballr.backend.utils.GrpcEnumSourceTest
 import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
 import java.sql.SQLException
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import java.util.UUID
 
 class CriterionTableRepoTest : RepositoryTest(
@@ -207,6 +211,29 @@ class CriterionTableRepoTest : RepositoryTest(
                 assertThat(userCriteria).containsExactly(userCriterion1)
                 assertThat(userCriteria).doesNotContain(userCriterion2)
                 assertThat(userCriteria).doesNotContain(projectCriterion)
+            }
+
+        @Test
+        fun `When all criteria are requested, then they are ordered by their creation date in descending order`() =
+            runTest {
+                suspend fun createCriterionWithDate(criterionName: String, year: Int) = db.query {
+                    CriterionTable.insertAndGet(ResultRow::toCriterion) {
+                        it[tag] = criterionName
+                        it[name] = criterionName
+                        it[description] = criterionName
+                        it[category] = CriterionCategory.EXCLUSION
+                        it[projectId] = null
+                        it[createdBy] = testUserId
+                        it[createdAt] = OffsetDateTime.of(year, 1, 1, 1, 1, 1, 0, ZoneOffset.UTC)
+                    }
+                }
+
+                val second = createCriterionWithDate("Second", 2021)
+                val third = createCriterionWithDate("Third", 2020)
+                val first = createCriterionWithDate("First", 2022)
+
+                val userCriteria = repo.getAllUserCriteria(testUserId) as List<Criterion>
+                assertThat(userCriteria).containsExactly(first, second, third)
             }
     }
 
