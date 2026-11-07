@@ -39,6 +39,7 @@ private const val INVITATION_TOKEN_LIFETIME_IN_DAYS = "INVITATION_TOKEN_LIFETIME
 private const val VERIFICATION_TOKEN_LIFETIME_IN_DAYS = "VERIFICATION_TOKEN_LIFETIME_IN_DAYS"
 
 // Plugins
+private const val FETCHER_MODE = "FETCHER_MODE"
 private const val PLUGIN_DIRECTORY = "PLUGIN_DIRECTORY"
 private const val PYTHON_EXECUTABLE = "PYTHON_EXECUTABLE"
 private const val FETCHER_RETRIES = "FETCHER_RETRIES"
@@ -52,6 +53,7 @@ private const val DEFAULT_SENSITIVE_INFORMATION_RETENTION_DAYS = 30
 private const val DEFAULT_DATABASE_HOST = "localhost"
 private const val DEFAULT_INVITATION_TOKEN_LIFETIME_IN_DAYS = 7
 private const val DEFAULT_VERIFICATION_TOKEN_LIFETIME_IN_DAYS = 1
+private val DEFAULT_FETCHER_MODE = FetcherMode.PYTHON
 private val DEFAULT_PLUGIN_DIRECTORY = Path.of("plugins")
 private const val DEFAULT_PYTHON_EXECUTABLE = ".venv/bin/python3"
 private const val DEFAULT_FETCHER_RETRIES = 3
@@ -91,7 +93,7 @@ class EnvReader(
             encryption = buildEncryption(),
             smtp = buildSmtp(defaults),
             lifetime = buildLifetime(defaults),
-            plugins = buildPlugins(),
+            plugins = buildPlugins(activeProfile),
         )
     }
 
@@ -207,10 +209,22 @@ class EnvReader(
     /**
      * Builds the plugins configuration by reading and processing related environment variables.
      *
+     * @param profile The active application profile, used to forbid the dummy fetcher mode in production.
      * @return An [Env.Plugins] object containing the plugins configuration.
      */
-    private fun buildPlugins(): Env.Plugins {
+    private fun buildPlugins(profile: AppProfile): Env.Plugins {
+        val fetcherMode = envService.getOrDefault(FETCHER_MODE, DEFAULT_FETCHER_MODE, FetcherMode::fromString)
+
+        check(!(profile == AppProfile.PRODUCTION && fetcherMode == FetcherMode.DUMMY)) {
+            "$FETCHER_MODE=${FetcherMode.DUMMY} is not allowed with profile ${AppProfile.PRODUCTION}."
+        }
+
+        if (fetcherMode == FetcherMode.DUMMY) {
+            logger.warn { "Using dummy fetchers. Fetched papers are generated and not real." }
+        }
+
         return Env.Plugins(
+            fetcherMode = fetcherMode,
             pluginDirectory = envService.getPathOrDefault(PLUGIN_DIRECTORY, DEFAULT_PLUGIN_DIRECTORY).normalize(),
             pythonExecutable = envService.getStringOrDefault(PYTHON_EXECUTABLE, DEFAULT_PYTHON_EXECUTABLE),
             fetcherRetries = envService.getOrDefault(FETCHER_RETRIES, DEFAULT_FETCHER_RETRIES) {

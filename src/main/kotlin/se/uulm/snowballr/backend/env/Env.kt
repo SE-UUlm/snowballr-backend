@@ -62,6 +62,7 @@ data class Env(
     )
 
     data class Plugins(
+        val fetcherMode: FetcherMode,
         val pluginDirectory: Path,
         val pythonExecutable: String,
         val fetcherRetries: Int,
