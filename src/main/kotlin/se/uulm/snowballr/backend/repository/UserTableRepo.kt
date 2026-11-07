@@ -202,14 +202,14 @@ class UserTableRepo(
      * @param userId The ID of the user to be deleted.
      * @return `true` if the user was successfully deleted, `false` otherwise.
      */
-    private suspend fun attemptToDeleteUser(userId: UUID): Boolean = db.query {
-        try {
+    private suspend fun attemptToDeleteUser(userId: UUID): Boolean = try {
+        db.query {
             val deletedRows = UserTable.deleteWhere { UserTable.id eq userId }
             deletedRows > 0
-        } catch (e: ExposedSQLException) {
-            logger.debug(e) { "Failed to hard-delete user $userId, likely due to existing references." }
-            false
         }
+    } catch (e: ExposedSQLException) {
+        logger.debug(e) { "Failed to hard-delete user $userId, likely due to existing references." }
+        false
     }
 
     override suspend fun getUserById(id: UUID): Result<User> = db.query {
