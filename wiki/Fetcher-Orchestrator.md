@@ -46,7 +46,9 @@ flowchart TD
 
 Depending on the snowballing type in the project settings, the orchestrator retrieves the forward references, the
 backward references, or both from all configured fetchers, e.g. Semantic Scholar. The `PythonPluginFetcherManager`
-invokes the fetcher plugins, which call the APIs of the external databases.
+invokes the fetcher plugins, which call the APIs of the external databases. With `FETCHER_MODE=DUMMY`, the
+`DummyFetcherManager` returns generated papers instead (see
+[Dummy Fetchers](https://github.com/SE-UUlm/snowballr-backend/wiki/Fetcher#dummy-fetchers)).
 
 The fetching results may contain duplicates, so the forward and backward sets are deduplicated separately. The
 `PaperMatcher` merges papers whose similarity exceeds the similarity threshold configured in the project settings.

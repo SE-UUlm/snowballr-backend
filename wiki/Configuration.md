@@ -12,7 +12,7 @@ cp .env.example .env
 The `PROFILE` variable determines the default behavior of the application.
 
 - `PRODUCTION` (Default): For live deployments. Requires explicit configuration for critical settings like PORT and
-  DATABASE_HOST. Disables all development helpers.
+  DATABASE_HOST. Disables all development helpers and refuses to start with `FETCHER_MODE=DUMMY`.
 - `DEVELOPMENT`: For local development. Provides convenient defaults for the server and database and automatically
   seeds a dummy user for easy interaction with the API.
 - `TESTING`: For local manual testing. Similar to development, but enables authentication bypass for easier testing of
@@ -44,6 +44,7 @@ The `PROFILE` variable determines the default behavior of the application.
 | `SENSITIVE_INFORMATION_RETENTION_DAYS` |                 :x:                  |    Profile-based    | Number of days sensitive information will be kept after an entity got deleted.                             |
 | `INVITATION_TOKEN_LIFETIME_IN_DAYS`    |                 :x:                  |          7          | Lifetime of invitation tokens in days.                                                                     |
 | `VERIFICATION_TOKEN_LIFETIME_IN_DAYS`  |                 :x:                  |          1          | Lifetime of verification tokens in days.                                                                   |
+| `FETCHER_MODE`                         |                 :x:                  |      `PYTHON`       | Fetcher implementation: `PYTHON` runs the fetcher plugins, `DUMMY` returns generated papers.               |
 | `PLUGIN_DIRECTORY`                     |                 :x:                  |      `plugins`      | The directory in which the plugins reside. The directory is relative to the root directory of the project. |
 | `PYTHON_EXECUTABLE`                    |                 :x:                  | `.venv/bin/python3` | Python executable used to run fetchers.                                                                    |
 | `FETCHER_RETRIES`                      |                 :x:                  |          3          | Number of retries after a fetcher call failed, e.g. because of a timeout. Must not be negative.            |
