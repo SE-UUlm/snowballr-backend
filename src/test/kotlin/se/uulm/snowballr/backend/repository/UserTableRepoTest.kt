@@ -2,6 +2,9 @@ package se.uulm.snowballr.backend.repository
 
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.update
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
@@ -28,18 +31,23 @@ import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.fetcher.FetcherMap
 import se.uulm.snowballr.backend.model.fetcher.FetcherOptions
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
+import se.uulm.snowballr.backend.repository.RepositoryHelper.assignUserToProject
+import se.uulm.snowballr.backend.repository.RepositoryHelper.insertPaperAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertProjectAndGetId
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertUserAndGetId
 import se.uulm.snowballr.backend.table.CriterionTable
+import se.uulm.snowballr.backend.table.PaperTable
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.UserTable
+import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.utils.assertResultFailure
 import se.uulm.snowballr.backend.utils.assertResultSuccess
 import java.sql.SQLException
 import java.time.OffsetDateTime
 import java.util.UUID
 
-class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, ProjectTable)) {
+class UserTableRepoTest :
+    RepositoryTest(arrayOf(UserTable, CriterionTable, ProjectTable, ProjectMemberTable, PaperTable)) {
     private val repo = UserTableRepo(db)
     private val criterionTableRepo = CriterionTableRepo(db)
 
@@ -500,6 +508,52 @@ class UserTableRepoTest : RepositoryTest(arrayOf(UserTable, CriterionTable, Proj
             assertThat(user.deletedAt).isBefore(defaultThresholdDate)
             assertThat(user.firstName).isEmpty()
         }
+
+        @Test
+        fun `When a cleared user is a project member, then the user is hard-deleted along with the membership`() =
+            runTest {
+                val creatorId = insertUserAndGetId(email = "creator@test.de")
+                val projectId = insertProjectAndGetId(createdBy = creatorId)
+                // Manually "soft-delete" user to set the `deletedAt` date
+                val userId = insertUserAndGetId(
+                    email = "member@test.de",
+                    status = UserStatus.DELETED,
+                    deletedAt = defaultThresholdDate.minusDays(1),
+                )
+                assignUserToProject(userId, projectId)
+                repo.clearSoftDeletedUsers(defaultThresholdDate)
+
+                repo.hardDeleteClearedUsers(repo.getUserIdsToDelete())
+
+                assertResultFailure<NotFoundException>(repo.getUserById(userId))
+                val membershipCount = db.query {
+                    ProjectMemberTable.selectAll().where { ProjectMemberTable.userId eq userId }.count()
+                }
+                assertEquals(0L, membershipCount)
+            }
+
+        @Test
+        fun `When a cleared user last modified a paper, then the user is hard-deleted and the reference is nulled`() =
+            runTest {
+                // Manually "soft-delete" user to set the `deletedAt` date
+                val userId = insertUserAndGetId(
+                    status = UserStatus.DELETED,
+                    deletedAt = defaultThresholdDate.minusDays(1),
+                )
+                val paperId = insertPaperAndGetId()
+                db.query {
+                    PaperTable.update({ PaperTable.id eq paperId }) { it[modifiedBy] = userId }
+                }
+                repo.clearSoftDeletedUsers(defaultThresholdDate)
+
+                repo.hardDeleteClearedUsers(repo.getUserIdsToDelete())
+
+                assertResultFailure<NotFoundException>(repo.getUserById(userId))
+                val modifiedBy = db.query {
+                    PaperTable.selectAll().where { PaperTable.id eq paperId }.single()[PaperTable.modifiedBy]
+                }
+                assertNull(modifiedBy)
+            }
     }
 
     @Nested
