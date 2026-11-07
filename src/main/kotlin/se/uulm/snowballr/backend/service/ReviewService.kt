@@ -161,7 +161,7 @@ class ReviewService(
         projectId: UUID,
     ) {
         val projectCriteriaIds = projectCriteria.map { criterion -> criterion.id }.toSet()
-        val foreignCriteriaIds = selectedCriteriaIds.filterNot { id -> id in projectCriteriaIds }.toSet()
+        val foreignCriteriaIds = selectedCriteriaIds.filterNot { id -> id in projectCriteriaIds }
         if (foreignCriteriaIds.isNotEmpty()) {
             throw CriteriaNotInProjectException(foreignCriteriaIds, projectId)
         }
@@ -171,11 +171,11 @@ class ReviewService(
         projectCriteria: List<Criterion.ProjectCriterion>,
         selectedCriteriaIds: List<UUID>,
     ): Boolean {
-        val hardExclusionCriteria = projectCriteria
+        val hardExclusionCriteriaIds = projectCriteria
             .filter { criterion -> criterion.category == CriterionCategory.HARD_EXCLUSION }
-            .map { criterion -> criterion.id }
+            .mapTo(HashSet()) { criterion -> criterion.id }
 
-        return selectedCriteriaIds.any { id -> hardExclusionCriteria.contains(id) }
+        return selectedCriteriaIds.any { id -> id in hardExclusionCriteriaIds }
     }
 
     /**
@@ -205,12 +205,12 @@ class ReviewService(
         if (reviews.size == decisionMatrix.numberOfReviewers) {
             val counts = reviews.groupingBy { it.decision }.eachCount()
 
-            for (pattern in decisionMatrix.patterns) {
-                val doesFoundMatch = pattern.entries.all { entry ->
+            for ((decision, entries) in decisionMatrix.patterns) {
+                val doesFoundMatch = entries.all { entry ->
                     (counts[entry.decision] ?: 0) >= entry.count
                 }
                 if (doesFoundMatch) {
-                    return pattern.decision
+                    return decision
                 }
             }
 
