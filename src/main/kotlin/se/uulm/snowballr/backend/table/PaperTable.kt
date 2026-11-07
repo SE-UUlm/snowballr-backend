@@ -49,7 +49,17 @@ object PaperTable : UUIDTable("paper") {
     val fetcherMetadata = stringMap("fetcher_metadata").clientDefault { emptyMap() }
     val createdAt = createdAt()
     val modifiedAt = modifiedAt()
-    val modifiedBy = modifiedBy()
+
+    /**
+     * Nullable reference to the user who last modified the paper.
+     *
+     * Papers are shared across projects and never deleted, so a `RESTRICT` reference would prevent the user from
+     * ever being hard-deleted.
+     *
+     * - `onDelete=SET_NULL` so that when the user is deleted, the reference is set to null
+     * - `onUpdate=CASCADE` so that when the user ID is updated, the foreign key ID is updated too
+     */
+    val modifiedBy = userReference("modified_by", ReferenceOption.SET_NULL, ReferenceOption.CASCADE).nullable()
 }
 
 /**

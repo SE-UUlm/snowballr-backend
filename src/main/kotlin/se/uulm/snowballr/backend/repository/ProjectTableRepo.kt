@@ -5,6 +5,7 @@ import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.inSubQuery
 import org.jetbrains.exposed.v1.core.isNotNull
 import org.jetbrains.exposed.v1.core.less
 import org.jetbrains.exposed.v1.core.lessEq
@@ -28,10 +29,12 @@ import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectSettingRequest
+import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.ReviewTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
 import se.uulm.snowballr.backend.table.association.ProjectPaperTable
+import se.uulm.snowballr.backend.table.association.ReviewHasCriterionTable
 import se.uulm.snowballr.backend.table.toProject
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -329,11 +332,19 @@ class ProjectTableRepo(
     /**
      * Attempts to delete a single project by its ID.
      *
+     * The review-criterion associations of the project are deleted first in the same transaction, because they
+     * restrict the deletion of the project's criteria, which would otherwise be deleted via the project cascade
+     * before the reviews are. If the project cannot be deleted, the whole transaction is rolled back.
+     *
      * @param projectId The ID of the project to be deleted.
      * @return `true` if the project was successfully deleted, `false` otherwise.
      */
     private suspend fun attemptToDeleteProject(projectId: UUID): Boolean = db.query {
         try {
+            ReviewHasCriterionTable.deleteWhere {
+                ReviewHasCriterionTable.criterionId inSubQuery
+                    CriterionTable.select(CriterionTable.id).where { CriterionTable.projectId eq projectId }
+            }
             val deletedRows = ProjectTable.deleteWhere { ProjectTable.id eq projectId }
             deletedRows > 0
         } catch (e: ExposedSQLException) {

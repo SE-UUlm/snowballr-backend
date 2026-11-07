@@ -32,7 +32,10 @@ import java.time.OffsetDateTime
  * - [modifiedBy]: A foreign key referencing the user table, representing the user who last modified the project paper.
  *
  * Primary Key:
- * - Composite primary key consisting of [paperId] and [projectId].
+ * - UUID primary key `id`.
+ *
+ * Unique Constraints:
+ * - The combination of [paperId] and [projectId] is unique, so a paper can be added to a project only once.
  */
 object ProjectPaperTable : UUIDTable("project_paper") {
     /**

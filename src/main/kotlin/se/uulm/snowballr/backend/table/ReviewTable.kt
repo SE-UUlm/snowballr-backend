@@ -14,7 +14,8 @@ import java.time.OffsetDateTime
  *
  * Columns:
  * - [projectPaperId]: Foreign key referencing the [ProjectPaperTable], representing the project paper being reviewed.
- * - [userId]: Foreign key referencing the user, with cascade delete and nullify on update, representing the reviewer.
+ * - [userId]: Foreign key referencing the user table, representing the reviewer.
+ * - [decision]: Represents the decision of the review as an enumeration value from [ReviewDecision].
  * - [createdAt]: Represents the timestamp of when the review was created as an [OffsetDateTime].
  * - [modifiedAt]: Represents the timestamp of when the review was last modified as an [OffsetDateTime].
  */
