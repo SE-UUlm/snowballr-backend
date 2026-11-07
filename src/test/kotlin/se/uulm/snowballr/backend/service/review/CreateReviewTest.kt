@@ -26,6 +26,7 @@ import se.uulm.snowballr.backend.model.dto.review.Review
 import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.alreadyexists.DuplicateReviewException
+import se.uulm.snowballr.backend.model.exception.invalidargument.CriteriaNotInProjectException
 import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectSettingRequest
@@ -43,6 +44,10 @@ class CreateReviewTest : ReviewServiceTest() {
     private val projectPaperId = UUID.randomUUID()
     private val decision = ReviewDecision.ACCEPTED
     private val defaultCriterion = UUID.randomUUID()
+    private val defaultProjectCriterion = DataBuilder.createExampleProjectCriterion(
+        id = defaultCriterion,
+        projectId = project.id,
+    )
     private val selectedCriteriaIds = listOf<UUID>(defaultCriterion)
 
     private val validCreateReviewRequest = CreateReviewRequest(
@@ -132,13 +137,13 @@ class CreateReviewTest : ReviewServiceTest() {
         if (stopBefore == reviewRepoMock::createReview) {
             return
         }
+        coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } returns listOf(defaultProjectCriterion)
         coEvery {
             reviewRepoMock.createReview(validCreateReviewRequest, currentUser.id)
         } returns review
         coEvery {
             reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(review.id)
         } returns selectedCriteriaIds
-        coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } returns emptyList()
         coJustRun { projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, updatedPaperDecision) }
         if (project.status != ProjectStatus.ACTIVE_LOCKED) {
             coJustRun {
@@ -348,7 +353,7 @@ class CreateReviewTest : ReviewServiceTest() {
             coEvery {
                 reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(declineReview.id)
             } returns selectedCriteriaIds
-            coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } returns emptyList()
+            coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } returns listOf(defaultProjectCriterion)
             coJustRun {
                 projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.DECLINED)
             }
@@ -383,7 +388,9 @@ class CreateReviewTest : ReviewServiceTest() {
             coEvery {
                 reviewHasCriterionRepoMock.getSelectedCriteriaIdsForReviewById(acceptedReview.id)
             } returns listOf(defaultCriterion, hardExclusionCriterion.id)
-            coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } returns listOf(hardExclusionCriterion)
+            coEvery {
+                criterionRepoMock.getAllProjectCriteria(project.id)
+            } returns listOf(defaultProjectCriterion, hardExclusionCriterion)
             coJustRun {
                 projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.IN_REVIEW)
             }
@@ -407,5 +414,40 @@ class CreateReviewTest : ReviewServiceTest() {
         service.createReview(createReviewRequest)
 
         coVerify(exactly = 0) { projectRepoMock.updateProject(any(), any()) }
+    }
+
+    @Test
+    fun `When a selected criterion belongs to another project, then a CriteriaNotInProjectException is thrown`() =
+        runTest {
+            val foreignCriterion = DataBuilder.createExampleProjectCriterion(projectId = UUID.randomUUID())
+            val createReviewRequest = validCreateReviewRequest.copy(
+                selectedCriteriaIds = listOf(defaultCriterion, foreignCriterion.id),
+            )
+            mockCreateReview(stopBefore = reviewRepoMock::createReview)
+            coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } returns listOf(defaultProjectCriterion)
+
+            assertThrows<CriteriaNotInProjectException> { service.createReview(createReviewRequest) }
+            coVerify(exactly = 0) { reviewRepoMock.createReview(any(), any()) }
+        }
+
+    @Test
+    fun `When a selected criterion is a user criterion, then a CriteriaNotInProjectException is thrown`() = runTest {
+        val userCriterion = DataBuilder.createExampleUserCriterion(createdBy = userId)
+        val createReviewRequest = validCreateReviewRequest.copy(selectedCriteriaIds = listOf(userCriterion.id))
+        mockCreateReview(stopBefore = reviewRepoMock::createReview)
+        coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } returns listOf(defaultProjectCriterion)
+
+        assertThrows<CriteriaNotInProjectException> { service.createReview(createReviewRequest) }
+        coVerify(exactly = 0) { reviewRepoMock.createReview(any(), any()) }
+    }
+
+    @Test
+    fun `When a selected criterion does not exist, then a CriteriaNotInProjectException is thrown`() = runTest {
+        val createReviewRequest = validCreateReviewRequest.copy(selectedCriteriaIds = listOf(UUID.randomUUID()))
+        mockCreateReview(stopBefore = reviewRepoMock::createReview)
+        coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } returns listOf(defaultProjectCriterion)
+
+        assertThrows<CriteriaNotInProjectException> { service.createReview(createReviewRequest) }
+        coVerify(exactly = 0) { reviewRepoMock.createReview(any(), any()) }
     }
 }
