@@ -8,7 +8,6 @@ import org.jetbrains.exposed.v1.core.Table
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.core.dao.id.IdTable
 import org.jetbrains.exposed.v1.core.eq
-import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.core.statements.InsertStatement
 import org.jetbrains.exposed.v1.core.statements.UpdateStatement
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
@@ -36,22 +35,6 @@ fun <T : Table, EntT : Any> T.getEntities(mapper: (ResultRow) -> EntT, where: ()
     this.selectAll()
         .where(where)
         .map(mapper)
-
-/**
- * Returns a list of entities by their IDs.
- *
- * @param Key The type of the [IdTable], i.e., the ID type, such as [UUID].
- * @param T The table type as a subtype of [IdTable].
- * @param EntT The result entity type.
- * @param ids A list of IDs for the entities to be fetched.
- * @param mapper Mapping function to map each [ResultRow] to an entity of type [EntT].
- */
-fun <Key : Any, T : IdTable<Key>, EntT : Any> T.getEntitiesByIds(
-    ids: List<Key>,
-    mapper: (ResultRow) -> EntT,
-): List<EntT> = this.getEntities(mapper) {
-    this@getEntitiesByIds.id inList ids
-}
 
 /**
  * Returns an entity according to the [where] expression or returns null if the entity couldn't be found.
