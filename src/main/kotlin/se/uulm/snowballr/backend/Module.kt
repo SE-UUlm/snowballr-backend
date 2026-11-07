@@ -205,7 +205,7 @@ private fun Module.customServicesDeps() {
         val envReader = get<EnvReader>()
         when (envReader.env.plugins.fetcherMode) {
             FetcherMode.PYTHON -> PythonPluginFetcherManager(envReader)
-            FetcherMode.DUMMY -> DummyFetcherManager(random = null)
+            FetcherMode.DUMMY -> DummyFetcherManager()
         }
     }
     singleOf(::CookieManager) { bind<ICookieManager>() }
