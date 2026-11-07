@@ -9,7 +9,6 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
-import se.uulm.snowballr.backend.model.dto.user.UserField
 
 class DeleteCriterionTest : CriterionServiceTest() {
     @Test
@@ -57,16 +56,12 @@ class DeleteCriterionTest : CriterionServiceTest() {
 
     @Test
     fun `When a user criterion can be deleted, then the criterion is deleted`() = runTest {
-        val userWithoutCriteriaIds = DataBuilder.createExampleUser()
-        val criterion = DataBuilder.createExampleUserCriterion(createdBy = userWithoutCriteriaIds.id)
-        val userWithCriteriaIds = userWithoutCriteriaIds.copy(
-            settings = userWithoutCriteriaIds.settings.copy(criteriaIds = listOf(criterion.id)),
-        )
+        val user = DataBuilder.createExampleUser()
+        val criterion = DataBuilder.createExampleUserCriterion(createdBy = user.id)
 
-        mockCurrentUser(userWithCriteriaIds)
+        mockCurrentUser(user)
         coEvery { criterionRepoMock.getCriterionById(criterion.id) } returns Result.success(criterion)
-        coJustRun { criterionAccessCheckerMock.isAllowedToDeleteCriterion(userWithCriteriaIds, criterion) }
-        coJustRun { userRepoMock.updateUser(userWithoutCriteriaIds, setOf(UserField.CRITERIA_IDS)) }
+        coJustRun { criterionAccessCheckerMock.isAllowedToDeleteCriterion(user, criterion) }
         coJustRun { criterionRepoMock.deleteCriterionById(criterion.id) }
 
         service.deleteCriterion(criterion.id)

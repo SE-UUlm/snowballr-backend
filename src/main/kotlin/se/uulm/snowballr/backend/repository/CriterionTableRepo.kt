@@ -69,15 +69,6 @@ interface ICriterionTableRepo {
     suspend fun deleteUserCriteriaByUserId(userId: UUID)
 
     /**
-     * Retrieves a list of criteria based on their unique identifiers.
-     *
-     * @param ids A list of unique identifiers (UUIDs) for the criteria to be fetched.
-     * @return A list of [Criterion] objects corresponding to the provided IDs.
-     *         If no criteria are found for certain IDs, they may be excluded from the result.
-     */
-    suspend fun getCriteriaByIds(ids: List<UUID>): List<Criterion>
-
-    /**
      * Retrieves all criteria associated with a specific project.
      *
      * @param projectId The unique identifier of the project for which the criteria are being retrieved.
@@ -150,10 +141,6 @@ class CriterionTableRepo(
         }
 
         logger.info { "Deleted $deletedIds user criteria." }
-    }
-
-    override suspend fun getCriteriaByIds(ids: List<UUID>): List<Criterion> = db.query {
-        CriterionTable.getEntitiesByIds(ids, ResultRow::toCriterion)
     }
 
     override suspend fun getAllUserCriteria(userId: UUID): List<Criterion.UserCriterion> = db.query {

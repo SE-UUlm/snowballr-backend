@@ -92,19 +92,6 @@ interface ICriterionAccessChecker {
      * locked.
      */
     suspend fun isAllowedToDeleteCriterion(currentUser: User, criterion: Criterion)
-
-    /**
-     * Checks whether the current user is allowed to use the target criterion as a default criterion in their settings.
-     *
-     * Conditions:
-     * - The criterion is a user criterion created by the current user. Server admins are not exempt, since the default
-     * criteria are copied into every project the user creates.
-     *
-     * @param currentUser The user for whom the access check is being performed.
-     * @param criterion The criterion that should be used as a default criterion.
-     * @throws UnauthorizedReadException if the criterion is not a user criterion of the current user.
-     */
-    suspend fun isAllowedToUseAsDefaultCriterion(currentUser: User, criterion: Criterion)
 }
 
 class CriterionAccessChecker(
@@ -136,14 +123,6 @@ class CriterionAccessChecker(
 
     override suspend fun isAllowedToDeleteCriterion(currentUser: User, criterion: Criterion) {
         isAllowedToUpdateOrDeleteCriterion(currentUser, criterion, AccessType.DELETE)
-    }
-
-    override suspend fun isAllowedToUseAsDefaultCriterion(currentUser: User, criterion: Criterion) {
-        isCreatorOfCriterion()
-            .orElseThrow { user, target ->
-                UnauthorizedReadException(user.id, target.id, EntityType.CRITERION)
-            }
-            .checkFor(currentUser, criterion)
     }
 
     private fun isCreatorOfCriterion() = AccessRule<Criterion> { currentUser, criterion ->

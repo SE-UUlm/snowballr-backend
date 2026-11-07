@@ -1,7 +1,6 @@
 package se.uulm.snowballr.backend.table
 
 import kotlinx.serialization.json.Json
-import org.jetbrains.exposed.v1.core.Column
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.dao.id.java.UUIDTable
 import org.jetbrains.exposed.v1.json.json
@@ -18,7 +17,6 @@ import se.uulm.snowballr.backend.model.dto.user.UserSettings
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.fetcher.FetcherMap
 import java.time.OffsetDateTime
-import java.util.UUID
 
 fun patternOf(vararg decisions: Pair<ReviewDecision, Int>, result: PaperDecision) = DecisionMatrixPattern(
     decision = result,
@@ -46,7 +44,6 @@ private val MAYBE_MAYBE_PATTERN = patternOf(
 
 private const val ARE_HOTKEYS_SHOWN_DEFAULT = true
 private const val IS_REVIEW_MODE_ENABLED_DEFAULT = false
-private val CRITERIA_IDS_DEFAULT = emptyList<UUID>()
 private const val SIMILARITY_THRESHOLD_DEFAULT = 0.85F
 
 /**
@@ -85,7 +82,6 @@ private const val REVIEW_MAYBE_ALLOWED_DEFAULT = true
  * - [status]: Represents the status of the user as an enumeration value from [UserStatus].
  * - [areHotkeysShown]: Represents whether the user has hotkeys displayed as a [Boolean].
  * - [reviewModeEnabled]: Represents whether the user is in review mode as a [Boolean].
- * - [criteriaIds]: Represents a list of criteria IDs associated with the user as a [List] of [UUID].
  * - [similarityThreshold]: Represents the user's similarity threshold as a [Float].
  * - [decisionMatrix]: Represents the review decision matrix of the user as a binary value.
  * - [fetchers]: Represents the fetchers used by the project as a JSON object mapping the fetcher names to their
@@ -108,7 +104,6 @@ object UserTable : UUIDTable("user") {
     // User settings
     val areHotkeysShown = bool("show_hotkeys").clientDefault { ARE_HOTKEYS_SHOWN_DEFAULT }
     val reviewModeEnabled = bool("review_mode").clientDefault { IS_REVIEW_MODE_ENABLED_DEFAULT }
-    val criteriaIds: Column<List<UUID>> = array<UUID>("criteria_ids").clientDefault { CRITERIA_IDS_DEFAULT }
 
     // Project settings defaults
     val similarityThreshold = float("similarity_threshold").clientDefault { SIMILARITY_THRESHOLD_DEFAULT }
@@ -146,7 +141,6 @@ fun ResultRow.toUser() = User(
 fun ResultRow.toUserSettings() = UserSettings(
     areHotkeysShown = this[UserTable.areHotkeysShown],
     isReviewModeEnabled = this[UserTable.reviewModeEnabled],
-    criteriaIds = this[UserTable.criteriaIds],
     defaultProjectSettings = ProjectSettings(
         similarityThreshold = this[UserTable.similarityThreshold],
         reviewDecisionMatrix = ReviewDecisionMatrix.parseFrom(this[UserTable.decisionMatrix]),

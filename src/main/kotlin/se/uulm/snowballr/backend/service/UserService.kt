@@ -2,7 +2,6 @@ package se.uulm.snowballr.backend.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.viascom.nanoid.NanoId
-import se.uulm.snowballr.backend.access.ICriterionAccessChecker
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.access.IUserAccessChecker
 import se.uulm.snowballr.backend.auth.PasswordUtils
@@ -97,7 +96,6 @@ interface IUserService {
  * @param envReader The environment reader that provides access to configuration values.
  * @param accessChecker Interface for checking access permissions for users based on defined rules.
  * @param projectAccessChecker Interface for checking access permissions for projects based on defined rules.
- * @param criterionAccessChecker Interface for checking access permissions for criteria based on defined rules.
  */
 @Suppress("LongParameterList")
 class UserService(
@@ -110,7 +108,6 @@ class UserService(
     private val envReader: EnvReader,
     private val accessChecker: IUserAccessChecker,
     private val projectAccessChecker: IProjectAccessChecker,
-    private val criterionAccessChecker: ICriterionAccessChecker,
 ) : IUserService {
     companion object {
         private const val VERIFICATION_TOKEN_LENGTH = 48
@@ -204,14 +201,6 @@ class UserService(
         val updateFields = fields.filter { it.isSettingsField }.toSet()
         var finalRequest = request
 
-        // Default criteria are cloned into new projects, so they must be the current user's own user criteria.
-        if (updateFields.contains(UserField.CRITERIA_IDS)) {
-            request.criteriaIds.forEach { criterionId ->
-                val criterion = criterionRepo.getCriterionById(criterionId).getOrThrow()
-                criterionAccessChecker.isAllowedToUseAsDefaultCriterion(currentUser, criterion)
-            }
-        }
-
         // Default fetchers are copied into new projects, so they are sanitized the same way as project fetchers.
         if (updateFields.contains(UserField.FETCHERS)) {
             finalRequest = finalRequest.copy(fetchers = sanitizeFetchersMap(fetcherManager, request.fetchers))
@@ -219,7 +208,7 @@ class UserService(
 
         val updateData = mergeUserSettingsUpdateWithUser(currentUser, finalRequest)
         val updatedUser = userRepo.updateUser(updateData, updateFields)
-        val defaultUserCriteria = criterionRepo.getCriteriaByIds(updatedUser.settings.criteriaIds)
+        val defaultUserCriteria = criterionRepo.getAllUserCriteria(updatedUser.id)
 
         logger.info { "User ${currentUser.id} updated: ${updateFields.joinToString()}" }
 
@@ -251,7 +240,7 @@ class UserService(
     override suspend fun getCurrentUser(): User = withUser(userRepo) { it }
 
     override suspend fun getUserSettings(): UserSettingsWithCriteria = withUser(userRepo) { currentUser ->
-        val defaultUserCriteria = criterionRepo.getCriteriaByIds(currentUser.settings.criteriaIds)
+        val defaultUserCriteria = criterionRepo.getAllUserCriteria(currentUser.id)
 
         UserSettingsWithCriteria(currentUser.settings, defaultUserCriteria)
     }
@@ -278,7 +267,6 @@ class UserService(
         userSettings = userSettings.copy(
             areHotkeysShown = request.areHotkeysShown,
             isReviewModeEnabled = request.isReviewModeEnabled,
-            criteriaIds = request.criteriaIds,
             defaultProjectSettings = projectSettings,
         )
 

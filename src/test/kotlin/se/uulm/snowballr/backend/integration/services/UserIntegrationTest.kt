@@ -22,7 +22,6 @@ import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateUserException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadAllException
-import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedUpdateException
 import se.uulm.snowballr.backend.model.fetcher.FetcherInformationWithId
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
@@ -30,7 +29,6 @@ import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserRequest
 import se.uulm.snowballr.backend.model.incoming.user.UpdateUserSettingsRequest
-import java.util.UUID
 
 class UserIntegrationTest : IntegrationTest() {
     @Nested
@@ -239,19 +237,15 @@ class UserIntegrationTest : IntegrationTest() {
         }
 
         @Test
-        fun `When a user sets default criteria in their settings, then the criteria are returned with the settings`() =
-            runTest {
-                mockAvailableFetchers()
-                val criterion = createUserCriterion()
+        fun `When a user has user criteria, then they are returned as default criteria with the settings`() = runTest {
+            mockAvailableFetchers()
+            val criterion = createUserCriterion()
 
-                val request = currentSettingsRequest().copy(criteriaIds = listOf(criterion.id))
+            val updated = userService.updateUserSettings(currentSettingsRequest(), settingsFields)
 
-                val updated = userService.updateUserSettings(request, settingsFields)
-
-                assertEquals(listOf(criterion.id), updated.settings.criteriaIds)
-                assertEquals(listOf(criterion.id), updated.criteria.map { it.id })
-                assertEquals(listOf(criterion.id), userService.getUserSettings().criteria.map { it.id })
-            }
+            assertEquals(listOf(criterion.id), updated.criteria.map { it.id })
+            assertEquals(listOf(criterion.id), userService.getUserSettings().criteria.map { it.id })
+        }
 
         @Test
         fun `When only a subset of settings fields is requested, then fields outside the subset are not modified`() =
@@ -307,38 +301,24 @@ class UserIntegrationTest : IntegrationTest() {
         }
 
         @Test
-        fun `When a user sets another user's criterion as default criterion, then the update is rejected`() = runTest {
-            val otherUser = addUser(DataBuilder.createExampleUser(email = "other.criteria@example.com"))
-            lateinit var foreignCriterionId: UUID
-            actAsUser(otherUser.id) { foreignCriterionId = createUserCriterion().id }
+        fun `When other users' criteria and project criteria exist, then they are not returned as default criteria`() =
+            runTest {
+                val otherUser = addUser(DataBuilder.createExampleUser(email = "other.criteria@example.com"))
+                actAsUser(otherUser.id) { createUserCriterion() }
+                val project = projectService.createProject(CreateProjectRequest(name = "Criteria Project"))
+                criterionService.createCriterion(
+                    CreateCriterionRequest(
+                        tag = "PC",
+                        name = "Project Criterion",
+                        description = "A project criterion",
+                        category = CriterionCategory.INCLUSION,
+                        projectId = project.id,
+                    ),
+                )
+                val ownCriterion = createUserCriterion()
 
-            val request = currentSettingsRequest().copy(criteriaIds = listOf(foreignCriterionId))
-
-            assertThrows<UnauthorizedReadException> {
-                userService.updateUserSettings(request, setOf(UserField.CRITERIA_IDS))
+                assertEquals(listOf(ownCriterion.id), userService.getUserSettings().criteria.map { it.id })
             }
-            assertTrue(userService.getUserSettings().settings.criteriaIds.isEmpty())
-        }
-
-        @Test
-        fun `When a user sets a project criterion as default criterion, then the update is rejected`() = runTest {
-            val project = projectService.createProject(CreateProjectRequest(name = "Criteria Project"))
-            val projectCriterion = criterionService.createCriterion(
-                CreateCriterionRequest(
-                    tag = "PC",
-                    name = "Project Criterion",
-                    description = "A project criterion",
-                    category = CriterionCategory.INCLUSION,
-                    projectId = project.id,
-                ),
-            )
-
-            val request = currentSettingsRequest().copy(criteriaIds = listOf(projectCriterion.id))
-
-            assertThrows<UnauthorizedReadException> {
-                userService.updateUserSettings(request, setOf(UserField.CRITERIA_IDS))
-            }
-        }
 
         @Test
         fun `When a user sets unknown default fetchers, then they are removed before being persisted`() = runTest {

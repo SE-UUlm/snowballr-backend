@@ -2,9 +2,7 @@ package se.uulm.snowballr.backend.service.project
 
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.slot
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.model.dto.project.Project
@@ -13,7 +11,6 @@ import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
-import java.util.UUID
 
 class CreateProjectTest : ProjectServiceTest() {
     private fun getExampleRequest() = CreateProjectRequest(name = "Test Project")
@@ -34,7 +31,7 @@ class CreateProjectTest : ProjectServiceTest() {
         val user = DataBuilder.createExampleUser(role = UserRole.DEFAULT)
 
         mockCurrentUser(user)
-        coEvery { criterionRepoMock.getCriteriaByIds(emptyList()) } returns emptyList()
+        coEvery { criterionRepoMock.getAllUserCriteria(user.id) } returns emptyList()
         coEvery {
             projectRepoMock.createProject(getExampleRequest(), user.id, user.settings.defaultProjectSettings)
         } returns project
@@ -55,9 +52,8 @@ class CreateProjectTest : ProjectServiceTest() {
     fun `When a project is correctly created and the user has default criteria, then the created project has the correct values`() =
         runTest {
             val project = DataBuilder.createExampleProject()
-            val criterion = DataBuilder.createExampleProjectCriterion()
-            val user = DataBuilder.createExampleUser(role = UserRole.DEFAULT, criteriaIds = listOf(criterion.id))
-            val criteriaIdsSlot = slot<List<UUID>>()
+            val user = DataBuilder.createExampleUser(role = UserRole.DEFAULT)
+            val criterion = DataBuilder.createExampleUserCriterion(createdBy = user.id)
 
             val criterionCreateRequest = CreateCriterionRequest(
                 tag = criterion.tag,
@@ -68,16 +64,18 @@ class CreateProjectTest : ProjectServiceTest() {
             )
 
             mockCurrentUser(user)
-            coEvery { criterionRepoMock.getCriteriaByIds(capture(criteriaIdsSlot)) } returns listOf(criterion)
+            coEvery { criterionRepoMock.getAllUserCriteria(user.id) } returns listOf(criterion)
             coEvery {
                 projectRepoMock.createProject(getExampleRequest(), user.id, user.settings.defaultProjectSettings)
             } returns project
-            coEvery { criterionRepoMock.createCriterion(criterionCreateRequest, user.id) } returns criterion
+            coEvery {
+                criterionRepoMock.createCriterion(criterionCreateRequest, user.id)
+            } returns DataBuilder.createExampleProjectCriterion(projectId = project.id, createdBy = user.id)
             mockProjectAdminCreation(project, user)
 
             val result = service.createProject(getExampleRequest())
 
             assertProjectEquality(project, result)
-            assertEquals(listOf(criterion.id), criteriaIdsSlot.captured)
+            coVerify(exactly = 1) { criterionRepoMock.createCriterion(criterionCreateRequest, user.id) }
         }
 }

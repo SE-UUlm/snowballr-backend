@@ -148,8 +148,8 @@ class CriterionIntegrationTest : IntegrationTest() {
                 ),
             )
 
-            val criteriaIds = userService.getCurrentUser().settings.criteriaIds
-            assertEquals(listOf(criterion.id), criteriaIds)
+            val defaultCriteriaIds = userService.getUserSettings().criteria.map { it.id }
+            assertEquals(listOf(criterion.id), defaultCriteriaIds)
         }
     }
 
@@ -243,8 +243,7 @@ class CriterionIntegrationTest : IntegrationTest() {
 
             criterionService.deleteCriterion(criterion.id)
 
-            val updatedCriteriaIds = userService.getCurrentUser().settings.criteriaIds
-            assertEquals(0, updatedCriteriaIds.size)
+            assertTrue(userService.getUserSettings().criteria.isEmpty())
         }
 
         @Test
@@ -267,8 +266,7 @@ class CriterionIntegrationTest : IntegrationTest() {
                 criterionService.deleteCriterion(criterion.id)
 
                 actAsUser(criterionOwner.id) {
-                    val criteriaIds = userService.getCurrentUser().settings.criteriaIds
-                    assertEquals(0, criteriaIds.size)
+                    assertTrue(userService.getUserSettings().criteria.isEmpty())
                 }
             }
     }

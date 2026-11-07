@@ -13,7 +13,7 @@ class GetUserSettingsTest : UserServiceTest() {
             val user = DataBuilder.createExampleUser()
 
             mockCurrentUser(user)
-            coEvery { criterionRepoMock.getCriteriaByIds(emptyList()) } returns emptyList()
+            coEvery { criterionRepoMock.getAllUserCriteria(user.id) } returns emptyList()
 
             val result = service.getUserSettings()
 
@@ -24,11 +24,11 @@ class GetUserSettingsTest : UserServiceTest() {
     @Test
     fun `When retrieving current user settings is correct and default criteria exists, then the correct values are returned`() =
         runTest {
-            val criterion = DataBuilder.createExampleUserCriterion()
-            val user = DataBuilder.createExampleUser(criteriaIds = listOf(criterion.id))
+            val user = DataBuilder.createExampleUser()
+            val criterion = DataBuilder.createExampleUserCriterion(createdBy = user.id)
 
             mockCurrentUser(user)
-            coEvery { criterionRepoMock.getCriteriaByIds(listOf(criterion.id)) } returns listOf(criterion)
+            coEvery { criterionRepoMock.getAllUserCriteria(user.id) } returns listOf(criterion)
 
             val result = service.getUserSettings()
 

@@ -148,7 +148,6 @@ object DataBuilder {
         status: UserStatus = UserStatus.ACTIVE,
         areHotkeysShown: Boolean = false,
         isReviewModeEnabled: Boolean = false,
-        criteriaIds: List<UUID> = emptyList(),
         defaultProjectSettings: ProjectSettings = createExampleProjectSettings(),
         createdAt: OffsetDateTime = OffsetDateTime.now(),
         modifiedAt: OffsetDateTime? = null,
@@ -163,7 +162,6 @@ object DataBuilder {
         settings = UserSettings(
             areHotkeysShown = areHotkeysShown,
             isReviewModeEnabled = isReviewModeEnabled,
-            criteriaIds = criteriaIds,
             defaultProjectSettings = defaultProjectSettings,
         ),
         createdAt = createdAt,
@@ -188,7 +186,6 @@ object DataBuilder {
     fun createExampleUserSettings(
         showHotkeys: Boolean = true,
         reviewMode: Boolean = false,
-        criteriaIds: List<UUID> = emptyList(),
         similarityThreshold: Float = 0.5f,
         reviewDecisionMatrix: ReviewDecisionMatrix = ReviewDecisionMatrix(1, emptyList()),
         fetchers: FetcherMap = emptyMap(),
@@ -197,7 +194,6 @@ object DataBuilder {
     ) = UserSettings(
         areHotkeysShown = showHotkeys,
         isReviewModeEnabled = reviewMode,
-        criteriaIds = criteriaIds,
         defaultProjectSettings = ProjectSettings(
             similarityThreshold = similarityThreshold,
             reviewDecisionMatrix = reviewDecisionMatrix,
