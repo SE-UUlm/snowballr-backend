@@ -85,5 +85,19 @@ class ReviewValidatorTest {
             val issue = assertInvalidResult<MultipleOccurrences>(result)
             assertEquals(listOf(duplicateId to 2), issue.occurrences)
         }
+
+        @Test
+        fun `When the list of criteria IDs contains an ID twice in different casing and is validated, then the 'MultipleOccurrences' issue is returned`() {
+            val duplicateId = UUID.randomUUID().toString()
+            val request =
+                validCreateRequestBuilder
+                    .clearSelectedCriteriaIds()
+                    .addAllSelectedCriteriaIds(listOf(duplicateId.lowercase(), duplicateId.uppercase()))
+                    .build()
+            val result = validateRequest(request)
+
+            val issue = assertInvalidResult<MultipleOccurrences>(result)
+            assertEquals(listOf(duplicateId to 2), issue.occurrences)
+        }
     }
 }

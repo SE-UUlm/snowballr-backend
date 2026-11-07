@@ -111,12 +111,15 @@ fun Raise<ValidationIssue>.ensureIdListValidity(name: String, ids: List<String>)
  * Ensures that the provided list of [ids] does not contain any ID more than once.
  * If it does, a [MultipleOccurrences] validation issue is raised.
  *
+ * IDs are compared by their parsed [UUID], so spellings that differ only in casing are treated as the same ID.
+ * Therefore, all [ids] must be valid UUIDs, i.e., [ensureIdListValidity] must be called beforehand.
+ *
  * @param name The name of the id list being validated.
  * @param ids The list of IDs to check for duplicates.
  */
 fun Raise<ValidationIssue>.ensureIdListDistinct(name: String, ids: List<String>) {
     val multipleOccurrences = ids
-        .groupBy { id -> id }
+        .groupBy { id -> UUID.fromString(id).toString() }
         .filterValues { occurrences -> occurrences.size > 1 }
         .map { (id, occurrences) -> id to occurrences.size }
 
