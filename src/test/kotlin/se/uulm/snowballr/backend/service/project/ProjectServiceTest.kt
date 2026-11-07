@@ -13,7 +13,6 @@ import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
-import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import se.uulm.snowballr.backend.service.BaseServiceTest
 import se.uulm.snowballr.backend.service.ProjectService
@@ -25,7 +24,6 @@ import se.uulm.snowballr.backend.service.withUser
 sealed class ProjectServiceTest : BaseServiceTest {
     val projectRepoMock = mockk<IProjectTableRepo>()
     val userRepoMock = mockk<IUserTableRepo>()
-    val projectMemberRepoMock = mockk<IProjectMemberTableRepo>()
     val projectPaperRepoMock = mockk<IProjectPaperTableRepo>()
     val criterionRepoMock = mockk<ICriterionTableRepo>()
     val invitationTokenRepoMock = mockk<IInvitationTokenTableRepo>()
@@ -35,7 +33,6 @@ sealed class ProjectServiceTest : BaseServiceTest {
     private val allMocks = arrayOf(
         projectRepoMock,
         userRepoMock,
-        projectMemberRepoMock,
         projectPaperRepoMock,
         criterionRepoMock,
         invitationTokenRepoMock,
@@ -46,7 +43,6 @@ sealed class ProjectServiceTest : BaseServiceTest {
     val service = ProjectService(
         repo = projectRepoMock,
         userRepo = userRepoMock,
-        projectMemberRepo = projectMemberRepoMock,
         projectPaperRepo = projectPaperRepoMock,
         criterionRepo = criterionRepoMock,
         invitationTokenRepo = invitationTokenRepoMock,

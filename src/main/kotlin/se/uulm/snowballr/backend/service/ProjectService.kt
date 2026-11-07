@@ -8,12 +8,10 @@ import se.uulm.snowballr.backend.model.AccessType
 import se.uulm.snowballr.backend.model.dto.project.ProjectField
 import se.uulm.snowballr.backend.model.dto.project.ProjectInfoField
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
-import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.notfound.StageNotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
-import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.outgoing.project.ProjectDecisionCount
@@ -24,7 +22,6 @@ import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IInvitationTokenTableRepo
 import se.uulm.snowballr.backend.repository.IProjectTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
-import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
 import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -93,7 +90,6 @@ interface IProjectService {
  * @constructor Initializes the [ProjectService] with a project repository.
  * @param repo The repository responsible for managing persistence operations for projects.
  * @param userRepo The repository responsible for managing persistence operations for users.
- * @param projectMemberRepo The repository responsible for managing persistence operations for project members.
  * @param projectPaperRepo The repository responsible for managing persistence operations for project papers.
  * @param criterionRepo The repository responsible for managing persistence operations for criteria.
  * @param invitationTokenRepo The repository responsible for managing persistence operations for invitation tokens.
@@ -104,7 +100,6 @@ interface IProjectService {
 class ProjectService(
     private val repo: IProjectTableRepo,
     private val userRepo: IUserTableRepo,
-    private val projectMemberRepo: IProjectMemberTableRepo,
     private val projectPaperRepo: IProjectPaperTableRepo,
     private val criterionRepo: ICriterionTableRepo,
     private val invitationTokenRepo: IInvitationTokenTableRepo,
@@ -120,25 +115,14 @@ class ProjectService(
 
     override suspend fun createProject(request: CreateProjectRequest): ProjectResponse =
         withUser(userRepo) { currentUser ->
-            val userDefaultCriteria = criterionRepo.getAllUserCriteria(currentUser.id)
+            val userCriteria = criterionRepo.getAllUserCriteria(currentUser.id)
 
-            val project = repo.createProject(request, currentUser.id, currentUser.settings.defaultProjectSettings)
-
-            // Additionally, clone user default criteria into the project as project criteria and add creator as project member
-            for (criterion in userDefaultCriteria) {
-                val createCriterionRequest = CreateCriterionRequest(
-                    tag = criterion.tag,
-                    name = criterion.name,
-                    description = criterion.description,
-                    category = criterion.category,
-                    projectId = project.id,
-                )
-
-                criterionRepo.createCriterion(createCriterionRequest, currentUser.id)
-            }
-
-            projectMemberRepo.addUserToProject(currentUser.id, project.id)
-            projectMemberRepo.updateProjectMemberRole(project.id, currentUser.id, MemberRole.ADMIN)
+            val project = repo.createProject(
+                request,
+                currentUser.id,
+                currentUser.settings.defaultProjectSettings,
+                userCriteria,
+            )
 
             logger.info { "Project '${project.name}' (${project.id}) created" }
             ProjectResponse.fromProject(project)

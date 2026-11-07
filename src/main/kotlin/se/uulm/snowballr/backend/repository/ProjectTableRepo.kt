@@ -12,22 +12,27 @@ import org.jetbrains.exposed.v1.core.or
 import org.jetbrains.exposed.v1.core.statements.UpdateStatement
 import org.jetbrains.exposed.v1.exceptions.ExposedSQLException
 import org.jetbrains.exposed.v1.jdbc.andWhere
+import org.jetbrains.exposed.v1.jdbc.batchInsert
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.update
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.model.EntityType
+import se.uulm.snowballr.backend.model.dto.criterion.Criterion
 import se.uulm.snowballr.backend.model.dto.project.Project
 import se.uulm.snowballr.backend.model.dto.project.ProjectField
 import se.uulm.snowballr.backend.model.dto.project.ProjectSettings
 import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
+import se.uulm.snowballr.backend.model.dto.projectmember.MemberRole
 import se.uulm.snowballr.backend.model.dto.projectpaper.ProjectPaper
 import se.uulm.snowballr.backend.model.dto.review.Review
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectSettingRequest
+import se.uulm.snowballr.backend.table.CriterionTable
 import se.uulm.snowballr.backend.table.ProjectTable
 import se.uulm.snowballr.backend.table.ReviewTable
 import se.uulm.snowballr.backend.table.association.ProjectMemberTable
@@ -61,12 +66,22 @@ interface IProjectTableRepo {
     /**
      * Creates a new project in the database with the provided project creation request and user ID.
      *
+     * In the same transaction, the passed [criteriaToClone] are copied into the project as project criteria and the
+     * creating user is added as project member with role [MemberRole.ADMIN]. Hence, either all of these changes are
+     * persisted or none.
+     *
      * @param request The project creation request containing project details
      * @param userId The ID of the user creating the project.
      * @param projectSettings The settings that the project should have.
+     * @param criteriaToClone The criteria that are copied into the new project as project criteria.
      * @return The created [Project] object representing the newly created project.
      */
-    suspend fun createProject(request: CreateProjectRequest, userId: UUID, projectSettings: ProjectSettings): Project
+    suspend fun createProject(
+        request: CreateProjectRequest,
+        userId: UUID,
+        projectSettings: ProjectSettings,
+        criteriaToClone: List<Criterion> = emptyList(),
+    ): Project
 
     /**
      * Returns all active projects stored in the database.
@@ -175,8 +190,9 @@ class ProjectTableRepo(
         request: CreateProjectRequest,
         userId: UUID,
         projectSettings: ProjectSettings,
+        criteriaToClone: List<Criterion>,
     ): Project = db.query {
-        ProjectTable.insertAndGet(ResultRow::toProject) {
+        val project = ProjectTable.insertAndGet(ResultRow::toProject) {
             it[name] = request.name
             it[status] = ProjectStatus.ACTIVE
             it[currentStage] = 0
@@ -188,6 +204,23 @@ class ProjectTableRepo(
             it[fetchers] = projectSettings.fetchers
             it[createdBy] = userId
         }
+
+        CriterionTable.batchInsert(criteriaToClone, shouldReturnGeneratedValues = false) { criterion ->
+            this[CriterionTable.tag] = criterion.tag
+            this[CriterionTable.name] = criterion.name
+            this[CriterionTable.description] = criterion.description
+            this[CriterionTable.category] = criterion.category
+            this[CriterionTable.projectId] = project.id
+            this[CriterionTable.createdBy] = userId
+        }
+
+        ProjectMemberTable.insert {
+            it[ProjectMemberTable.userId] = userId
+            it[ProjectMemberTable.projectId] = project.id
+            it[ProjectMemberTable.role] = MemberRole.ADMIN
+        }
+
+        project
     }
 
     override suspend fun getAllProjects(): List<Project> = db.query {
