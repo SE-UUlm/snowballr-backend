@@ -1,10 +1,12 @@
 package se.uulm.snowballr.backend.validation
 
 import `in`.rcard.assertj.arrowcore.EitherAssert
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import se.uulm.snowballr.backend.model.EnumUnspecified
 import se.uulm.snowballr.backend.model.InvalidId
+import se.uulm.snowballr.backend.model.MultipleOccurrences
 import snowballr.ReviewOuterClass
 import snowballr.ReviewOuterClass.Review.Create
 import java.util.UUID
@@ -69,6 +71,33 @@ class ReviewValidatorTest {
             val result = validateRequest(request)
 
             EitherAssert.assertThat(result).isRight()
+        }
+
+        @Test
+        fun `When the list of criteria IDs contains an ID twice and is validated, then the 'MultipleOccurrences' issue is returned`() {
+            val duplicateId = UUID.randomUUID().toString()
+            val request =
+                validCreateRequestBuilder
+                    .addAllSelectedCriteriaIds(listOf(duplicateId, duplicateId))
+                    .build()
+            val result = validateRequest(request)
+
+            val issue = assertInvalidResult<MultipleOccurrences>(result)
+            assertEquals(listOf(duplicateId to 2), issue.occurrences)
+        }
+
+        @Test
+        fun `When the list of criteria IDs contains an ID twice in different casing and is validated, then the 'MultipleOccurrences' issue is returned`() {
+            val duplicateId = UUID.randomUUID().toString()
+            val request =
+                validCreateRequestBuilder
+                    .clearSelectedCriteriaIds()
+                    .addAllSelectedCriteriaIds(listOf(duplicateId.lowercase(), duplicateId.uppercase()))
+                    .build()
+            val result = validateRequest(request)
+
+            val issue = assertInvalidResult<MultipleOccurrences>(result)
+            assertEquals(listOf(duplicateId to 2), issue.occurrences)
         }
     }
 }
