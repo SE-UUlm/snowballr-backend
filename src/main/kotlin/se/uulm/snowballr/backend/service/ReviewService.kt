@@ -16,7 +16,6 @@ import se.uulm.snowballr.backend.model.dto.review.Review
 import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
 import se.uulm.snowballr.backend.model.exception.alreadyexists.DuplicateReviewException
-import se.uulm.snowballr.backend.model.exception.invalidargument.CriteriaNotInProjectException
 import se.uulm.snowballr.backend.model.fetcher.FetcherEnqueueJob
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectSettingRequest
@@ -122,13 +121,11 @@ class ReviewService(
                 )
             }
 
+            val review = repo.createReview(request, project.id, currentUser.id).getOrThrow()
+
             val projectCriteria = criterionRepo.getAllProjectCriteria(project.id)
-            ensureCriteriaBelongToProject(request.selectedCriteriaIds, projectCriteria, project.id)
-
-            val review = repo.createReview(request, currentUser.id)
-            val selectedCriteriaIds = reviewHasCriterionRepo.getSelectedCriteriaIdsForReviewById(review.id)
-
-            val hasSelectedExclusionCriterion = hasSelectedHardExclusionCriterion(projectCriteria, selectedCriteriaIds)
+            val hasSelectedExclusionCriterion =
+                hasSelectedHardExclusionCriterion(projectCriteria, request.selectedCriteriaIds)
 
             val decision = if (hasSelectedExclusionCriterion && review.doesDeclinePaper) {
                 PaperDecision.DECLINED
@@ -147,25 +144,8 @@ class ReviewService(
             logger.info {
                 "Review ${review.id} created for project paper ${request.projectPaperId} (${review.decision})"
             }
-            ReviewResponse.fromReviewAndIds(review, selectedCriteriaIds)
+            ReviewResponse.fromReviewAndIds(review, request.selectedCriteriaIds)
         }
-
-    /**
-     * Ensures that all selected criteria belong to the project. This also rejects IDs of non-existent criteria.
-     *
-     * @throws CriteriaNotInProjectException if at least one selected criterion does not belong to the project.
-     */
-    private fun ensureCriteriaBelongToProject(
-        selectedCriteriaIds: List<UUID>,
-        projectCriteria: List<Criterion.ProjectCriterion>,
-        projectId: UUID,
-    ) {
-        val projectCriteriaIds = projectCriteria.map { criterion -> criterion.id }.toSet()
-        val foreignCriteriaIds = selectedCriteriaIds.filterNot { id -> id in projectCriteriaIds }
-        if (foreignCriteriaIds.isNotEmpty()) {
-            throw CriteriaNotInProjectException(foreignCriteriaIds, projectId)
-        }
-    }
 
     private fun hasSelectedHardExclusionCriterion(
         projectCriteria: List<Criterion.ProjectCriterion>,
