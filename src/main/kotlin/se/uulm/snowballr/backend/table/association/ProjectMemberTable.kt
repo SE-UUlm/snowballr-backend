@@ -41,10 +41,10 @@ object ProjectMemberTable : CompositeIdTable("project_member") {
     /**
      * Reference to the user who is the member.
      *
-     * - `onDelete=RESTRICT` so that no user can be deleted who is referenced by the entity
+     * - `onDelete=CASCADE` so that the membership is deleted when the user is deleted
      * - `onUpdate=CASCADE` so that when the user ID is updated, the foreign key ID is updated too
      */
-    val userId = userReference("user_id", ReferenceOption.RESTRICT, ReferenceOption.CASCADE)
+    val userId = userReference("user_id", ReferenceOption.CASCADE, ReferenceOption.CASCADE)
 
     init {
         addIdColumn(projectId)

@@ -29,7 +29,7 @@ object ReadingListTable : CompositeIdTable("reading_list") {
     val paperId = reference("paper_id", PaperTable, ReferenceOption.CASCADE, ReferenceOption.CASCADE)
 
     /**
-     * Reference to the user who created the entity.
+     * Reference to the user the reading list belongs to.
      *
      * - `onDelete=CASCADE` so that the entity is deleted when the user is deleted
      * - `onUpdate=CASCADE` so that when the user ID is updated, the foreign key ID is updated too
