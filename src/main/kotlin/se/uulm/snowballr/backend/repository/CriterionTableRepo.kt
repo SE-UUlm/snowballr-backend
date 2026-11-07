@@ -56,6 +56,14 @@ interface ICriterionTableRepo {
     suspend fun getAllUserCriteria(userId: UUID): List<Criterion>
 
     /**
+     * Counts the user criteria of a specific user, i.e., the criteria created by the user that belong to no project.
+     *
+     * @param userId The unique identifier of the user whose user criteria are counted.
+     * @return The number of user criteria of the given user.
+     */
+    suspend fun countUserCriteria(userId: UUID): Long
+
+    /**
      * Updates an existent criterion in the database with the provided new information.
      *
      * @param request The update request containing the new criterion details.
@@ -151,6 +159,12 @@ class CriterionTableRepo(
             .where { CriterionTable.createdBy eq userId and CriterionTable.projectId.isNull() }
             .orderBy(CriterionTable.createdAt to SortOrder.DESC)
             .map(ResultRow::toUserCriterion)
+    }
+
+    override suspend fun countUserCriteria(userId: UUID): Long = db.query {
+        CriterionTable.selectAll()
+            .where { CriterionTable.createdBy eq userId and CriterionTable.projectId.isNull() }
+            .count()
     }
 
     override suspend fun getAllProjectCriteria(projectId: UUID): List<Criterion.ProjectCriterion> = db.query {

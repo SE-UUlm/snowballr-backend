@@ -238,6 +238,29 @@ class CriterionTableRepoTest : RepositoryTest(
     }
 
     @Nested
+    inner class CountUserCriteria {
+        @Test
+        fun `When a user has no user criteria, then zero is returned`() = runTest {
+            assertEquals(0L, repo.countUserCriteria(testUserId))
+        }
+
+        @Test
+        fun `When user criteria are counted, then only the user criteria of the according user are counted`() =
+            runTest {
+                val otherUserId = insertUserAndGetId("other@email.com")
+                val projectId = insertProjectAndGetId(createdBy = testUserId)
+
+                insertCriterionAndGetId(createdBy = testUserId)
+                insertCriterionAndGetId(createdBy = testUserId)
+                insertCriterionAndGetId(createdBy = otherUserId)
+                insertCriterionAndGetId(projectId = projectId, createdBy = testUserId)
+
+                assertEquals(2L, repo.countUserCriteria(testUserId))
+                assertEquals(1L, repo.countUserCriteria(otherUserId))
+            }
+    }
+
+    @Nested
     inner class UpdateCriterion {
         @ParameterizedTest(name = "Update the field {0}")
         @EnumSource(CriterionField::class)
