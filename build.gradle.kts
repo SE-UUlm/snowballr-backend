@@ -175,14 +175,14 @@ val uvExecutable: String by lazy {
         ?: executableName
 }
 
-val isPythonFetcherMode: Boolean by lazy {
-    val mode = dotenv {
+val isPythonFetcherImplementation: Boolean by lazy {
+    val implementation = dotenv {
         directory = projectDir.path
         ignoreIfMissing = true
         ignoreIfMalformed = true
-    }["FETCHER_MODE"]
+    }["FETCHER_IMPLEMENTATION"]
 
-    mode.isNullOrBlank() || mode.trim().equals("PYTHON", ignoreCase = true)
+    implementation.isNullOrBlank() || implementation.trim().equals("PYTHON", ignoreCase = true)
 }
 
 tasks.register<Exec>("createFetcherVenv") {
@@ -567,7 +567,7 @@ tasks.named("processResources") {
 
 tasks.named<JavaExec>("run") {
     // The venv is only needed when the application uses the Python fetchers.
-    if (isPythonFetcherMode) {
+    if (isPythonFetcherImplementation) {
         dependsOn("syncFetcherPythonDeps")
     }
 }

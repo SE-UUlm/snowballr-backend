@@ -273,20 +273,20 @@ implementation and debugging.
 ### Dummy Fetchers
 
 For local development and testing without Python or access to external
-databases, start the backend with `FETCHER_MODE=DUMMY`. Instead of the Python
+databases, start the backend with `FETCHER_IMPLEMENTATION=DUMMY`. Instead of the Python
 plugins, the backend then provides hard-coded dummy fetchers that return
 generated papers for every search. The plugin directory is neither created nor
 used.
 
 ```bash
-PROFILE=development FETCHER_MODE=dummy ./gradlew run
+PROFILE=development FETCHER_IMPLEMENTATION=dummy ./gradlew run
 ```
 
 Note that `./gradlew run` still sets up the Python virtual environment before
 startup. To avoid this, run the built JAR directly (see
 [Getting Started](https://github.com/SE-UUlm/snowballr-backend/wiki/Getting-Started)).
 
-The dummy mode is not allowed in the `PRODUCTION` profile: the backend refuses
+The dummy implementation is not allowed in the `PRODUCTION` profile: the backend refuses
 to start. See [Configuration](https://github.com/SE-UUlm/snowballr-backend/wiki/Configuration) for all environment variables.
 
 ### Developers

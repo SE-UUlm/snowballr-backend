@@ -6,19 +6,19 @@ package se.uulm.snowballr.backend.env
  * - **PYTHON**: Uses the Python plugin fetchers.
  * - **DUMMY**: Uses hard-coded dummy fetchers that return generated papers. Not allowed in production.
  */
-enum class FetcherMode {
+enum class FetcherImplementationType {
     PYTHON,
     DUMMY,
     ;
 
     companion object {
         /**
-         * Parses a string to a [FetcherMode]. The matching is case-insensitive.
+         * Parses a string to a [FetcherImplementationType]. The matching is case-insensitive.
          *
          * @param value The string value to parse.
-         * @return The corresponding [FetcherMode], or null if the [value] doesn't match a [FetcherMode].
+         * @return The corresponding [FetcherImplementationType], or null if the [value] doesn't match any of them.
          */
-        fun fromString(value: String): FetcherMode? =
+        fun fromString(value: String): FetcherImplementationType? =
             entries.firstOrNull { it.name.equals(value.trim(), ignoreCase = true) }
     }
 }

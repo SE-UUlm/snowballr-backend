@@ -31,7 +31,7 @@ import se.uulm.snowballr.backend.db.Database
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.env.EnvService
-import se.uulm.snowballr.backend.env.FetcherMode
+import se.uulm.snowballr.backend.env.FetcherImplementationType
 import se.uulm.snowballr.backend.env.IEnvService
 import se.uulm.snowballr.backend.fetcher.DummyFetcherManager
 import se.uulm.snowballr.backend.fetcher.FetcherOrchestrator
@@ -203,9 +203,9 @@ private fun Module.customServicesDeps() {
     singleOf(::JwtManager) { bind<IJwtManager>() }
     single<IFetcherManager> {
         val envReader = get<EnvReader>()
-        when (envReader.env.plugins.fetcherMode) {
-            FetcherMode.PYTHON -> PythonPluginFetcherManager(envReader)
-            FetcherMode.DUMMY -> DummyFetcherManager()
+        when (envReader.env.plugins.fetcherImplementation) {
+            FetcherImplementationType.PYTHON -> PythonPluginFetcherManager(envReader)
+            FetcherImplementationType.DUMMY -> DummyFetcherManager()
         }
     }
     singleOf(::CookieManager) { bind<ICookieManager>() }
