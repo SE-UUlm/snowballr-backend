@@ -35,6 +35,6 @@ class DummyFetcherManagerTest {
     fun `When searching papers, then every paper has a distinct DOI`() = runTest {
         val papers = search("snowballing")
 
-        assertThat(papers.map { it.doi() }).doesNotHaveDuplicates().hasSize(papers.size)
+        assertThat(papers.map { it.doi() }).doesNotHaveDuplicates()
     }
 }
