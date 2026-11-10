@@ -3,7 +3,9 @@ package se.uulm.snowballr.backend.fetcher
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
+import se.uulm.snowballr.backend.model.exception.notfound.FetcherNotFoundException
 import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
 import kotlin.random.Random
 
@@ -25,11 +27,37 @@ class DummyFetcherManagerTest {
     }
 
     @Test
-    fun `When searching with an unknown fetcher, then no papers are returned`() = runTest {
-        val papers = search("snowballing", fetcher = "SemanticScholar.py")
+    fun `When searching with an unknown fetcher, then a FetcherNotFoundException is thrown`() = runTest {
+        val exception = assertThrows<FetcherNotFoundException> {
+            search("snowballing", fetcher = "SemanticScholar.py")
+        }
 
-        assertThat(papers).isEmpty()
+        assertThat(exception.message).contains("Fetcher \"SemanticScholar.py\" not found.")
     }
+
+    @Test
+    fun `When fetching forward references with an unknown fetcher, then a FetcherNotFoundException is thrown`() =
+        runTest {
+            val paper = search("snowballing").first()
+
+            val exception = assertThrows<FetcherNotFoundException> {
+                DummyFetcherManager().fetchForwardReferences("SemanticScholar.py", paper, emptyMap())
+            }
+
+            assertThat(exception.message).contains("Fetcher \"SemanticScholar.py\" not found.")
+        }
+
+    @Test
+    fun `When fetching backward references with an unknown fetcher, then a FetcherNotFoundException is thrown`() =
+        runTest {
+            val paper = search("snowballing").first()
+
+            val exception = assertThrows<FetcherNotFoundException> {
+                DummyFetcherManager().fetchBackwardReferences("SemanticScholar.py", paper, emptyMap())
+            }
+
+            assertThat(exception.message).contains("Fetcher \"SemanticScholar.py\" not found.")
+        }
 
     @Test
     fun `When searching papers, then every paper has a distinct DOI`() = runTest {

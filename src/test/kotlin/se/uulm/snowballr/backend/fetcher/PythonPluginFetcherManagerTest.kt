@@ -42,6 +42,18 @@ class PythonPluginFetcherManagerTest {
     private suspend fun PythonPluginFetcherManager.makeTestCall(fetcherName: String) =
         this.searchPapers(fetcherName, "", emptyMap())
 
+    private val referencePaper = FetcherPaper(
+        title = "Example title",
+        externalIds = listOf(ExternalId(ExternalIdType.DOI, "external-42")),
+        abstract = "Example abstract",
+        year = 2024,
+        publisher = "Example publisher",
+        publicationType = "journal",
+        publicationName = "Example publication",
+        authors = listOf(Author("Ada", "Lovelace")),
+        fetcherMetadata = emptyMap(),
+    )
+
     @BeforeEach
     fun setUp() {
         pluginDirectory = Files.createTempDirectory("python-fetcher-test")
@@ -312,6 +324,24 @@ class PythonPluginFetcherManagerTest {
         }
         assertThat(exception.message).contains("Fetcher \"does_not_exist\" not found.")
     }
+
+    @Test
+    fun `When fetching forward references with a missing fetcher script, then a FetcherNotFoundException is thrown`() =
+        runTest {
+            val exception = assertThrows<FetcherNotFoundException> {
+                fetcherManager.fetchForwardReferences("does_not_exist", referencePaper, emptyMap())
+            }
+            assertThat(exception.message).contains("Fetcher \"does_not_exist\" not found.")
+        }
+
+    @Test
+    fun `When fetching backward references with a missing fetcher script, then a FetcherNotFoundException is thrown`() =
+        runTest {
+            val exception = assertThrows<FetcherNotFoundException> {
+                fetcherManager.fetchBackwardReferences("does_not_exist", referencePaper, emptyMap())
+            }
+            assertThat(exception.message).contains("Fetcher \"does_not_exist\" not found.")
+        }
 
     @Test
     fun `When a fetcher path resolves to a directory, then a FetcherNotFoundException is thrown`() = runTest {

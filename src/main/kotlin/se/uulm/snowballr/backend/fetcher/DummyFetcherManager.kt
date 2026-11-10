@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.fetcher
 import se.uulm.snowballr.backend.model.dto.paper.Author
 import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
+import se.uulm.snowballr.backend.model.exception.notfound.FetcherNotFoundException
 import se.uulm.snowballr.backend.model.fetcher.FetcherInformation
 import se.uulm.snowballr.backend.model.fetcher.FetcherInformationWithId
 import se.uulm.snowballr.backend.model.fetcher.FetcherOptionsSchema
@@ -72,7 +73,7 @@ class DummyFetcherManager(
         searchQuery: String,
         options: Map<String, String>,
     ): Set<FetcherPaper> {
-        if (dummyFetchers.none { it.id == fetcher }) return emptySet()
+        requireFetcherExists(fetcher)
 
         val query = searchQuery.trim()
         return dummyPaperTemplates
@@ -106,11 +107,23 @@ class DummyFetcherManager(
         fetcher: String,
         paper: FetcherPaper,
         options: Map<String, String>,
-    ): Set<FetcherPaper> = emptySet()
+    ): Set<FetcherPaper> {
+        requireFetcherExists(fetcher)
+
+        return emptySet()
+    }
 
     override suspend fun fetchBackwardReferences(
         fetcher: String,
         paper: FetcherPaper,
         options: Map<String, String>,
-    ): Set<FetcherPaper> = emptySet()
+    ): Set<FetcherPaper> {
+        requireFetcherExists(fetcher)
+
+        return emptySet()
+    }
+
+    private fun requireFetcherExists(fetcher: String) {
+        if (dummyFetchers.none { it.id == fetcher }) throw FetcherNotFoundException(fetcher)
+    }
 }
