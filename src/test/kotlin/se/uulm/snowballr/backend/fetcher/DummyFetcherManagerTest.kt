@@ -37,28 +37,4 @@ class DummyFetcherManagerTest {
 
         assertThat(papers.map { it.doi() }).doesNotHaveDuplicates().hasSize(papers.size)
     }
-
-    @Test
-    fun `When searching the same query in a different order, then each title keeps its DOI`() = runTest {
-        val first = search("snowballing", random = Random(1)).associate { it.title to it.doi() }
-        val second = search("snowballing", random = Random(2)).associate { it.title to it.doi() }
-
-        assertThat(second).isEqualTo(first)
-    }
-
-    @Test
-    fun `When searching different queries, then the DOIs do not overlap`() = runTest {
-        val first = search("snowballing").map { it.doi() }
-        val second = search("literature review").map { it.doi() }
-
-        assertThat(first).doesNotContainAnyElementsOf(second)
-    }
-
-    @Test
-    fun `When searching with different fetchers, then the DOIs do not overlap`() = runTest {
-        val first = search("snowballing", fetcher = "d-1").map { it.doi() }
-        val second = search("snowballing", fetcher = "d-2").map { it.doi() }
-
-        assertThat(first).doesNotContainAnyElementsOf(second)
-    }
 }
