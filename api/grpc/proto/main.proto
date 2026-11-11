@@ -372,7 +372,9 @@ service SnowballR {
   // ## Errors
   // | Error Code | Description |
   // | :--- | :--- |
+  // | `NOT_FOUND` | A criterion that was about to be stored in the user's settings was not found. |
   // | `INVALID_ARGUMENT` | At least one updated setting did not meet the requirements. |
+  // | `PERMISSION_DENIED` | The user is not allowed to use at least one of the criteria IDs. |
   // | `FAILED_PRECONDITION` | The user is not active (i.e., in state `USER_STATUS_ACTIVE`). |
   // | `UNAUTHENTICATED` | The user is not signed in. |
   //
@@ -856,7 +858,8 @@ service SnowballR {
   // **non-blank**. If the criterion is successfully created, it is returned and **guaranteed to be specified**.
   //
   // A user-criterion is created by leaving the `project_id` empty. For a project-criterion,
-  // this field must be set and refer to a valid project in the **active** state.
+  // this field must be set and refer to a valid project in the **active** state whose settings are
+  // **not locked** (i.e., the project status must be `PROJECT_STATUS_ACTIVE`).
   // When creating a project-criterion, the calling user is **required to be a project admin**.
   //
   // ## Errors
@@ -865,7 +868,7 @@ service SnowballR {
   // | `INVALID_ARGUMENT` | At least one input did not meet the requirements: All fields (except `project_id`) must not be blank and if the `project_id` is given, it must be a valid UUID. |
   // | `NOT_FOUND` | A project ID is given but does not refer to an existing project. |
   // | `PERMISSION_DENIED` | A project ID is given but the calling user is neither a server admin nor a project admin of the project the criterion should belong to. |
-  // | `FAILED_PRECONDITION` | A project ID is given but does not refer to an active project (i.e., it is archived or deleted). |
+  // | `FAILED_PRECONDITION` | A project ID is given but does not refer to an active project (i.e., it is archived or deleted) or the project's settings are locked (i.e., it is in the `PROJECT_STATUS_ACTIVE_LOCKED` state). |
   // | `UNAUTHENTICATED` | The user is not signed in. |
   //
   // @auth
@@ -875,7 +878,8 @@ service SnowballR {
   // The updated criterion is returned and **guaranteed to be specified**.
   // If the updated criterion is a user-criterion, the calling user
   // is **required to be the creator of the criterion**. If it is a
-  // project-criterion, the calling user is **required to be a project admin**.
+  // project-criterion, the calling user is **required to be a project admin** and the project
+  // must be in the **active** state with **unlocked** settings (i.e., `PROJECT_STATUS_ACTIVE`).
   //
   // ## Errors
   // | Error Code | Description |
@@ -883,7 +887,7 @@ service SnowballR {
   // | `INVALID_ARGUMENT` | At least one (updated) criterion detail did not meet the requirements: All fields (except `project_id`) must not be blank and if the `project_id` is given, it must be a valid UUID. |
   // | `NOT_FOUND` | No criterion with the provided ID was found or a project ID is given but does not refer to an existing project. |
   // | `PERMISSION_DENIED` | If the criterion is a user-criterion, the calling user is not the original creator of the criterion. If the criterion is a project-criterion, the calling user is neither a server admin nor a project admin of the project the criterion belongs to. |
-  // | `FAILED_PRECONDITION` | A project ID is given but does not refer to an active project (i.e., it is archived or deleted). |
+  // | `FAILED_PRECONDITION` | If the criterion is a project-criterion, the project it belongs to is not active (i.e., it is archived or deleted) or its settings are locked (i.e., it is in the `PROJECT_STATUS_ACTIVE_LOCKED` state). |
   // | `UNAUTHENTICATED` | The user is not signed in. |
   //
   // @auth
@@ -893,14 +897,16 @@ service SnowballR {
   // be removed. **This cannot be undone**.
   // If the deleted criterion is a user-criterion, the calling user
   // is **required to be the creator of the criterion**. If it is a
-  // project-criterion, the calling user is **required to be a project admin**.
+  // project-criterion, the calling user is **required to be a project admin** and the project
+  // must be in the **active** state with **unlocked** settings (i.e., `PROJECT_STATUS_ACTIVE`).
   //
   // ## Errors
   // | Error Code | Description |
   // | :--- | :--- |
-  // | `INVALID_ARGUMENT` | If the criterion is a project-criterion, the project ID is not a valid UUID. |
+  // | `INVALID_ARGUMENT` | The criterion ID is not a valid UUID. |
   // | `NOT_FOUND` | No criterion with the provided ID was found. |
   // | `PERMISSION_DENIED` | If the criterion is a user-criterion, the calling user is not the original creator of the criterion. If the criterion is a project-criterion, the calling user is neither a server admin nor a project admin of the project the criterion belongs to. |
+  // | `FAILED_PRECONDITION` | If the criterion is a project-criterion, the project it belongs to is not active (i.e., it is archived or deleted) or its settings are locked (i.e., it is in the `PROJECT_STATUS_ACTIVE_LOCKED` state). |
   // | `UNAUTHENTICATED` | The user is not signed in. |
   //
   // @auth
