@@ -1,0 +1,86 @@
+{% import "type_name.html" as common %}
+
+<h4 class="title is-4 type-heading" id="message-{{ message.full_name }}">
+  <span>
+    <a href="#message-{{ message.full_name }}" title="{{ message.full_name }}">message {{ message.chain_name }}</a>
+  </span>
+  {% if message.repository_url %}
+    <a class="type-source-link" href="{{ message.repository_url }}">{{ message.source_file_path }}</a>
+  {% endif %}
+</h4>
+
+<div class="block content">
+  {{ message.description_html | safe }}
+</div>
+
+<table class="table is-fullwidth is-hoverable is-bordered">
+  <thead>
+    <tr>
+      <th></th>
+      <th>Field</th>
+      <th>Type</th>
+      <th>Description</th>
+      {% if message.has_any_fields_with_default_value %}
+      <th>Default Value</th>
+      {% endif %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for field in message.non_oneof_fields %}
+    <tr>
+      <td>{{ field.number }}</td>
+      <td>
+        {{ field.name }}
+      </td>
+      <td>
+        <code title="{{ field.full_type }}">
+          {% if field.label != "" %}
+            {{ field.label }}
+          {% endif %}
+          {{ common.type_name(field) }}
+        </code>
+      </td>
+      <td class="content">{{ field.description_html | safe }}</td>
+      {% if message.has_any_fields_with_default_value %}
+      <td>{{ field.default_value }}</td>
+      {% endif %}
+    </tr>
+    {% endfor %}
+    {% for oneof_field_group in message.oneof_field_groups %}
+      {% for field in oneof_field_group.fields %}
+        {% if loop.first %}
+          <tr class="nohover"><td style="border: 0px"></td></tr>
+          <tr class="nohover">
+            <td class="oneof-heading" colspan="4">
+              <div class="oneof-heading">
+                <strong>oneof {{ oneof_field_group.name }}</strong>
+              </div>
+            </td>
+          </tr>
+        {% endif %}
+
+        <tr>
+          <td>
+            {{ field.number }}
+          </td>
+          <td>
+            {{ field.name }}
+          </td>
+          <td>
+            <code title="{{ field.full_type }}">
+              {% if field.label != "" %}
+                {{ field.label }}
+              {% endif %}
+              {{ common.type_name(field) }}
+            </code>
+          </td>
+          <td class="content">{{ field.description_html | safe }}</td>
+          {% if message.has_any_fields_with_default_value %}
+          <td>{{ field.default_value }}</td>
+          {% endif %}
+        </tr>
+      {% endfor %}
+    {% endfor %}
+  </tbody>
+</table>
+
