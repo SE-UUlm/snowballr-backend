@@ -1,0 +1,25 @@
+diff --git a/proto_descriptor_parser.py b/proto_descriptor_parser.py
+index 062dc84..b7ac025 100644
+--- a/proto_descriptor_parser.py
++++ b/proto_descriptor_parser.py
+@@ -228,6 +228,7 @@ def parse_service_method(service_method: MethodDescriptorProto, ctx: ParseContex
+     sm = ServiceMethod()
+     sm.name = service_method.name
+     sm.description = ctx.config.comments_parser.ParseServiceMethod(ctx.GetComments())
+-    sm.description_html = markdown_to_html(sm.description, ctx.config)
++    sm.auth = "@auth" in sm.description
++    sm.description_html = markdown_to_html(sm.description.replace("@auth", ""), ctx.config)
+     sm.line_number = ctx.GetLineNumber()
+     sm.request = ServiceMethodArgument(
+diff --git a/proto_model.py b/proto_model.py
+index 0edcce8..8d81df4 100644
+--- a/proto_model.py
++++ b/proto_model.py
+@@ -99,6 +99,7 @@ class ServiceMethod(CodeItem):
+         CodeItem.__init__(self)
+         self.request = ServiceMethodArgument("", "", "")
+         self.response = ServiceMethodArgument("", "", "")
++        self.auth = False
+ 
+ 
+ class Service(CodeItem):

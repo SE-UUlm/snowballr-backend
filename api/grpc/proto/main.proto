@@ -101,21 +101,19 @@ import "user_settings.proto";
 // erDiagram
 //  direction LR
 //
-//  Project 0+ -- 0+ User : "member of"
-//  Project 1 -- 1 ProjectSettings : has
-//  Project 1 -- 0+ ProjectPaper : contains
-//  Project 1 -- 0+ Criterion : contains
+//  Project }o--o{ User : "member of"
+//  Project ||--o{ ProjectPaper : contains
+//  Project ||--o{ Criterion : contains
 //
-//  ProjectSettings 0+ -- 1+ Fetcher : "fetches from"
+//  Project }o--|{ Fetcher : "fetches from"
 //
-//  ProjectPaper 1 -- 0+ Review : has
-//  ProjectPaper 1 -- 1 Paper : "refers to"
+//  ProjectPaper ||--o{ Review : has
+//  ProjectPaper ||--|| Paper : "refers to"
 //
-//  Review 0+ -- 1 User : by
-//  Review 0+ -- 0+ Criterion : "ticks off"
+//  Review }o--|| User : by
+//  Review }o--o{ Criterion : "ticks off"
 //
-//  User 1 -- 1 UserSettings : has
-//  User 0+ -- 0+ Paper : "on reading-list of"
+//  User }o--o{ Paper : "on reading-list of"
 // ~~~
 //
 // **Disclaimer:**

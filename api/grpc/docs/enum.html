@@ -1,0 +1,29 @@
+<h4 class="title is-4 type-heading" id="enum-{{ enum.full_name }}">
+  <a href="#enum-{{ enum.full_name }}" title="{{ enum.full_name }}">enum {{ enum.name }}</a>
+  {% if enum.repository_url %}
+    <a class="type-source-link" href="{{ enum.repository_url }}">{{ enum.source_file_path }}</a>
+  {% endif %}
+</h4>
+
+<div class="block content">
+  <p>{{ enum.description_html | safe }}</p>
+</div>
+
+<table class="table is-fullwidth is-hoverable is-bordered">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Number</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for enum_value in enum.values %}
+    <tr>
+      <td><code>{{ enum_value.name }}</code></td>
+      <td>{{ enum_value.number }}</td>
+      <td class="content">{{ enum_value.description_html | safe }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
