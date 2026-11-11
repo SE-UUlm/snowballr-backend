@@ -1,0 +1,58 @@
+/// Authentication related messages and enums of the SnowballR app.
+
+syntax = "proto3";
+package snowballr;
+
+// Request to log in.
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+}
+
+// Request to register an account.
+message RegisterRequest {
+  string first_name = 1;
+  string last_name = 2;
+  string email = 3;
+  string password = 4;
+}
+
+// Request to verify a user's email after registering.
+message VerifyEmailRequest {
+  string token = 1;
+}
+
+// Request to request the reset of the user's password.
+message RequestPasswordResetRequest {
+  string email = 1;
+}
+
+// Request to actually reset the user's password.
+message PasswordResetRequest {
+  string token = 1;
+  string new_password = 2;
+}
+
+// Request to reset the password of the user while being logged in.
+message PasswordChangeRequest {
+  string old_password = 1;
+  string new_password = 2;
+}
+
+// The status of the user's authentication.
+// It is required to be authenticated to use the SnowballR app.
+enum AuthenticationStatus {
+  // Unspecified authentication status.
+  AUTHENTICATION_STATUS_UNSPECIFIED = 0;
+  // The user is unauthenticated. They have to sign into the app.
+  AUTHENTICATION_STATUS_UNAUTHENTICATED = 1;
+  // The user's access token is expired. They have to use the refresh token to get a new access token.
+  AUTHENTICATION_STATUS_ACCESS_TOKEN_EXPIRED = 2;
+  // The user is authenticated. They are signed in.
+  AUTHENTICATION_STATUS_AUTHENTICATED = 3;
+}
+
+// Response on whether the user is authenticated.
+message AuthenticationStatusResponse {
+  AuthenticationStatus authentication_status = 1;
+}

@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block content %}
+  <p class="mb-2">
+    <a style="font-size: 0.9em" href="index.html">← Back to packages</a>
+  </p>
+  <h3 class="title is-3">
+    {% if package.name %}
+    Package <code>{{ package.name }}</code>
+    {% else %}
+    Default package
+    {% endif %}
+  </h3>
+
+  <div class="block">
+    {% for service in package.services %}
+    <p>
+      <a href="#service-{{ service.full_name }}">
+        <span class="tag" style="min-width: 6em">Service</span>
+        <code>{{ service.name }}</code> 
+      </a>
+    </p>
+    {% endfor %}
+
+    {% for message in package.messages %}
+      {% if not message.is_map_entry %}
+      <p>
+        <a href="#message-{{ message.full_name }}">
+          <span class="tag" style="min-width: 6em">Message</span>
+          <code>{{ message.chain_name }}</code> 
+        </a>
+      </p>
+      {% endif %}
+    {% endfor %}
+
+    {% for enum in package.enums %}
+      <p>
+        <a href="#enum-{{ enum.full_name }}">
+          <span class="tag" style="min-width: 6em">Enum</span>
+          <code>{{ enum.name }}</code> 
+        </a>
+      </p>
+    {% endfor %}
+  </div>
+
+  <div class="block">
+      {{ package.description_html | safe }}
+  </div>
+
+  {% if package.services %}
+
+  <div class="block">
+    <h3 class="title is-3">
+      Services
+    </h3>
+
+    {% for service in package.services %}
+    <div>
+      {% include 'service.html' %} 
+    </div>
+    {% endfor %}
+  </div>
+
+  {% endif %}
+
+  {% if package.messages %}
+
+    <h3 class="title is-3">
+      Messages
+    </h3>
+
+    {% for message in package.messages %}
+      {% if not message.is_map_entry %}
+      <div class="block">
+        {% include 'message.html' %} 
+      </div>
+      {% endif %}
+    {% endfor %}
+
+  {% endif %}
+
+  {% if package.enums %}
+
+    <h3 class="title is-3">
+      Enums
+    </h3>
+
+    {% for enum in package.enums %}
+    <div class="block">
+      {% include 'enum.html' %} 
+    </div>
+    {% endfor %}
+
+  {% endif %}
+
+{% endblock %}

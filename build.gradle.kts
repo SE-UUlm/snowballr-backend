@@ -1,12 +1,9 @@
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
-import de.undercouch.gradle.tasks.download.Download
 import dev.detekt.gradle.Detekt
 import dev.detekt.gradle.DetektCreateBaselineTask
 import kotlinx.kover.gradle.plugin.dsl.AggregationType
 import kotlinx.kover.gradle.plugin.dsl.CoverageUnit
 import kotlinx.kover.gradle.plugin.dsl.GroupingEntityType
-import java.util.zip.ZipEntry
-import java.util.zip.ZipFile
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
@@ -16,7 +13,6 @@ plugins {
     alias(libs.plugins.shadow.jar)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.git.versioning)
-    alias(libs.plugins.undercouch.download)
     alias(libs.plugins.ben.manes.versions)
     alias(libs.plugins.spring)
     alias(libs.plugins.spring.framework.boot)
@@ -27,11 +23,6 @@ plugins {
 
 group = "se.uulm.snowballr.backend"
 version = "0.0.0"
-
-// Snowballr API version to use for the proto files
-val apiVersion = "0.16.0" // can be a tag (e.g., "1.2.3"), commit hash, or branch name like "main"
-val escapedApiVersion = apiVersion.replace('/', '-')
-val protoDir: Provider<Directory> = layout.buildDirectory.dir("snowballr-api/${escapedApiVersion}")
 
 gitVersioning.apply {
     refs {
@@ -97,6 +88,7 @@ dependencies {
     implementation(libs.spring.doc)
     implementation(libs.spring.boot.starter.security)
     implementation(libs.spring.boot.starter.actuator)
+    implementation(libs.spring.boot.starter.grpc.server)
 
     testImplementation(libs.koin.test)
     testImplementation(libs.testcontainers)
@@ -114,7 +106,6 @@ dependencies {
 
     runtimeOnly(libs.jjwt.impl)
     runtimeOnly(libs.jjwt.jackson)
-    runtimeOnly(libs.grpc.netty)
 
     testRuntimeOnly(libs.junit.platform)
 
@@ -251,15 +242,29 @@ tasks.register<Test>("createApiSpec") {
     reports.junitXml.required.set(false)
 }
 
+/**
+ * Runs `npm pkg set` in [dir] and fails the build if npm exits with a non-zero code.
+ */
+fun npmPkgSet(dir: File, vararg fields: String) {
+    val exitCode = ProcessBuilder("npm", "pkg", "set", *fields)
+        .directory(dir)
+        .inheritIO()
+        .start()
+        .waitFor()
+    if (exitCode != 0) {
+        throw GradleException("`npm pkg set ${fields.joinToString(" ")}` in $dir failed with exit code $exitCode")
+    }
+}
+
 // The committed OpenAPI spec is the single source of truth for the generated frontend client.
 // `openApiGenerate` turns it into a publishable TypeScript npm package.
 val committedApiSpec: RegularFile = layout.projectDirectory.file("api/openapi.json")
-val tsClientDir: Provider<Directory> = layout.buildDirectory.dir("generated/ts-client")
+val tsRestClientDir: Provider<Directory> = layout.buildDirectory.dir("generated/ts-rest-client")
 
 openApiGenerate {
     generatorName.set("typescript-fetch")
     inputSpec.set(committedApiSpec.asFile.absolutePath)
-    outputDir.set(tsClientDir)
+    outputDir.set(tsRestClientDir)
     validateSpec.set(true)
     gitUserId.set("SE-UUlm")
     gitRepoId.set("snowballr-backend")
@@ -283,39 +288,66 @@ tasks.named("openApiGenerate") {
     inputs.file(committedApiSpec)
 }
 
-tasks.register<Exec>("buildTsClient") {
+tasks.register<Exec>("buildTsRestClient") {
     dependsOn("openApiGenerate")
-    description = "Installs npm dependencies for the generated TypeScript client and builds it"
+    description = "Installs npm dependencies for the generated TypeScript REST client and builds it"
     group = "publishing"
-    workingDir = tsClientDir.get().asFile
+    workingDir = tsRestClientDir.get().asFile
     commandLine("npm", "install")
-
-    fun copyToPackage(fileName: String) {
-        val sourceFile = layout.projectDirectory.file(fileName)
-        val targetFile = tsClientDir.get().asFile.resolve(fileName)
-
-        sourceFile.asFile.copyTo(targetFile, overwrite = true)
-    }
 
     // Copy the license and changelog to the package to make it ready for publishing
     doFirst {
-        copyToPackage("LICENSE")
-        copyToPackage("CHANGELOG.md")
+        copy {
+            from(".")
+            into(tsRestClientDir.get())
+            include("LICENSE")
+            include("CHANGELOG.md")
+        }
 
         // Restrict the published package contents to the compiled output and docs (source code is omitted).
-        ProcessBuilder(
-            "npm", "pkg", "set",
+        npmPkgSet(
+            tsRestClientDir.get().asFile,
             "description=API client for the SnowballR Web Application",
             "author=SnowballR",
             "files[0]=dist",
             "files[1]=README.md",
             "files[2]=LICENSE",
             "files[3]=CHANGELOG.md",
+            "repository[url]=git+https://github.com/SE-UUlm/snowballr-backend.git"
         )
-            .directory(tsClientDir.get().asFile)
-            .inheritIO()
-            .start()
-            .waitFor()
+    }
+}
+
+val tsGrpcClientDir: Provider<Directory> = layout.buildDirectory.dir("generated/ts-grpc-client")
+
+tasks.register<Exec>("buildTsGrpcClient") {
+    description = "Installs npm dependencies for the generated TypeScript gRPC client and builds it"
+    group = "publishing"
+    workingDir = tsGrpcClientDir.get().asFile
+    commandLine("npm", "install")
+
+    // Copy all required files to the package to make it ready for publishing
+    doFirst {
+        copy {
+            into(tsGrpcClientDir.get())
+
+            from("api/grpc") {
+                include("package.json")
+                include("proto/*.proto")
+                include("README.md")
+                include("compile.js")
+            }
+
+            from(".") {
+                include("LICENSE")
+                include("CHANGELOG.md")
+            }
+        }
+
+        npmPkgSet(
+            tsGrpcClientDir.get().asFile,
+            "version=${project.version}"
+        )
     }
 }
 
@@ -432,7 +464,7 @@ protobuf {
 sourceSets {
     main {
         proto {
-            srcDir(protoDir)
+            srcDir("api/grpc/proto")
             include("*.proto")
         }
     }
@@ -477,75 +509,6 @@ tasks.withType<DetektCreateBaselineTask>().configureEach {
     jvmTarget = "22"
     classpath = sourceSets["main"].runtimeClasspath
     parallel = true
-}
-
-tasks.register<Download>("downloadApiFiles") {
-    group = "other"
-    description = "Downloads the API definition files from the snowballr-api repository."
-
-    val isTag = apiVersion.matches(Regex("""\d+.\d+.\d+"""))
-    val isCommit = apiVersion.matches(Regex("""[a-f0-9]{40}"""))
-    val isBranch = !isTag && !isCommit
-    println("Using API version: $apiVersion (isTag: $isTag, isCommit: $isCommit, isBranch: $isBranch)")
-
-    val zipUrl =
-        if (isTag) "https://github.com/SE-UUlm/snowballr-api/archive/refs/tags/v${apiVersion}.zip"
-        else if (isCommit) "https://github.com/SE-UUlm/snowballr-api/archive/${apiVersion}.zip"
-        else "https://github.com/SE-UUlm/snowballr-api/archive/refs/heads/${apiVersion}.zip"
-
-    val zipFile = layout.buildDirectory.file("snowballr-api-${escapedApiVersion}.zip").get().asFile
-    val protoDirAsFile = protoDir.get().asFile
-
-    // Declare inputs & outputs for caching
-    inputs.property("apiVersion", apiVersion)
-    outputs.dir(protoDir)
-    outputs.cacheIf { !isBranch } // don't cache if apiVersion is a branch
-
-    src(zipUrl)
-    dest(zipFile)
-    overwrite(isBranch) // don't re-download unless file missing or apiVersion is a branch
-
-    doLast {
-        // Only unzip if the directory is empty
-        if (protoDirAsFile.list()?.isNotEmpty() == true && !isBranch) {
-            println("API proto files already extracted - skipping unzip")
-            return@doLast
-        }
-
-        println("Extracting $zipFile to $protoDirAsFile")
-
-        fun unzipFile(zip: ZipFile, entry: ZipEntry) {
-            // We only want the proto files
-            if (!entry.name.startsWith("snowballr-api-${escapedApiVersion}/proto/")) return
-            val entryName = entry.name.removePrefix("snowballr-api-${escapedApiVersion}/proto/")
-
-            val outputFile = protoDirAsFile.resolve(entryName)
-            if (entry.isDirectory) {
-                outputFile.mkdirs()
-            } else {
-                outputFile.parentFile?.mkdirs()
-                zip.getInputStream(entry).use { input ->
-                    outputFile.outputStream().use { output ->
-                        input.copyTo(output)
-                    }
-                }
-            }
-        }
-
-        ZipFile(zipFile).use { zip ->
-            zip.entries().asSequence().forEach { entry ->
-                unzipFile(zip, entry)
-            }
-        }
-    }
-}
-
-tasks.named("extractProto") {
-    dependsOn("downloadApiFiles")
-}
-
-tasks.named("processResources") {
-    dependsOn("downloadApiFiles")
 }
 
 tasks.named<JavaExec>("run") {

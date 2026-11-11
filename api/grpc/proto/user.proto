@@ -1,0 +1,49 @@
+/// User related messages and enums of the SnowballR app.
+
+syntax = "proto3";
+package snowballr;
+
+import "google/protobuf/field_mask.proto";
+
+// Role of a user inside the SnowballR app.
+enum UserRole {
+  // Unspecified user role.
+  USER_ROLE_UNSPECIFIED = 0;
+  // Default user role. No elevated rights.
+  USER_ROLE_DEFAULT = 1;
+  // (SnowballR instance) Admin user role. Can do everything that a default user can do and more.
+  USER_ROLE_ADMIN = 2;
+}
+
+// Status of the user. Can be considered the stage in the lifecycle of a user.
+enum UserStatus {
+  // Unspecified user status.
+  USER_STATUS_UNSPECIFIED = 0;
+  // User is registered and has confirmed their email address.
+  USER_STATUS_ACTIVE = 1;
+  // User has requested the deletion of their account.
+  USER_STATUS_DELETED = 2;
+  // User is registered, but has not yet confirmed their email address.
+  USER_STATUS_ACTIVE_UNCONFIRMED = 3;
+}
+
+// A SnowballR user.
+message User {
+  string id = 1;
+  string email = 2;
+  string first_name = 3;
+  string last_name = 4;
+  UserRole role = 5;
+  UserStatus status = 6;
+
+  // A list of users.
+  message List {
+    repeated User users = 1;
+  }
+
+  // Request to update a user.
+  message Update {
+    User user = 1;
+    google.protobuf.FieldMask mask = 2;
+  }
+}

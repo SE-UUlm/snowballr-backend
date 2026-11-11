@@ -1,0 +1,44 @@
+/// Review related messages and enums of the SnowballR app.
+
+syntax = "proto3";
+package snowballr;
+
+import "google/protobuf/field_mask.proto";
+
+// The decision based on the review of a paper.
+enum ReviewDecision {
+  // Unspecified review decision.
+  REVIEW_DECISION_UNSPECIFIED = 0;
+  // The reviewer declined the paper.
+  REVIEW_DECISION_DECLINED = 1;
+  // The reviewer was not sure in their decision.
+  REVIEW_DECISION_MAYBE = 2;
+  // The reviewer accepted the paper.
+  REVIEW_DECISION_ACCEPTED = 3;
+}
+
+// A review of a paper made by a user (project member).
+message Review {
+  string id = 1;
+  string user_id = 2;
+  ReviewDecision decision = 3;
+  repeated string selected_criteria_ids = 4;
+
+  // List of reviews.
+  message List {
+    repeated Review reviews = 1;
+  }
+
+  // Request to create a review.
+  message Create {
+    string project_paper_id = 1;
+    ReviewDecision decision = 2;
+    repeated string selected_criteria_ids = 3;
+  }
+
+  // Request to update a review.
+  message Update {
+    Review review = 1;
+    google.protobuf.FieldMask mask = 2;
+  }
+}

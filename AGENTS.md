@@ -33,6 +33,9 @@ existing docs over restating them here. If you must summarize, keep it short and
 
 ```
 .
+├── api/
+│   ├── grpc/proto/              # gRPC API definitions, compiled into stubs at build time
+│   └── openapi.json             # committed OpenAPI spec for the REST API
 ├── src/
 │   ├── main/
 │   │   ├── kotlin/              # production code (table, repository, access, service, validation, grpc)
@@ -70,7 +73,7 @@ existing docs over restating them here. If you must summarize, keep it short and
 | Fetcher orchestrator tests      | src/test/kotlin/se/uulm/snowballr/backend/fetcher/orchestrator           | Unit tests.                                      |
 | Orchestrator wiring/startup     | src/main/kotlin/se/uulm/snowballr/backend/Module.kt, Main.kt             | Koin wiring, start/stop.                         |
 | Architecture tests              | src/test/kotlin/se/uulm/snowballr/backend/arch/LayerArchitectureTest.kt  | Layer constraints incl. fetcher.                 |
-| Build config                    | build.gradle.kts                                                         | apiVersion, Gradle tasks, fetcher deps.          |
+| Build config                    | build.gradle.kts                                                         | Gradle tasks, proto codegen, fetcher deps.       |
 | Python tool config              | pyproject.toml                                                           | ruff (lint/format) and ty (type-check) settings. |
 | Docker images                   | Dockerfile, Dockerfile.proxy                                             | Backend and proxy containers.                    |
 | CI workflows                    | .github/workflows                                                        | Lint, tests, docker, wiki publish.               |
@@ -114,18 +117,17 @@ Full rules in wiki/Logging.md. The points most easily got wrong:
 - Use .env.example as a baseline and wiki/Configuration.md for required variables and profile defaults.
 - Profiles: PRODUCTION, DEVELOPMENT, TESTING; use PROFILE to switch (wiki/Configuration.md).
 
-## API versioning
+## gRPC API definitions
 
-- build.gradle.kts controls the SnowballR API proto version (apiVersion).
-- Follow wiki/Contributing.md#use-another-api-version when changing it.
+- The proto files live in api/grpc/proto and are compiled directly.
+- Follow wiki/Contributing.md#change-the-grpc-api when changing them.
 
 ## Boundaries
 
 - Always do: prefer wiki references for process guidance; keep changes focused to the requested scope; follow existing
   layer patterns from wiki/Contributing.md.
-- Ask first: apiVersion changes, database schema or migration changes, CI workflow edits, Docker image or compose
-  profile
-  changes, dependency additions, changes to fetcher contract or plugin loading rules.
+- Ask first: gRPC API (api/grpc/proto) changes, database schema or migration changes, CI workflow edits, Docker image
+  or compose profile changes, dependency additions, changes to fetcher contract or plugin loading rules.
 - Never do: commit secrets or real credentials; edit generated build artifacts under build/; modify or remove the
   db-data Docker volume; change .env with production values; bypass security warnings for fetchers.
 

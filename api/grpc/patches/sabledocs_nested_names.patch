@@ -1,0 +1,19 @@
+diff --git a/proto_descriptor_parser.py b/proto_descriptor_parser.py
+index 062dc84..7710f9b 100644
+--- a/proto_descriptor_parser.py
++++ b/proto_descriptor_parser.py
+@@ -171,11 +171,11 @@ def parse_field(field: FieldDescriptorProto, containing_message: DescriptorProto
+ 
+ 
+ def extract_type_name_from_full_name(full_type_name: str):
+-    last_dot = full_type_name.rfind(".")
+-    if last_dot == -1:
++    first_dot = full_type_name.find(".")
++    if first_dot == -1:
+         return full_type_name
+     else:
+-        return full_type_name[last_dot + 1:]
++        return full_type_name[first_dot + 1:]
+ 
+ 
+ def parse_message(message: DescriptorProto, ctx: ParseContext, parent_message, nested_type_chain: str):

@@ -3,7 +3,7 @@ package se.uulm.snowballr.backend.service
 import io.github.oshai.kotlinlogging.KotlinLogging
 import se.uulm.snowballr.backend.access.ICriterionAccessChecker
 import se.uulm.snowballr.backend.access.IProjectAccessChecker
-import se.uulm.snowballr.backend.grpc.SnowballRServer.SnowballRService
+import se.uulm.snowballr.backend.grpc.SnowballRService
 import se.uulm.snowballr.backend.model.dto.criterion.Criterion
 import se.uulm.snowballr.backend.model.dto.criterion.CriterionField
 import se.uulm.snowballr.backend.model.exception.FailedPreconditionException

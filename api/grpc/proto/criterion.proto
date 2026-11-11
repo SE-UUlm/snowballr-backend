@@ -1,0 +1,52 @@
+/// Criterion related messages and enums of the SnowballR app.
+
+syntax = "proto3";
+package snowballr;
+
+import "google/protobuf/field_mask.proto";
+
+// Category of a criterion, it can only be ever one of it.
+enum CriterionCategory {
+  // Unspecified criterion category.
+  CRITERION_CATEGORY_UNSPECIFIED = 0;
+  // If this criterion is fulfilled, the paper should be accepted.
+  CRITERION_CATEGORY_INCLUSION = 1;
+  // If this criterion is fulfilled, the paper should be declined.
+  CRITERION_CATEGORY_EXCLUSION = 2;
+  // If this criterion is fulfilled, the paper is definitely declined.
+  CRITERION_CATEGORY_HARD_EXCLUSION = 3;
+}
+
+// There are two types of criteria that must be differentiated: user- and
+// project-criteria. A user-criterion has a user but no project attached to it
+// and can be used for the creation of default criteria for a project in the
+// user settings.
+// A project-criterion on the other hand is associated with a project and
+// provide the basis for justifying reviews.
+message Criterion {
+  string id = 1;
+  string tag = 2;
+  string name = 3;
+  string description = 4;
+  CriterionCategory category = 5;
+
+  // List of criteria.
+  message List {
+    repeated Criterion criteria = 1;
+  }
+
+  // Request to create a criterion.
+  message Create {
+    string project_id = 1;
+    string tag = 2;
+    string name = 3;
+    string description = 4;
+    CriterionCategory category = 5;
+  }
+
+  // Request to update a criterion.
+  message Update {
+    Criterion criterion = 1;
+    google.protobuf.FieldMask mask = 2;
+  }
+}

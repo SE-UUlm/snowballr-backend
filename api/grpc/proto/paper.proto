@@ -1,0 +1,59 @@
+/// Paper related messages and enums of the SnowballR app.
+
+syntax = "proto3";
+package snowballr;
+
+import "base.proto";
+import "google/protobuf/field_mask.proto";
+
+// An author of a paper.
+message Author {
+  string first_name = 1;
+  string last_name = 2;
+}
+
+// A scientific paper with it's references and other metadata.
+message Paper {
+  string id = 1;
+  reserved 2;
+  string title = 3;
+  string abstrakt = 4;
+  int32 year = 5;
+  string publisher = 6;
+  string publication_name = 7;
+  string publication_type = 8;
+  bool has_pdf = 9;
+  repeated Author authors = 10;
+  repeated string backward_referenced_ids = 11;
+  // A key-value map to store arbitrary metadata about the paper.
+  // This could for example be a fetcher specific id.
+  map<string, string> fetcher_metadata = 12;
+  repeated ExternalId external_ids = 13;
+
+  // A list of papers.
+  message List {
+    repeated Paper papers = 1;
+  }
+
+  // Request to update a paper.
+  message Update {
+    Paper paper = 1;
+    google.protobuf.FieldMask mask = 2;
+  }
+
+  // Request to update the PDF of a paper.
+  message PdfUpdate {
+    string paper_id = 1;
+    Blob pdf = 2;
+  }
+
+  // External ID of a paper, e.g. DOI, URL, etc. that can be used to identify the paper.
+  message ExternalId {
+    // The type of the external ID, e.g. DOI, URL, ...
+    string type = 1;
+    // The display type of the external ID, e.g. DOI, URL, ...
+    string display_type = 2;
+    // The actual value of the ID that can be used to identify the paper
+    string value = 3;
+  }
+}
