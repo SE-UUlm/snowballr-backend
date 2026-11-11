@@ -276,15 +276,11 @@ For local development and testing without Python or access to external
 databases, start the backend with `FETCHER_IMPLEMENTATION=DUMMY`. Instead of
 the Python plugins, the backend then provides hard-coded dummy fetchers that
 return generated papers for every search. The plugin directory is neither
-created nor used.
+created nor used. Gradle also skips Python setup in this mode.
 
 ```bash
 PROFILE=development FETCHER_IMPLEMENTATION=dummy ./gradlew run
 ```
-
-Note that `./gradlew run` still sets up the Python virtual environment before
-startup. To avoid this, run the built JAR directly (see
-[Getting Started](https://github.com/SE-UUlm/snowballr-backend/wiki/Getting-Started)).
 
 Do not switch between the Python and the dummy implementation on the same
 database. Project and user settings store the selected fetchers by their names
