@@ -1,0 +1,58 @@
+diff --git a/proto_descriptor_parser.py b/proto_descriptor_parser.py
+index 062dc84..a835a28 100644
+--- a/proto_descriptor_parser.py
++++ b/proto_descriptor_parser.py
+@@ -113,6 +113,7 @@ def parse_enum(enum: EnumDescriptorProto, ctx: ParseContext, parent_message, nes
+     e = Enum()
+     e.name = enum.name
+     e.full_name = f"{ctx.package.name}.{nested_type_chain}{enum.name}".lstrip(".")
++    e.chain_name = f"{nested_type_chain}{enum.name}".lstrip(".")
+     e.parent_message = parent_message
+     e.description = ctx.config.comments_parser.ParseEnum(ctx.GetComments())
+     e.description_html = markdown_to_html(e.description, ctx.config)
+@@ -137,7 +138,7 @@ def parse_enums(enums: Sequence[EnumDescriptorProto], ctx: ParseContext, parent_
+         ctx.package.enums.append(parse_enum(enum, ctx.ExtendPath(i), parent_message, nested_type_chain))
+ 
+     if ctx.config.member_ordering == MemberOrdering.ALPHABETICAL:
+-        ctx.package.enums.sort(key=lambda e: e.name)
++        ctx.package.enums.sort(key=lambda e: e.chain_name)
+ 
+ 
+ def parse_field(field: FieldDescriptorProto, containing_message: DescriptorProto, ctx: ParseContext):
+@@ -181,6 +182,7 @@ def parse_message(message: DescriptorProto, ctx: ParseContext, parent_message, n
+     m = Message()
+     m.name = message.name
+     m.full_name = f"{ctx.package.name}.{nested_type_chain}{message.name}".lstrip(".")
++    m.chain_name = f"{nested_type_chain}{message.name}".lstrip(".")
+     m.parent_message = parent_message
+     m.description = ctx.config.comments_parser.ParseMessage(ctx.GetComments())
+     m.description_html = markdown_to_html(m.description, ctx.config)
+@@ -219,7 +221,7 @@ def parse_messages(messages: Sequence[DescriptorProto], ctx: ParseContext, paren
+         ctx.package.messages.append(parse_message(message, ctx.ExtendPath(i), parent_message, nested_type_chain))
+ 
+     if ctx.config.member_ordering == MemberOrdering.ALPHABETICAL:
+-        ctx.package.messages.sort(key=lambda m: m.name)
++        ctx.package.messages.sort(key=lambda m: m.chain_name)
+ 
+ 
+ def parse_service_method(service_method: MethodDescriptorProto, ctx: ParseContext):
+diff --git a/proto_model.py b/proto_model.py
+index 0edcce8..e4caa9f 100644
+--- a/proto_model.py
++++ b/proto_model.py
+@@ -41,6 +41,7 @@ class Message(CodeItem):
+     def __init__(self):
+         CodeItem.__init__(self)
+         self.full_name = ''
++        self.chain_name = ''
+         self.is_map_entry = False
+         self.fields: list[MessageField] = []
+         self.oneof_field_groups: list[OneOfFieldGroup] = []
+@@ -74,6 +75,7 @@ class Enum(CodeItem):
+     def __init__(self):
+         CodeItem.__init__(self)
+         self.full_name = ''
++        self.chain_name = ''
+         self.values: list[EnumValue] = []
+         self.parent_message = None
+         self.package: Optional[Package] = None

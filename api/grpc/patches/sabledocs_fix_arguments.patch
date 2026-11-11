@@ -1,0 +1,20 @@
+diff --git a/proto_descriptor_parser.py b/proto_descriptor_parser.py
+index 2ee9df7..defa0cc 100644
+--- a/proto_descriptor_parser.py
++++ b/proto_descriptor_parser.py
+@@ -231,13 +231,13 @@ def parse_service_method(service_method: MethodDescriptorProto, ctx: ParseContex
+     sm.description_html = markdown_to_html(sm.description, ctx.config)
+     sm.line_number = ctx.GetLineNumber()
+     sm.request = ServiceMethodArgument(
+-        service_method.input_type[service_method.input_type.rfind(".") + 1:],
++        service_method.input_type.strip(".")[service_method.input_type.strip(".").find(".") + 1:],
+         service_method.input_type.strip("."),
+         "MESSAGE"
+     )
+ 
+     sm.response = ServiceMethodArgument(
+-        service_method.output_type[service_method.output_type.rfind(".") + 1:],
++        service_method.output_type.strip(".")[service_method.output_type.strip(".").find(".") + 1:],
+         service_method.output_type.strip("."),
+         "MESSAGE"
+     )

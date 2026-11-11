@@ -1,0 +1,19 @@
+diff --git a/proto_descriptor_parser.py b/proto_descriptor_parser.py
+index 062dc84..e15986e 100644
+--- a/proto_descriptor_parser.py
++++ b/proto_descriptor_parser.py
+@@ -275,11 +275,11 @@ def parse_services(services: Sequence[ServiceDescriptorProto], ctx: ParseContext
+ 
+ 
+ def extract_package_name_from_full_name(full_type_name: str):
+-    last_dot = full_type_name.rfind(".")
+-    if last_dot == -1:
++    first_dot = full_type_name.find(".")
++    if first_dot == -1:
+         return ""
+     else:
+-        return full_type_name[:last_dot]
++        return full_type_name[:first_dot]
+ 
+ 
+ def add_package_references(messages: list[Message], services: list[Service], packages: list[Package], hidden_packages: list[str]):
