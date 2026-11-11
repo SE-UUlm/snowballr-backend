@@ -18,7 +18,12 @@
     "license": "GPL-3.0-or-later",
     "author": "SnowballR",
     "type": "module",
-    "main": "dist/",
+    "exports": {
+        "./*": {
+            "types": "./dist/*.d.ts",
+            "default": "./dist/*.js"
+        }
+    },
     "files": [
         "dist/",
         "README.md",
@@ -26,8 +31,11 @@
         "CHANGELOG.md"
     ],
     "scripts": {
-        "compile": "node_modules/.bin/protoc --ts_out dist/ --ts_opt generate_dependencies --proto_path proto/ proto/main.proto",
-        "prepack": "npm run compile"
+        "prepack": "node compile.js"
+    },
+    "peerDependencies": {
+        "@protobuf-ts/runtime": "^2.11.1",
+        "@protobuf-ts/runtime-rpc": "^2.11.1"
     },
     "devDependencies": {
         "@protobuf-ts/plugin": "^2.11.1"

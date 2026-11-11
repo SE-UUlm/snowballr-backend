@@ -342,7 +342,6 @@ tasks.register<Exec>("buildTsGrpcClient") {
     group = "publishing"
     workingDir = tsGrpcClientDir.get().asFile
     commandLine("npm", "install")
-    mkdir("${tsGrpcClientDir.get()}/dist")
 
     // Copy all required files to the package to make it ready for publishing
     doFirst {
@@ -353,6 +352,7 @@ tasks.register<Exec>("buildTsGrpcClient") {
                 include("package.json")
                 include("proto/*.proto")
                 include("README.md")
+                include("compile.js")
             }
 
             from(".") {
