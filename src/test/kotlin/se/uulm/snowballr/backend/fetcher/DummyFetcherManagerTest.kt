@@ -76,7 +76,7 @@ class DummyFetcherManagerTest {
         DummyFetcherManager(Random(0)).fetchBackwardReferences(fetcher, paper, emptyMap())
 
     private fun FetcherPaper.doi(): String? =
-        externalIds.firstOrNull { it.type == ExternalIdType.DOI }?.normalized()?.value
+        externalIds.firstOrNull { it.type == ExternalIdType.DOI }?.run { normalized().value }
 
     private suspend fun paperWithDoi(doi: String) = search(doi).single()
 }
