@@ -79,5 +79,4 @@ class DummyFetcherManagerTest {
         externalIds.firstOrNull { it.type == ExternalIdType.DOI }?.normalized()?.value
 
     private suspend fun paperWithDoi(doi: String) = search(doi).single()
-
 }
