@@ -3,6 +3,7 @@ package se.uulm.snowballr.backend.fetcher
 import se.uulm.snowballr.backend.model.dto.paper.Author
 import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
+import se.uulm.snowballr.backend.model.dto.paper.normalized
 import se.uulm.snowballr.backend.model.exception.notfound.FetcherNotFoundException
 import se.uulm.snowballr.backend.model.fetcher.FetcherInformation
 import se.uulm.snowballr.backend.model.fetcher.FetcherInformationWithId
@@ -280,6 +281,27 @@ class DummyFetcherManager(
         ),
     )
 
+    private val dummyCitations: Map<String, Set<String>> = mapOf(
+        // Exploring the Universe of AI (2014) -> Neuroscience and the Human Brain, Cybersecurity in the Age of IoT
+        "10.1234/abcd.5678" to setOf("10.4568/xyz.4567", "10.3457/xyz.9876"),
+        // Artificial Intelligence in Healthcare (2014) -> Neuroscience and the Human Brain, Blockchain Technology
+        "10.5432/lmn.1234" to setOf("10.4568/xyz.4567", "10.6789/pqr.4321"),
+        // The Role of Data in Modern Research (2019) -> Exploring the Universe of AI, Blockchain Technology
+        "10.2345/xyz.9876" to setOf("10.1234/abcd.5678", "10.6789/pqr.4321"),
+        // Advances in Deep Learning (2019) -> Exploring the Universe of AI, AI in Healthcare, Neuroscience
+        "10.1111/abc.1234" to setOf("10.1234/abcd.5678", "10.5432/lmn.1234", "10.4568/xyz.4567"),
+        // Augmented Reality in Education (2019) -> Exploring the Universe of AI
+        "10.2345/abc.1234" to setOf("10.1234/abcd.5678"),
+        // The Ethics of Gene Editing (2021) -> AI in Healthcare, The Role of Data, Neuroscience
+        "10.6547/xyz.2345" to setOf("10.5432/lmn.1234", "10.2345/xyz.9876", "10.4568/xyz.4567"),
+        // Biotechnology in Environmental Protection (2021) -> The Role of Data, Blockchain Technology
+        "10.1122/xyz.5678" to setOf("10.2345/xyz.9876", "10.6789/pqr.4321"),
+        // The Evolution of E-Commerce (2021) -> Blockchain Technology, Augmented Reality, Advances in Deep Learning
+        "10.4312/abc.2111" to setOf("10.6789/pqr.4321", "10.2345/abc.1234", "10.1111/abc.1234"),
+        // The Rise of Virtual Reality (2022) -> Augmented Reality, Evolution of E-Commerce, Advances in Deep Learning
+        "10.9875/abc.6543" to setOf("10.2345/abc.1234", "10.4312/abc.2111", "10.1111/abc.1234"),
+    )
+
     override suspend fun getAvailableFetchers(): Set<FetcherInformationWithId> = dummyFetchers
 
     override suspend fun searchPapers(
@@ -291,9 +313,7 @@ class DummyFetcherManager(
 
         return dummyPapers
             .filter { it.matchesQuery(searchQuery) }
-            .map { it.copy(fetcherMetadata = mapOf("fetcherId" to fetcher)) }
-            .shuffled(random)
-            .toSet()
+            .toFetcherPaperSet(fetcher)
     }
 
     private fun FetcherPaper.matchesQuery(query: String): Boolean {
@@ -320,7 +340,12 @@ class DummyFetcherManager(
     ): Set<FetcherPaper> {
         requireFetcherExists(fetcher)
 
-        return emptySet()
+        val doi = paper.doi() ?: return emptySet()
+        val citingDois = dummyCitations.filterValues { doi in it }.keys
+
+        return dummyPapers
+            .filter { it.doi() in citingDois }
+            .toFetcherPaperSet(fetcher)
     }
 
     override suspend fun fetchBackwardReferences(
@@ -330,8 +355,21 @@ class DummyFetcherManager(
     ): Set<FetcherPaper> {
         requireFetcherExists(fetcher)
 
-        return emptySet()
+        val doi = paper.doi() ?: return emptySet()
+        val citedDois = dummyCitations[doi].orEmpty()
+
+        return dummyPapers
+            .filter { it.doi() in citedDois }
+            .toFetcherPaperSet(fetcher)
     }
+
+    private fun FetcherPaper.doi(): String? =
+        externalIds.firstOrNull { it.type == ExternalIdType.DOI }?.normalized()?.value
+
+    private fun List<FetcherPaper>.toFetcherPaperSet(fetcher: String): Set<FetcherPaper> =
+        map { it.copy(fetcherMetadata = mapOf("fetcherId" to fetcher)) }
+            .shuffled(random)
+            .toSet()
 
     private fun requireFetcherExists(fetcher: String) {
         if (dummyFetchers.none { it.id == fetcher }) throw FetcherNotFoundException(fetcher)
