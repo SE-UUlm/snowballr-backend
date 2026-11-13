@@ -16,20 +16,12 @@ enum class AppProfile {
 
     companion object {
         /**
-         * Parses a string to an [AppProfile], defaulting to an exception for safety.
-         * The matching is case-insensitive.
+         * Parses a string to an [AppProfile]. The matching is case-insensitive.
          *
          * @param value The string value to parse.
-         * @return The corresponding [AppProfile].
-         * @throws IllegalStateException If the [value] doesn't match an [AppProfile].
+         * @return The corresponding [AppProfile], or null if the [value] doesn't match an [AppProfile].
          */
-        fun fromString(value: String): AppProfile {
-            return when (value.uppercase()) {
-                "TESTING" -> TESTING
-                "DEVELOPMENT" -> DEVELOPMENT
-                "PRODUCTION" -> PRODUCTION
-                else -> error("Unknown profile type: $value")
-            }
-        }
+        fun fromString(value: String): AppProfile? =
+            entries.firstOrNull { it.name.equals(value.trim(), ignoreCase = true) }
     }
 }

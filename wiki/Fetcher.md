@@ -270,6 +270,28 @@ printed as an error log entry. If the fetcher exits successfully (exit-code ==
 This can be useful for determining the source of unexpected errors or during
 implementation and debugging.
 
+### Dummy Fetchers
+
+For local development and testing without Python or access to external
+databases, start the backend with `FETCHER_IMPLEMENTATION=DUMMY`. Instead of
+the Python plugins, the backend then provides hard-coded dummy fetchers that
+return generated papers for every search. The plugin directory is neither
+created nor used. Gradle also skips Python setup in this mode.
+
+```bash
+PROFILE=development FETCHER_IMPLEMENTATION=dummy ./gradlew run
+```
+
+Do not switch between the Python and the dummy implementation on the same
+database. Project and user settings store the selected fetchers by their names
+together with their options, and these fetchers do not exist in the other
+implementation. The generated papers would also remain in the database next to
+real ones. Use a separate database for each implementation instead.
+
+The dummy implementation is not allowed in the `PRODUCTION` profile: the backend
+refuses to start. See [Configuration](https://github.com/SE-UUlm/snowballr-backend/wiki/Configuration) for all
+environment variables.
+
 ### Developers
 
 If you want to contribute a fetcher to SnowballR, add it to the resources in

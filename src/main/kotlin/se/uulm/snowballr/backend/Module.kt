@@ -31,7 +31,9 @@ import se.uulm.snowballr.backend.db.Database
 import se.uulm.snowballr.backend.db.IDatabase
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.env.EnvService
+import se.uulm.snowballr.backend.env.FetcherImplementationType
 import se.uulm.snowballr.backend.env.IEnvService
+import se.uulm.snowballr.backend.fetcher.DummyFetcherManager
 import se.uulm.snowballr.backend.fetcher.FetcherOrchestrator
 import se.uulm.snowballr.backend.fetcher.IFetcherManager
 import se.uulm.snowballr.backend.fetcher.IFetcherOrchestrator
@@ -199,7 +201,13 @@ private fun createMailer(envReader: EnvReader): Mailer {
  */
 private fun Module.customServicesDeps() {
     singleOf(::JwtManager) { bind<IJwtManager>() }
-    single<IFetcherManager> { PythonPluginFetcherManager(get()) }
+    single<IFetcherManager> {
+        val envReader = get<EnvReader>()
+        when (envReader.env.plugins.fetcherImplementation) {
+            FetcherImplementationType.PYTHON -> PythonPluginFetcherManager(envReader)
+            FetcherImplementationType.DUMMY -> DummyFetcherManager()
+        }
+    }
     singleOf(::CookieManager) { bind<ICookieManager>() }
     singleOf(::EmailManager) { bind<IEmailManager>() }
     singleOf(::AuthenticationManager) { bind<IAuthenticationManager>() }
