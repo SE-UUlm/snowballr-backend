@@ -16,20 +16,41 @@ class DummyFetcherManagerTest {
         DummyFetcherManager(random).searchPapers(fetcher, query, emptyMap())
 
     @Test
-    fun `When searching papers, then every title contains the trimmed search query`() = runTest {
-        val papers = search("  snowballing  ")
+    fun `When searching papers, then the trimmed query is matched case-insensitively against the title`() = runTest {
+        val papers = search("  gene EDITING  ")
 
-        assertThat(papers).isNotEmpty()
-        assertThat(papers).allSatisfy { paper ->
-            assertThat(paper.title).contains("snowballing")
-            assertThat(paper.title).doesNotContain("%s", "  snowballing")
-        }
+        assertThat(papers.map { it.title }).containsExactly("The Ethics of Gene Editing")
+    }
+
+    @Test
+    fun `When searching papers by DOI, then the paper with that DOI is returned`() = runTest {
+        val papers = search("10.1111/abc.1234")
+
+        assertThat(papers.map { it.title }).containsExactly("Advances in Deep Learning")
+    }
+
+    @Test
+    fun `When searching papers by author name, then papers of that author are returned`() = runTest {
+        val papers = search("Henry Garcia")
+
+        assertThat(papers.map { it.title }).containsExactlyInAnyOrder(
+            "Exploring the Universe of AI",
+            "Augmented Reality: Shaping the Future of Education",
+            "The Evolution of E-Commerce in the Digital Age",
+        )
+    }
+
+    @Test
+    fun `When searching papers with a query matching no paper, then no papers are returned`() = runTest {
+        val papers = search("snowballing")
+
+        assertThat(papers).isEmpty()
     }
 
     @Test
     fun `When searching with an unknown fetcher, then a FetcherNotFoundException is thrown`() = runTest {
         val exception = assertThrows<FetcherNotFoundException> {
-            search("snowballing", fetcher = "SemanticScholar.py")
+            search("deep learning", fetcher = "SemanticScholar.py")
         }
 
         assertThat(exception.message).contains("Fetcher \"SemanticScholar.py\" not found.")
@@ -38,7 +59,7 @@ class DummyFetcherManagerTest {
     @Test
     fun `When fetching forward references with an unknown fetcher, then a FetcherNotFoundException is thrown`() =
         runTest {
-            val paper = search("snowballing").first()
+            val paper = search("deep learning").first()
 
             val exception = assertThrows<FetcherNotFoundException> {
                 DummyFetcherManager().fetchForwardReferences("SemanticScholar.py", paper, emptyMap())
@@ -50,7 +71,7 @@ class DummyFetcherManagerTest {
     @Test
     fun `When fetching backward references with an unknown fetcher, then a FetcherNotFoundException is thrown`() =
         runTest {
-            val paper = search("snowballing").first()
+            val paper = search("deep learning").first()
 
             val exception = assertThrows<FetcherNotFoundException> {
                 DummyFetcherManager().fetchBackwardReferences("SemanticScholar.py", paper, emptyMap())
@@ -61,8 +82,19 @@ class DummyFetcherManagerTest {
 
     @Test
     fun `When searching papers, then every paper has a distinct DOI`() = runTest {
-        val papers = search("snowballing")
+        val papers = search("paper")
 
+        assertThat(papers).hasSize(12)
         assertThat(papers.map { it.doi() }).doesNotHaveDuplicates()
+    }
+
+    @Test
+    fun `When searching papers, then every paper carries the fetcher metadata`() = runTest {
+        val papers = search("paper", fetcher = "d-2")
+
+        assertThat(papers).isNotEmpty()
+        assertThat(papers).allSatisfy { paper ->
+            assertThat(paper.fetcherMetadata).containsEntry("fetcherId", "d-2")
+        }
     }
 }
