@@ -318,30 +318,23 @@ class PythonPluginFetcherManagerTest {
     }
 
     @Test
-    fun `When a fetcher script is missing, then a FetcherNotFoundException is thrown`() = runTest {
-        val exception = assertThrows<FetcherNotFoundException> {
-            fetcherManager.makeTestCall("does_not_exist")
-        }
-        assertThat(exception.message).contains("Fetcher \"does_not_exist\" not found.")
-    }
-
-    @Test
-    fun `When fetching forward references with a missing fetcher script, then a FetcherNotFoundException is thrown`() =
-        runTest {
-            val exception = assertThrows<FetcherNotFoundException> {
+    fun `When a fetcher script is missing, then every method throws a FetcherNotFoundException`() = runTest {
+        val exceptions = listOf(
+            assertThrows<FetcherNotFoundException> {
+                fetcherManager.makeTestCall("does_not_exist")
+            },
+            assertThrows<FetcherNotFoundException> {
                 fetcherManager.fetchForwardReferences("does_not_exist", referencePaper, emptyMap())
-            }
-            assertThat(exception.message).contains("Fetcher \"does_not_exist\" not found.")
-        }
-
-    @Test
-    fun `When fetching backward references with a missing fetcher script, then a FetcherNotFoundException is thrown`() =
-        runTest {
-            val exception = assertThrows<FetcherNotFoundException> {
+            },
+            assertThrows<FetcherNotFoundException> {
                 fetcherManager.fetchBackwardReferences("does_not_exist", referencePaper, emptyMap())
-            }
+            },
+        )
+
+        assertThat(exceptions).allSatisfy { exception ->
             assertThat(exception.message).contains("Fetcher \"does_not_exist\" not found.")
         }
+    }
 
     @Test
     fun `When a fetcher path resolves to a directory, then a FetcherNotFoundException is thrown`() = runTest {
