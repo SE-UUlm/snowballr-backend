@@ -302,7 +302,7 @@ def cmd_init_config(args):
     for fetcher in fetchers:
         info: dict = run_fetcher(fetcher, "info", run_settings(args))
         options_schema = info.get("options_schema", {})
-        config[fetcher] = {key: "" for key in options_schema}
+        config[fetcher] = dict.fromkeys(options_schema, "")
 
     with open(CONFIG_FILE, "w") as f:
         json.dump(config, f, indent=2)
@@ -341,7 +341,7 @@ def cmd_references(args, action: str):
 
 def positive_float(value: str) -> float:
     number = float(value)
-    if not number > 0:
+    if number <= 0:
         raise argparse.ArgumentTypeError(f"must be greater than 0, got {value}")
     return number
 
