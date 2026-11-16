@@ -3,7 +3,6 @@ package se.uulm.snowballr.backend.fetcher
 import se.uulm.snowballr.backend.model.dto.paper.Author
 import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
-import se.uulm.snowballr.backend.model.dto.paper.normalized
 import se.uulm.snowballr.backend.model.exception.notfound.FetcherNotFoundException
 import se.uulm.snowballr.backend.model.fetcher.FetcherInformation
 import se.uulm.snowballr.backend.model.fetcher.FetcherInformationWithId
@@ -316,7 +315,7 @@ class DummyFetcherManager(
 
     private fun FetcherPaper.matchesQuery(query: String): Boolean {
         val searchTerm = query.trim().lowercase()
-        if (searchTerm == "paper") return true
+        if (searchTerm == MATCH_ALL_QUERY) return true
 
         val attributes = buildList {
             add(title)
@@ -361,8 +360,7 @@ class DummyFetcherManager(
             .toFetcherPaperSet(fetcher)
     }
 
-    private fun FetcherPaper.doi(): String? =
-        externalIds.firstOrNull { it.type == ExternalIdType.DOI }?.run { normalized().value }
+    private fun FetcherPaper.doi(): String? = externalIds.firstOrNull { it.type == ExternalIdType.DOI }?.value
 
     private fun List<FetcherPaper>.toFetcherPaperSet(fetcher: String): Set<FetcherPaper> =
         map { it.copy(fetcherMetadata = mapOf("fetcherId" to fetcher)) }
@@ -372,17 +370,22 @@ class DummyFetcherManager(
     private fun requireFetcherExists(fetcher: String) {
         if (dummyFetchers.none { it.id == fetcher }) throw FetcherNotFoundException(fetcher)
     }
-}
 
-private const val DOI_UNIVERSE_OF_AI = "10.1234/abcd.5678"
-private const val DOI_ROLE_OF_DATA = "10.2345/xyz.9876"
-private const val DOI_AI_IN_HEALTHCARE = "10.5432/lmn.1234"
-private const val DOI_BLOCKCHAIN = "10.6789/pqr.4321"
-private const val DOI_DEEP_LEARNING = "10.1111/abc.1234"
-private const val DOI_CYBERSECURITY = "10.3457/xyz.9876"
-private const val DOI_AUGMENTED_REALITY = "10.2345/abc.1234"
-private const val DOI_NEUROSCIENCE = "10.4568/xyz.4567"
-private const val DOI_GENE_EDITING = "10.6547/xyz.2345"
-private const val DOI_BIOTECHNOLOGY = "10.1122/xyz.5678"
-private const val DOI_VIRTUAL_REALITY = "10.9875/abc.6543"
-private const val DOI_E_COMMERCE = "10.4312/abc.2111"
+    companion object {
+        /** Query that matches every paper, regardless of its attributes. */
+        private const val MATCH_ALL_QUERY = "paper"
+
+        private const val DOI_UNIVERSE_OF_AI = "10.1234/abcd.5678"
+        private const val DOI_ROLE_OF_DATA = "10.2345/xyz.9876"
+        private const val DOI_AI_IN_HEALTHCARE = "10.5432/lmn.1234"
+        private const val DOI_BLOCKCHAIN = "10.6789/pqr.4321"
+        private const val DOI_DEEP_LEARNING = "10.1111/abc.1234"
+        private const val DOI_CYBERSECURITY = "10.3457/xyz.9876"
+        private const val DOI_AUGMENTED_REALITY = "10.2345/abc.1234"
+        private const val DOI_NEUROSCIENCE = "10.4568/xyz.4567"
+        private const val DOI_GENE_EDITING = "10.6547/xyz.2345"
+        private const val DOI_BIOTECHNOLOGY = "10.1122/xyz.5678"
+        private const val DOI_VIRTUAL_REALITY = "10.9875/abc.6543"
+        private const val DOI_E_COMMERCE = "10.4312/abc.2111"
+    }
+}

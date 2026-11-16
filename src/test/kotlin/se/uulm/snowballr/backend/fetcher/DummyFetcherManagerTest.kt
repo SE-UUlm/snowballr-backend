@@ -59,7 +59,7 @@ class DummyFetcherManagerTest {
     }
 
     @Test
-    fun `When searching with paper query, then return all papers`() = runTest {
+    fun `When searching with the paper query, then return all papers`() = runTest {
         val papers = search("paper")
 
         assertThat(papers).hasSize(12)
