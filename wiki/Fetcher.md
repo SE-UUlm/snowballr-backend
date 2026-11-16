@@ -148,7 +148,7 @@ constructed like this:
 ```py
 paper = Paper(
     title,             # str
-    external_id,       # Optional[str]
+    external_ids,      # list[ExternalId]
     abstract,          # str
     year,              # int
     publisher,         # str
@@ -168,6 +168,26 @@ author = Author(
 )
 ```
 
+A paper can have any number of external IDs, e.g. a DOI and the ID it has at the
+fetcher's source. An `ExternalId` can be constructed like this:
+
+```py
+external_id = ExternalId(
+    type,   # str, e.g. "DOI"
+    value,  # str, e.g. "10.1136/bmj-2023-078378"
+)
+```
+
+The `type` must be the name of a constant of
+[`ExternalIdType`](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/model/dto/paper/ExternalIdType.kt).
+If any paper contains an unknown type, the backend rejects the
+fetcher's whole response as invalid JSON. If the source returns an ID of a type
+that is not listed, leave it out or adjust the backend enum.
+
+The paper passed to `forward_references` and `backward_references` carries its
+external IDs in the same form, so a fetcher can look the paper up at its source by
+an ID of a type it understands.
+
 Returned papers do not need to be pre-formatted by the fetcher. Fields such as the title or author names are
 normalized by the backend after they are received; see
 [Normalization](https://github.com/SE-UUlm/snowballr-backend/wiki/Normalization) for details.
@@ -179,7 +199,7 @@ Let's put all the pieces together:
 ```py
 # ./plugins/fetchers/basic.py
 
-from snowballr import fetcher_plugin, FetcherInformation, Paper, Author
+from snowballr import fetcher_plugin, FetcherInformation, Paper, Author, ExternalId
 
 fetcher_information = FetcherInformation(
     name="Basic",
@@ -191,7 +211,7 @@ fetcher_information = FetcherInformation(
 def search_papers(search_query: str, options: dict[str, str]) -> list[Paper]:
     return [ Paper(
         "title",
-        "external_id",
+        [ExternalId("DOI", "10.1234/example")],
         "abstract",
         2026,
         "publisher",

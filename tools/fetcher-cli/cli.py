@@ -183,6 +183,16 @@ def format_authors(authors: list) -> str:
     return result
 
 
+def format_external_ids(external_ids: list) -> str:
+    if not external_ids:
+        return "—"
+    first = external_ids[0]
+    result = f"{first.get('type', '')}:{first.get('value', '')}"
+    if len(external_ids) > 1:
+        result += f" +{len(external_ids) - 1}"
+    return result
+
+
 def print_papers_table(papers: list[dict]) -> None:
     if not papers:
         print("No papers found.")
@@ -191,11 +201,11 @@ def print_papers_table(papers: list[dict]) -> None:
     col_title = 52
     col_year = 6
     col_authors = 32
-    col_id = 22
+    col_ids = 40
 
     header = (
         f"  {'#':<4} {'Title':<{col_title}} {'Year':<{col_year}}"
-        f" {'Authors':<{col_authors}} {'ExternalId':<{col_id}}"
+        f" {'Authors':<{col_authors}} {'External IDs':<{col_ids}}"
     )
     print(header)
     print("  " + "-" * (len(header) - 2))
@@ -203,10 +213,10 @@ def print_papers_table(papers: list[dict]) -> None:
         title = truncate(paper.get("title", ""), col_title)
         year = str(paper.get("year", ""))
         authors = truncate(format_authors(paper.get("authors", [])), col_authors)
-        external_id = truncate(paper.get("external_id") or "—", col_id)
+        external_ids = truncate(format_external_ids(paper.get("external_ids", [])), col_ids)
         print(
             f"  {i:<4} {title:<{col_title}} {year:<{col_year}}"
-            f" {authors:<{col_authors}} {external_id:<{col_id}}"
+            f" {authors:<{col_authors}} {external_ids:<{col_ids}}"
         )
 
 
