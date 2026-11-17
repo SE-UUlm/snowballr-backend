@@ -5,6 +5,7 @@ This page lists tools that assist the development process of this repository.
 <!-- TOC -->
   * [Fetcher CLI](#fetcher-cli)
     * [Configuration](#configuration)
+    * [Timeout and retries](#timeout-and-retries)
     * [Subcommands](#subcommands)
       * [list](#list)
       * [info](#info)
@@ -66,6 +67,32 @@ just fetcher-cli init-config
 ```
 
 This will create a configuration object for each existing fetcher.
+
+### Timeout and retries
+
+All subcommands that run a plugin (`info`, `search`, `forwards`, `backwards` and
+`init-config`) accept these options after the subcommand name:
+
+| Option                         | Default | Meaning                                                    |
+|--------------------------------|---------|------------------------------------------------------------|
+| `--timeout <seconds>`          | 30      | Timeout of one plugin run.                                 |
+| `--retries <n>`                | 0       | Retries after the first failed attempt.                    |
+| `--retry-delay <milliseconds>` | 1000    | Delay before the first retry. It doubles after each retry. |
+
+A run fails if it times out, exits with a non-zero code or returns no or invalid
+JSON output.
+A failed run is retried, and each failed attempt is reported on standard error.
+If the last attempt fails, the CLI prints an error and exits with code 1. The
+retry delay behaves like `FETCHER_RETRY_DELAY_IN_MILLIS` in the backend (see
+[Configuration](https://github.com/SE-UUlm/snowballr-backend/wiki/Configuration)).
+
+Example:
+
+```bash
+uv run tools/fetcher-cli/cli.py backwards ExampleFetcher tools/fetcher-cli/paper.json --timeout 120 --retries 3
+# or
+just fetcher-cli backwards ExampleFetcher tools/fetcher-cli/paper.json --timeout 120 --retries 3
+```
 
 ### Subcommands
 
