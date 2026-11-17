@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.fetcher
 
+import se.uulm.snowballr.backend.model.exception.notfound.FetcherNotFoundException
 import se.uulm.snowballr.backend.model.fetcher.FetcherInformationWithId
 import se.uulm.snowballr.backend.model.fetcher.FetcherPaper
 import se.uulm.snowballr.backend.normalization.PaperNormalizer
@@ -23,6 +24,7 @@ interface IFetcherManager {
      * @param searchQuery A text to search for.
      * @param options The set of options to be used for this invocation.
      * @return A set of papers best matching the provided searchQuery.
+     * @throws FetcherNotFoundException if no fetcher with the name [fetcher] exists.
      */
     suspend fun searchPapers(fetcher: String, searchQuery: String, options: Map<String, String>): Set<FetcherPaper>
 
@@ -39,6 +41,7 @@ interface IFetcherManager {
      * @param paper The paper from which the forward references should be fetched.
      * @param options The set of options to be used for this invocation.
      * @return A (sub)set of papers that are forward references of the provided paper.
+     * @throws FetcherNotFoundException if no fetcher with the name [fetcher] exists.
      */
     suspend fun fetchForwardReferences(
         fetcher: String,
@@ -59,6 +62,7 @@ interface IFetcherManager {
      * @param paper The paper from which the backward references should be fetched.
      * @param options The set of options to be used for this invocation.
      * @return A (sub)set of papers that are backward references of the provided paper.
+     * @throws FetcherNotFoundException if no fetcher with the name [fetcher] exists.
      */
     suspend fun fetchBackwardReferences(
         fetcher: String,

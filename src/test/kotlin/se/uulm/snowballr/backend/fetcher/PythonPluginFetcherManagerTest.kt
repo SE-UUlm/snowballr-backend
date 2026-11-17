@@ -42,6 +42,18 @@ class PythonPluginFetcherManagerTest {
     private suspend fun PythonPluginFetcherManager.makeTestCall(fetcherName: String) =
         this.searchPapers(fetcherName, "", emptyMap())
 
+    private val referencePaper = FetcherPaper(
+        title = "Example title",
+        externalIds = listOf(ExternalId(ExternalIdType.DOI, "external-42")),
+        abstract = "Example abstract",
+        year = 2024,
+        publisher = "Example publisher",
+        publicationType = "journal",
+        publicationName = "Example publication",
+        authors = listOf(Author("Ada", "Lovelace")),
+        fetcherMetadata = emptyMap(),
+    )
+
     @BeforeEach
     fun setUp() {
         pluginDirectory = Files.createTempDirectory("python-fetcher-test")
@@ -306,11 +318,22 @@ class PythonPluginFetcherManagerTest {
     }
 
     @Test
-    fun `When a fetcher script is missing, then a FetcherNotFoundException is thrown`() = runTest {
-        val exception = assertThrows<FetcherNotFoundException> {
-            fetcherManager.makeTestCall("does_not_exist")
+    fun `When a fetcher script is missing, then every method throws a FetcherNotFoundException`() = runTest {
+        val exceptions = listOf(
+            assertThrows<FetcherNotFoundException> {
+                fetcherManager.makeTestCall("does_not_exist")
+            },
+            assertThrows<FetcherNotFoundException> {
+                fetcherManager.fetchForwardReferences("does_not_exist", referencePaper, emptyMap())
+            },
+            assertThrows<FetcherNotFoundException> {
+                fetcherManager.fetchBackwardReferences("does_not_exist", referencePaper, emptyMap())
+            },
+        )
+
+        assertThat(exceptions).allSatisfy { exception ->
+            assertThat(exception.message).contains("Fetcher \"does_not_exist\" not found.")
         }
-        assertThat(exception.message).contains("Fetcher \"does_not_exist\" not found.")
     }
 
     @Test

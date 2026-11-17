@@ -2,11 +2,18 @@ import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 import de.undercouch.gradle.tasks.download.Download
 import dev.detekt.gradle.Detekt
 import dev.detekt.gradle.DetektCreateBaselineTask
+import io.github.cdimascio.dotenv.dotenv
 import kotlinx.kover.gradle.plugin.dsl.AggregationType
 import kotlinx.kover.gradle.plugin.dsl.CoverageUnit
 import kotlinx.kover.gradle.plugin.dsl.GroupingEntityType
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
+
+buildscript {
+    dependencies {
+        classpath(libs.dotenv.kotlin)
+    }
+}
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
@@ -166,6 +173,16 @@ val uvExecutable: String by lazy {
             .firstOrNull { it.isFile && it.canExecute() }
             ?.absolutePath
         ?: executableName
+}
+
+val isPythonFetcherImplementation: Boolean by lazy {
+    val implementation = dotenv {
+        directory = projectDir.path
+        ignoreIfMissing = true
+        ignoreIfMalformed = true
+    }["FETCHER_IMPLEMENTATION"]
+
+    implementation.isNullOrBlank() || implementation.trim().equals("PYTHON", ignoreCase = true)
 }
 
 tasks.register<Exec>("createFetcherVenv") {
@@ -549,7 +566,10 @@ tasks.named("processResources") {
 }
 
 tasks.named<JavaExec>("run") {
-    dependsOn("syncFetcherPythonDeps")
+    // The venv is only needed when the application uses the Python fetchers.
+    if (isPythonFetcherImplementation) {
+        dependsOn("syncFetcherPythonDeps")
+    }
 }
 
 tasks.withType<DependencyUpdatesTask> {
