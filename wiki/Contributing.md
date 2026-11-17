@@ -21,7 +21,7 @@ On this page, we explain how to contribute to the SnowballR backend project. We 
     * [Linting](#linting)
     * [Type Checking](#type-checking)
   * [Release procedure](#release-procedure)
-  * [Use another API Version](#use-another-api-version)
+  * [Change the gRPC API](#change-the-grpc-api)
   * [TypeScript API Client](#typescript-api-client)
   * [Fetcher Orchestration Progress](#fetcher-orchestration-progress)
 <!-- TOC -->
@@ -217,7 +217,7 @@ If there isn't already a service for the entity associated with your use case, a
 1. Register the implementation in `serviceLayerDeps()` in
    [Module.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/Module.kt)
    and inject the service interface directly into `SnowballRService` in
-   [SnowballRServer.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/grpc/SnowballRServer.kt).
+   [SnowballRService.kt](https://github.com/SE-UUlm/snowballr-backend/blob/develop/src/main/kotlin/se/uulm/snowballr/backend/grpc/SnowballRService.kt).
 
 2. Create an entity-specific `ExampleServiceTest` base class in the service test package, as described on the
    [Testing](https://github.com/SE-UUlm/snowballr-backend/wiki/Testing#service) page.
@@ -352,12 +352,11 @@ We create a new release whenever a set of features, bug fixes, or changes is rea
 frontend. To release a new version of the backend, follow the steps in the
 [SnowballR Wiki](https://github.com/SE-UUlm/snowballr/wiki/Contributing#release-procedure).
 
-## Use another API Version
+## Change the gRPC API
 
-To use another API version than the currently used one, go to the `build.gradle.kts` file and change the
-`apiVersion` variable to the desired version. Make sure that the version exists in the
-[API repository](https://github.com/SE-UUlm/snowballr-api). After changing the version, recompile the code using
-`./gradlew compileKotlin`.
+The gRPC API definitions live in `api/grpc/proto` and are compiled directly by the protobuf Gradle plugin. To change the
+API, edit the proto files there and recompile the code using `./gradlew compileKotlin`, which regenerates the Java and
+Kotlin stubs.
 
 ## TypeScript API Client
 
@@ -377,7 +376,7 @@ The alpha/beta version numbers (e.g. `0.1.1-alpha.a3f9c2e`) are produced by the 
 `build.gradle.kts`: the patch version of the last `vX.Y.Z` tag is bumped by one and suffixed with the channel name and
 the short commit hash.
 
-To build the client locally, use the `buildTsClient` Gradle task.
+To build the client locally, use the `buildTsRestClient` Gradle task.
 
 ## Fetcher Orchestration Progress
 

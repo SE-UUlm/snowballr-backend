@@ -1,0 +1,15 @@
+diff --git a/markdown_mermaidjs.py b/markdown_mermaidjs.py
+index 17c21a7..896130a 100644
+--- a/markdown_mermaidjs.py
++++ b/markdown_mermaidjs.py
+@@ -42,10 +42,6 @@ mermaid.registerIconPacks([
+ ]);"""
+ 
+         script_module = f"""
+-<script type="module">
+-    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';{icon_packs_calls}
+-    mermaid.initialize({{ startOnLoad: true }});
+-</script>
+ """
+ 
+         return script_module.split("\n")
