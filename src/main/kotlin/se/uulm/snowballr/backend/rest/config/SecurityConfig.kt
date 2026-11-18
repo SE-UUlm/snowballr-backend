@@ -35,6 +35,8 @@ class SecurityConfig(
                 it.requestMatchers(HttpMethod.POST, "${Routes.AUTH_ROUTE}/verify-email").permitAll()
                 it.requestMatchers(HttpMethod.GET, "${Routes.AUTH_ROUTE}/status").permitAll()
                 it.requestMatchers(HttpMethod.POST, "${Routes.AUTH_ROUTE}/logout").permitAll()
+                it.requestMatchers(HttpMethod.GET, "${Routes.EXPORT_ROUTE}/formats").permitAll()
+                it.requestMatchers(HttpMethod.POST, "${Routes.INVITATIONS_ROUTE}/*/accept").permitAll()
 
                 // Infra / docs endpoints are public. Only the actuator endpoints actually exposed today
                 // (management.endpoints.web.exposure.include is not overridden) are listed explicitly, so that
