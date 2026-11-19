@@ -162,25 +162,13 @@ def _paper_from_response(res: dict[str, Any]) -> Paper:
         title=safe_get(res, "title", ""),
         external_ids=external_ids,
         abstract=safe_get(res, "abstract", ""),
-        year=_year_from_response(res),
+        year=safe_get(res, "publication_year", 0),
         publisher=safe_get(res, "publisher", ""),
         publication_type=safe_get(res, "content_type", ""),
         publication_name=safe_get(res, "publication_title", ""),
         authors=authors,
         fetcher_metadata={metadata_key: str(res["article_number"])},
     )
-
-
-def _year_from_response(res: dict[str, Any]) -> int:
-    """Prefers the publication year over the year the paper was inserted into IEEE Xplore."""
-    for value in (
-        str(safe_get(res, "publication_year", "")),
-        str(safe_get(res, "insert_date", "")),
-    ):
-        if value[:4].isdigit():
-            return int(value[:4])
-
-    return 0
 
 
 def _author_from_response(res: dict[str, Any]) -> Author:
