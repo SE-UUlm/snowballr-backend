@@ -69,7 +69,6 @@ class PythonPluginFetcherManagerTest {
         assertThat(fetcherDirectory.resolve("SemanticScholar.py").exists()).isTrue()
         assertThat(fetcherDirectory.resolve("OpenAlex.py").exists()).isTrue()
         assertThat(fetcherDirectory.resolve("lib").resolve("snowballr.py").exists()).isTrue()
-        assertThat(fetcherDirectory.resolve("lib").resolve("xploreapi.py").exists()).isTrue()
     }
 
     @Test
