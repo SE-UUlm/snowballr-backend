@@ -193,7 +193,8 @@ def _fetch_all_pages_paid(ref_url: str) -> Callable[[dict[str, Any]], Optional[s
         if not cursor:
             return None
 
-        return f"{ref_url}&cursor={cursor}"
+        # The cursor is base64 and may contain "+", which a query string would read as a space.
+        return f"{ref_url}&cursor={quote(cursor, safe='')}"
 
     return next_url
 
