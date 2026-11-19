@@ -81,19 +81,22 @@ For each domain — `[x] User · [x] Project · [x] Paper · [x] Review · [x] C
 ### 1.1 Spring Boot wiring
 
 - [x] Add Spring Boot MVC to `build.gradle.kts`
-- [ ] Spring Boot becomes entrypoint; start grpc-netty as a `CommandLineRunner`/bean during coexistence
-  (currently inverted: `Main.kt` starts Koin + gRPC manually, then calls `startRestServer()` to boot Spring)
+- [x] Spring Boot becomes entrypoint; start grpc-netty as a `CommandLineRunner`/bean during coexistence
+  (`GrpcServerConfig`; `Main.kt` still bootstraps Koin, orchestrator and scheduler before `startRestServer()`
+  until Phase 3)
 - [x] Embedded Tomcat on a second port next to grpc-netty; reconcile Netty versions
-- [ ] Bridge: controllers resolve existing `I*Service` singletons from Koin (`KoinComponent`)
-  (the one existing controller uses an in-memory list, not a real Koin-backed service)
+- [x] Bridge: controllers resolve existing `I*Service` singletons from Koin
+  (`KoinBridge` exposes Koin singletons as Spring beans; controllers use constructor injection instead of
+  `KoinComponent`; extend it as more domains get controllers)
 - [x] Add `springdoc-openapi`; emit `openapi.json` at build; CI drift-check vs annotations
 - [x] CI: generate + publish TS npm client (semver); keep `snowballr-api` publishing until retired
 
 ### 1.2 Cross-cutting web layer
 
-- [ ] Spring Security filter: parse cookie → validate JWT → populate `RequestContext` (401/403)
-- [ ] `@RestControllerAdvice` mapping `SnowballRException` → HTTP via `ProblemDetail`
-- [ ] Versioned base path `/api/v1`
+- [x] Spring Security filter: parse cookie → validate JWT → populate `RequestContext` (401/403)
+  (`SecurityConfig` + `RequestContextFilter`)
+- [x] `@RestControllerAdvice` mapping `SnowballRException` → HTTP via `ProblemDetail` (`RestExceptionHandler`)
+- [x] Versioned base path `/api/v1` (`Routes.BASE_ROUTE`)
 
 ### 1.3 Controllers per-domain (separate package)
 
@@ -105,10 +108,15 @@ For each domain — `[ ] User · [ ] Project · [ ] Paper · [ ] Review · [ ] C
 - [ ] Thin `@WebMvcTest` slice (mapping, status, validation, auth) — small, added incrementally
 - [ ] Frontend integrates this domain against staging via the generated client
 
+In progress (#600): partial controllers for `Authentication` (login, logout, status, verify-email,
+change-password), `User` (register) and `Project` (list, get, create, delete). Request/response models exist under
+`model/incoming/` and `model/outgoing/` for most domains but have no Bean Validation yet. No `@WebMvcTest` slices yet
+(only `AuthWorkflowIntegrationTest` and `OpenApiContractTest`).
+
 ### 1.4 Special cases
 
 - [ ] Binary endpoints (`getPaperPdf`, `exportProject`): `ResponseEntity<ByteArray>`/`Resource` with correct content-type (not JSON)
-- [ ] Health/metrics via Spring Actuator
+- [x] Health/metrics via Spring Actuator (`/actuator/health`, used by docker-compose healthchecks)
 
 ---
 
