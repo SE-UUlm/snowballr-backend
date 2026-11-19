@@ -63,7 +63,7 @@ def search_papers(search_query: str, options: dict[str, str]) -> list[Paper]:
         "per_page": 25,
     } | _oa_params(options)
 
-    data = request_with_retry(url, {}, params, _request_interval(options))
+    data = request_with_retry(url, {}, params, _request_interval(options), _api_key(options))
     papers = safe_get(data, "results", [])
 
     return list(map(_paper_from_response, papers))
@@ -110,11 +110,13 @@ def _construct_paper_id(paper: Paper, options: dict[str, str]) -> Optional[str]:
         params = {"select": "id"} | _oa_params(options)
 
         try:
-            data = request_with_retry(url, {}, params, _request_interval(options))
+            data = request_with_retry(
+                url, {}, params, _request_interval(options), _api_key(options)
+            )
         except HTTPError as e:
             if e.response is not None and e.response.status_code == 404:
                 continue
-            raise e
+            raise
 
         paper_id = data.get("id")
         if paper_id is not None:
@@ -140,8 +142,9 @@ def _fetch_all_pages(specific_param: str, options: dict[str, str]) -> list[Paper
     else:
         next_url = _fetch_all_pages_free(ref_url, per_page)
 
+    interval = _request_interval(options)
     papers = []
-    for page in paginate_with_retry(ref_url, next_url, {}, params, _request_interval(options)):
+    for page in paginate_with_retry(ref_url, next_url, {}, params, interval, _api_key(options)):
         papers += safe_get(page, "results", [])
 
     return list(map(_paper_from_response, papers))
@@ -284,6 +287,11 @@ def _request_interval(options: dict[str, str]) -> float:
         return 1 / requests_per_second_with_key
 
     return 1 / requests_per_second_without_key
+
+
+def _api_key(options: dict[str, str]) -> str:
+    # The API key is sent as a query parameter, so it is passed on to be kept out of error messages.
+    return options.get("API_KEY", "")
 
 
 def _has_api_key(options: dict[str, str]) -> bool:
