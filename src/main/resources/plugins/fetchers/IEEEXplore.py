@@ -1,4 +1,4 @@
-from typing import Any, Callable, Optional, TypeVar
+from typing import Any, Optional
 
 from requests import HTTPError
 from snowballr import (
@@ -13,8 +13,6 @@ from snowballr import (
     request_with_retry,
     safe_get,
 )
-
-T = TypeVar("T")
 
 fetcher_information = FetcherInformation(
     name="IEEE Xplore",
@@ -51,9 +49,6 @@ max_records = 200
 
 # Number of articles looked up with a single boolean search.
 lookup_batch_size = 100
-
-# Number of characters of an error response body included in the error message.
-max_error_body_length = 300
 
 
 def search_papers(search_query: str, options: dict[str, str]) -> list[Paper]:
@@ -114,7 +109,9 @@ def _citing_article_numbers(article_number: str, options: dict[str, str]) -> lis
     def fetch_pages() -> list[dict[str, Any]]:
         pages = []
         try:
-            for page in paginate_with_retry(url, next_url, {}, params, request_interval_seconds):
+            for page in paginate_with_retry(
+                url, next_url, {}, params, request_interval_seconds, options["API_KEY"]
+            ):
                 pages.append(page)
         except HTTPError as e:
             # The API answers an article without IEEE citations with a 500 and an empty JSON
@@ -127,7 +124,7 @@ def _citing_article_numbers(article_number: str, options: dict[str, str]) -> lis
         return pages
 
     numbers = []
-    for page in _without_api_key_in_errors(fetch_pages, options["API_KEY"]):
+    for page in fetch_pages():
         for citation in safe_get(page, "ieee_citation", []):
             number = safe_get(safe_get(citation, "links", {}), "articleNumber", None)
             if number is not None:
@@ -177,34 +174,8 @@ def _author_from_response(res: dict[str, Any]) -> Author:
 
 
 def _request(url: str, params: dict[str, Any]) -> dict[str, Any]:
-    return _without_api_key_in_errors(
-        lambda: request_with_retry(url, {}, params, request_interval_seconds), params["apikey"]
-    )
-
-
-def _without_api_key_in_errors(call: Callable[[], T], api_key: str) -> T:
-    """
-    IEEE Xplore only accepts the API key as a query parameter, and the HTTPError raised by requests
-    contains the full URL. Re-raise without the URL so the key never ends up in stderr or the
-    backend logs.
-
-    The start of the response body is kept, because it tells apart errors with the same status
-    code, e.g. an exceeded quota and an invalid key both return 403. Any occurrence of the key in
-    the body is redacted.
-    """
-    try:
-        return call()
-    except HTTPError as e:
-        if e.response is None:
-            raise RuntimeError("IEEE Xplore API request failed without a response") from None
-
-        body = " ".join(e.response.text.split())[:max_error_body_length]
-        if api_key:
-            body = body.replace(api_key, "<redacted>")
-
-        raise RuntimeError(
-            f"IEEE Xplore API request failed: {e.response.status_code} {e.response.reason}: {body}"
-        ) from None
+    # IEEE Xplore only accepts the API key as a query parameter, so keep it out of error messages.
+    return request_with_retry(url, {}, params, request_interval_seconds, params["apikey"])
 
 
 def _is_no_citations_response(error: HTTPError) -> bool:

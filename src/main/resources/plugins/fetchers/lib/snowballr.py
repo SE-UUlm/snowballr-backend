@@ -5,6 +5,7 @@ import time
 from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any, Callable, Iterator, Optional
+from urllib.parse import quote, quote_plus
 
 import requests
 from dataclass_wizard import JSONWizard, fromdict
@@ -221,6 +222,31 @@ def request_with_retry(
     headers: dict[str, Any] = {},
     params: dict[str, Any] = {},
     timeout_seconds: float = 0.0,
+    secret: str = "",
+) -> dict[str, Any]:
+    """
+    Requests the specified url with automated retries.
+
+    If a secret is passed, it is removed from the message of any request error. Some APIs only
+    accept an API key as a query parameter, and the exceptions raised by requests contain the full
+    URL, e.g. "401 Client Error: Unauthorized for url: ...?api_key=SECRET". Their tracebacks end up
+    in stderr and the backend logs. See _redacted_error for details.
+    """
+    try:
+        return _request_with_retry(url, headers, params, timeout_seconds)
+    except requests.exceptions.RequestException as e:
+        if not secret:
+            raise
+
+        # Suppress the exception chain, as the original exception would print the URL again.
+        raise _redacted_error(e, secret) from None
+
+
+def _request_with_retry(
+    url: str,
+    headers: dict[str, Any],
+    params: dict[str, Any],
+    timeout_seconds: float,
 ) -> dict[str, Any]:
     """
     Requests the specified url with automated retries.
@@ -290,9 +316,11 @@ def paginate_with_retry(
     headers: dict[str, Any] = {},
     params: dict[str, Any] = {},
     timeout_seconds: float = 0.0,
+    secret: str = "",
 ) -> Iterator[dict[str, Any]]:
     """
-    Paginates through a resource by repeatedly calling request_with_retry.
+    Paginates through a resource by repeatedly calling request_with_retry. The secret is passed on
+    to request_with_retry.
 
     Before each request, sleeps the remaining time since the last call to respect the
     timeout_seconds interval, avoiding 429s proactively. request_with_retry still handles any 429s
@@ -309,6 +337,48 @@ def paginate_with_retry(
             time.sleep(timeout_seconds - elapsed)
 
         last_call = time.monotonic()
-        response = request_with_retry(url, headers, params, timeout_seconds)
+        response = request_with_retry(url, headers, params, timeout_seconds, secret)
         yield response
         url = next_url(response)
+
+
+def _redacted_error(
+    error: requests.exceptions.RequestException, secret: str
+) -> requests.exceptions.RequestException:
+    """
+    Returns an error of the same type with any occurrence of the secret, plain or URL-encoded,
+    removed from its message. The response and request stay attached, so callers can still check
+    the status code. Note that they still contain the URL with the secret, so never log them.
+
+    For an HTTPError, the start of the response body is added to the message, because it tells
+    apart errors with the same status code, e.g. an exceeded quota and an invalid key both return
+    403.
+    """
+    message = _redact(str(error), secret)
+
+    response = error.response
+    if isinstance(error, requests.exceptions.HTTPError) and response is not None:
+        body = " ".join(response.text.split())[:_max_error_body_length]
+        message = f"{message}: {_redact(body, secret)}"
+
+    try:
+        return type(error)(message, response=response, request=error.request)
+    except TypeError:
+        # Some subclasses, e.g. JSONDecodeError, have a different constructor.
+        return requests.exceptions.RequestException(
+            message, response=response, request=error.request
+        )
+
+
+# Number of characters of an error response body included in a redacted error message.
+_max_error_body_length = 300
+
+
+def _redact(text: str, secret: str) -> str:
+    if not secret:
+        return text
+
+    for variant in {secret, quote(secret, safe=""), quote_plus(secret)}:
+        text = text.replace(variant, "<redacted>")
+
+    return text
