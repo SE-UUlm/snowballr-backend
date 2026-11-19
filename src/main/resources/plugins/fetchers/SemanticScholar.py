@@ -43,7 +43,7 @@ id_metadata_key: str = "SemanticScholarId"
 corpus_id_metadata_key: str = "SemanticScholarCorpusId"
 
 base_url = "https://api.semanticscholar.org/graph/v1"
-fields = "corpusId,title,externalIds,abstract,publicationDate,year,venue,publicationTypes,authors"
+fields = "corpusId,title,externalIds,abstract,publicationDate,year,venue,publicationVenue,authors"
 
 
 def search_papers(search_query: str, options: dict[str, str]) -> list[Paper]:
@@ -161,7 +161,7 @@ def _paper_from_response(res) -> Paper:
     date_str = safe_get(res, "publicationDate", "") or str(safe_get(res, "year", "0"))
     year = int(str(date_str)[:4] or "0")
 
-    publication_type = next(iter(safe_get(res, "publicationTypes", [])), "")
+    venue = safe_get(res, "publicationVenue", {})
 
     metadata = {}
     paper_id = res["paperId"]
@@ -178,8 +178,8 @@ def _paper_from_response(res) -> Paper:
         abstract=safe_get(res, "abstract", ""),
         year=year,
         publisher="",
-        publication_type=publication_type,
-        publication_name=safe_get(res, "venue", ""),
+        publication_type=safe_get(venue, "type", ""),
+        publication_name=safe_get(venue, "name", safe_get(res, "venue", "")),
         authors=authors,
         fetcher_metadata=metadata,
     )
