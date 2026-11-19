@@ -11,6 +11,8 @@ import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.criterion.UpdateCriterionRequest
 import se.uulm.snowballr.backend.repository.ICriterionTableRepo
 import se.uulm.snowballr.backend.repository.IUserTableRepo
+import se.uulm.snowballr.backend.repository.isForeignKeyConstraintViolation
+import java.sql.SQLException
 import java.util.UUID
 
 private val logger = KotlinLogging.logger {}
@@ -121,7 +123,15 @@ class CriterionService(
 
         accessChecker.isAllowedToDeleteCriterion(currentUser, criterion)
 
-        repo.deleteCriterionById(criterionId)
+        try {
+            repo.deleteCriterionById(criterionId)
+        } catch (e: SQLException) {
+            if (!e.isForeignKeyConstraintViolation()) throw e
+            // The criterion is still referenced by a review, which restricts its deletion on DB level
+            throw FailedPreconditionException(
+                "The criterion with the ID '$criterionId' cannot be deleted, because it is selected in a review.",
+            )
+        }
         logger.info { "Criterion $criterionId deleted" }
     }
 }
