@@ -1,5 +1,6 @@
 from typing import Any, Optional
 
+from requests import HTTPError
 from snowballr import (
     Author,
     ExternalId,
@@ -102,8 +103,14 @@ def _get_references(
         return f"{url}?offset={next_offset}" if next_offset is not None else None
 
     paper_objects = []
-    for page in paginate_with_retry(url, next_url, headers, params, timeout_seconds):
-        paper_objects += safe_get(page, "data", [])
+    try:
+        for page in paginate_with_retry(url, next_url, headers, params, timeout_seconds):
+            paper_objects += safe_get(page, "data", [])
+    except HTTPError as e:
+        is_not_found = e.response is not None and e.response.status_code == 404
+        if is_not_found and not paper_objects:
+            return []
+        raise
 
     return list(map(lambda obj: _paper_from_response(safe_get(obj, obj_key, {})), paper_objects))
 
