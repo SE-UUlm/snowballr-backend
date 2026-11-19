@@ -37,14 +37,11 @@ ENV PYTHON_EXECUTABLE=/app/.venv/bin/python3
 
 # Install python and fetcher dependencies using uv
 COPY --chown=backend-user:backend-user requirements.txt .
-RUN apk add --no-cache python3 libcurl
+RUN apk add --no-cache python3
 RUN uv venv /app/.venv
-# Needed for pycurl
-ENV PYCURL_SSL_LIBRARY=openssl
-RUN apk add --no-cache --virtual .py-build-deps python3-dev build-base curl-dev
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv pip install --python /app/.venv/bin/python -r requirements.txt
-RUN apk del .py-build-deps && chown -R backend-user /app/.venv
+RUN chown -R backend-user /app/.venv
 
 RUN mkdir -p /app/plugins && chown backend-user:backend-user /app/plugins
 USER backend-user
