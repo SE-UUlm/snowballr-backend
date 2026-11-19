@@ -3,6 +3,8 @@ import random
 import sys
 import time
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from enum import StrEnum
 from typing import Any, Callable, Iterator, Optional
 from urllib.parse import quote, quote_plus
@@ -277,8 +279,7 @@ def _request_with_retry(
                 if n == max_attempts - 1:
                     response.raise_for_status()
 
-                retry_after = response.headers.get("Retry-After")
-                wait = int(retry_after) if retry_after is not None else None
+                wait = _retry_after_seconds(response.headers.get("Retry-After"))
 
                 if wait is None:
                     wait = _exp_backoff(timeout_seconds, max_timeout, n)
@@ -300,10 +301,34 @@ def _request_with_retry(
 
 def _should_retry_request(response: requests.Response) -> bool:
     """
-    Determines whether a request should be retried based on the HTTPError received.
+    Determines whether a request should be retried based on the status code of its response.
     Retries are performed for 429 (Too Many Requests) and 504 (Gateway Timeout) status codes.
     """
-    return response is not None and response.status_code in [429, 504]
+    return response.status_code in [429, 504]
+
+
+def _retry_after_seconds(retry_after: Optional[str]) -> Optional[float]:
+    """
+    Parses a "Retry-After" header, which is either a number of seconds or an HTTP date.
+    Returns None if the header is missing or malformed, so the caller falls back to backoff.
+    """
+    if retry_after is None:
+        return None
+
+    try:
+        return max(0, int(retry_after))
+    except ValueError:
+        pass
+
+    try:
+        retry_at = parsedate_to_datetime(retry_after)
+    except (TypeError, ValueError):
+        return None
+
+    if retry_at.tzinfo is None:
+        retry_at = retry_at.replace(tzinfo=timezone.utc)
+
+    return max(0.0, (retry_at - datetime.now(timezone.utc)).total_seconds())
 
 
 def _exp_backoff(timeout_seconds: float, max_timeout: float, attempt: int) -> float:
