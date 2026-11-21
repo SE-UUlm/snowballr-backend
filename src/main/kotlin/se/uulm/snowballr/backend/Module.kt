@@ -29,11 +29,10 @@ import se.uulm.snowballr.backend.auth.IJwtManager
 import se.uulm.snowballr.backend.auth.JwtManager
 import se.uulm.snowballr.backend.db.Database
 import se.uulm.snowballr.backend.db.IDatabase
+import se.uulm.snowballr.backend.env.Env
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.env.EnvService
-import se.uulm.snowballr.backend.env.FetcherImplementationType
 import se.uulm.snowballr.backend.env.IEnvService
-import se.uulm.snowballr.backend.env.MailerImplementationType
 import se.uulm.snowballr.backend.fetcher.DummyFetcherManager
 import se.uulm.snowballr.backend.fetcher.FetcherOrchestrator
 import se.uulm.snowballr.backend.fetcher.IFetcherManager
@@ -170,29 +169,29 @@ fun Module.repositoryLayerDeps() {
 /**
  * Module declaration of the mail service dependencies.
  *
- * Consists of the [Mailer] and the [Template]s used for sending mails.
+ * Consists of the [Template]s used for sending mails.
  */
 fun Module.mailServiceDeps() {
-    single<Mailer> { createMailer(get()) }
     single<EmailTemplateManager> { EmailTemplateManager() }
 }
 
 /**
- * Creates the Mailer instance based on the environment configuration.
+ * Creates the SMTP [Mailer] instance based on the SMTP configuration.
+ *
+ * @param config The SMTP configuration.
+ * @param logLevel The application log level, used to enable the mailer's debug logging.
  */
-private fun createMailer(envReader: EnvReader): Mailer {
-    val env = envReader.env
-
+private fun createMailer(config: Env.Mailer.Smtp, logLevel: String): Mailer {
     // Enable debug logging if the log level is DEBUG or TRACE
-    val isDebugLogging = env.miscellaneous.logLevel == "DEBUG" || env.miscellaneous.logLevel == "TRACE"
+    val isDebugLogging = logLevel == "DEBUG" || logLevel == "TRACE"
 
     return MailerBuilder
-        .withSMTPServer(env.mailer.smtpHost, env.mailer.smtpPort)
-        .withTransportModeLoggingOnly(env.mailer.smtpTransportLoggingOnlyEnabled)
+        .withSMTPServer(config.host, config.port)
+        .withTransportModeLoggingOnly(config.transportLoggingOnlyEnabled)
         .withDebugLogging(isDebugLogging)
         .apply {
-            env.mailer.smtpUser?.let { withSMTPServerUsername(it) }
-            env.mailer.smtpPassword?.let { withSMTPServerPassword(it) }
+            config.user?.let { withSMTPServerUsername(it) }
+            config.password?.let { withSMTPServerPassword(it) }
         }
         .async()
         .buildMailer()
@@ -206,18 +205,17 @@ private fun createMailer(envReader: EnvReader): Mailer {
 private fun Module.customServicesDeps() {
     singleOf(::JwtManager) { bind<IJwtManager>() }
     single<IFetcherManager> {
-        val envReader = get<EnvReader>()
-        when (envReader.env.plugins.fetcherImplementation) {
-            FetcherImplementationType.PYTHON -> PythonPluginFetcherManager(envReader)
-            FetcherImplementationType.DUMMY -> DummyFetcherManager()
+        when (val config = get<EnvReader>().env.plugins.fetcher) {
+            is Env.Plugins.Fetcher.Python -> PythonPluginFetcherManager(config)
+            Env.Plugins.Fetcher.Dummy -> DummyFetcherManager()
         }
     }
     singleOf(::CookieManager) { bind<ICookieManager>() }
     single<IEmailSender> {
-        val envReader = get<EnvReader>()
-        when (envReader.env.mailer.mailerImplementation) {
-            MailerImplementationType.SMTP -> SmtpEmailSender(envReader, get())
-            MailerImplementationType.DUMMY -> DummyEmailSender()
+        val env = get<EnvReader>().env
+        when (val config = env.mailer) {
+            is Env.Mailer.Smtp -> SmtpEmailSender(config, createMailer(config, env.miscellaneous.logLevel))
+            Env.Mailer.Dummy -> DummyEmailSender()
         }
     }
     singleOf(::EmailManager) { bind<IEmailManager>() }

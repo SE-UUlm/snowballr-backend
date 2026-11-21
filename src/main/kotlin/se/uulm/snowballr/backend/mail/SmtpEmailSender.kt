@@ -6,7 +6,7 @@ import org.simplejavamail.MailException
 import org.simplejavamail.api.mailer.Mailer
 import org.simplejavamail.email.EmailBuilder
 import org.simplejavamail.recipient.RecipientBuilder
-import se.uulm.snowballr.backend.env.EnvReader
+import se.uulm.snowballr.backend.env.Env
 import se.uulm.snowballr.backend.model.exception.internal.email.MailSendFailedException
 
 private val logger = KotlinLogging.logger {}
@@ -14,11 +14,11 @@ private val logger = KotlinLogging.logger {}
 /**
  * An [IEmailSender] that sends emails using an SMTP mailer.
  *
- * @param envReader The environment reader that provides access to the sender settings.
+ * @param config The SMTP configuration that provides the sender settings.
  * @param mailer The SMTP mailer that is used to send emails.
  */
 class SmtpEmailSender(
-    private val envReader: EnvReader,
+    private val config: Env.Mailer.Smtp,
     private val mailer: Mailer,
 ) : IEmailSender {
     override fun send(to: String, subject: String, htmlBody: String) {
@@ -31,7 +31,7 @@ class SmtpEmailSender(
                         .withType(Message.RecipientType.TO)
                         .build(),
                 )
-                .from(envReader.env.mailer.smtpSenderName, envReader.env.mailer.smtpSenderEmail)
+                .from(config.senderName, config.senderEmail)
                 .withSubject(subject)
                 .withHTMLText(htmlBody)
                 .buildEmailCompletedWithDefaultsAndOverrides()
