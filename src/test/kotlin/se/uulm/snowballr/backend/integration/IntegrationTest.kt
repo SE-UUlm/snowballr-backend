@@ -194,6 +194,7 @@ open class IntegrationTest : KoinTest {
         val link = "https://example.com/verify"
         coEvery { emailManagerMock.createVerificationLink(capture(verificationToken)) } returns link
         every { envReaderMock.env.lifetime.verificationTokenLifeTimeInDays } returns 1
+        every { envReaderMock.env.miscellaneous.registrationAutoVerifyEnabled } returns false
         val verificationData = EmailData.EmailVerification(user.firstName, link, "tomorrow")
         coJustRun { emailManagerMock.sendVerificationEmail(any(), verificationData) }
 
