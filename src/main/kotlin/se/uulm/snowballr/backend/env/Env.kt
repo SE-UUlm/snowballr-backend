@@ -46,6 +46,7 @@ data class Env(
     )
 
     data class SMTP(
+        val mailerImplementation: MailerImplementationType,
         val smtpHost: String,
         val smtpPort: Int,
         val smtpUser: String?,
