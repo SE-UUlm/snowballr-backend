@@ -31,7 +31,7 @@ class SmtpEmailSender(
                         .withType(Message.RecipientType.TO)
                         .build(),
                 )
-                .from(envReader.env.smtp.smtpSenderName, envReader.env.smtp.smtpSenderEmail)
+                .from(envReader.env.mailer.smtpSenderName, envReader.env.mailer.smtpSenderEmail)
                 .withSubject(subject)
                 .withHTMLText(htmlBody)
                 .buildEmailCompletedWithDefaultsAndOverrides()

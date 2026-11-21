@@ -30,7 +30,7 @@ class SmtpEmailSenderTest {
 
     private val envReaderMock = mockk<EnvReader> {
         every { env } returns mockk<Env> {
-            every { smtp } returns mockk<Env.SMTP> {
+            every { mailer } returns mockk<Env.Mailer> {
                 every { smtpSenderName } returns testSenderName
                 every { smtpSenderEmail } returns testSenderEmail
             }
