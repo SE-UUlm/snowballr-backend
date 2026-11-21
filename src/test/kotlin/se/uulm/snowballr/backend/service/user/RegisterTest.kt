@@ -2,6 +2,7 @@ package se.uulm.snowballr.backend.service.user
 
 import io.mockk.coEvery
 import io.mockk.coJustRun
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.slot
 import kotlinx.coroutines.test.runTest
@@ -12,6 +13,8 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.DataBuilder
 import se.uulm.snowballr.backend.TestSpecificException
 import se.uulm.snowballr.backend.model.dto.user.User
+import se.uulm.snowballr.backend.model.dto.user.UserField
+import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateUserException
 import se.uulm.snowballr.backend.model.incoming.user.RegisterRequest
@@ -80,5 +83,26 @@ class RegisterTest : UserServiceTest() {
 
             assertEquals(user.firstName, capturedEmailData.firstName)
             assertEquals(expectedVerificationLink, capturedEmailData.verificationLink)
+        }
+
+    @Test
+    fun `When registration auto-verify is enabled, then the verification email is sent and the user is activated`() =
+        runTest {
+            val user = DataBuilder.createExampleUser(status = UserStatus.ACTIVE_UNCONFIRMED)
+            val activatedUser = user.copy(status = UserStatus.ACTIVE)
+
+            coEvery { userRepoMock.doesUserExistByEmail(user.email) } returns false
+            coEvery { userRepoMock.createUser(getExampleRequest(user), any()) } returns user
+            coJustRun { verificationTokenRepoMock.saveVerificationToken(user.id, any()) }
+            every { emailManagerMock.createVerificationLink(any()) } returns "verification-link"
+            every { envReaderMock.env.lifetime.verificationTokenLifeTimeInDays } returns 1
+            every { envReaderMock.env.miscellaneous.registrationAutoVerifyEnabled } returns true
+            coJustRun { emailManagerMock.sendVerificationEmail(user.email, any()) }
+            coEvery { userRepoMock.updateUser(activatedUser, setOf(UserField.STATUS)) } returns activatedUser
+
+            service.register(getExampleRequest(user))
+
+            coVerify(exactly = 1) { emailManagerMock.sendVerificationEmail(user.email, any()) }
+            coVerify(exactly = 1) { userRepoMock.updateUser(activatedUser, setOf(UserField.STATUS)) }
         }
 }
