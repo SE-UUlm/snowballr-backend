@@ -34,25 +34,29 @@ The `PROFILE` variable determines the default behavior of the application.
 | `JWT_PRIVATE_KEY_BASE64`               |          :white_check_mark:          |          -          | Base64 encoded private key for JWT authentication.                                                         |
 | `JWT_PUBLIC_KEY_BASE64`                |          :white_check_mark:          |          -          | Base64 encoded public key for JWT authentication.                                                          |
 | `MAILER_IMPLEMENTATION`                |                 :x:                  |       `SMTP`        | Mailer implementation: `SMTP` sends emails via SMTP, `DUMMY` keeps sent emails in memory.                  |
-| `SMTP_HOST`                            |          :white_check_mark:          |          -          | SMTP host for sending emails.                                                                              |
-| `SMTP_PORT`                            |          :white_check_mark:          |          -          | SMTP port for sending emails.                                                                              |
-| `SMTP_USER`                            |                 :x:                  |          -          | SMTP user for sending emails.                                                                              |
-| `SMTP_PASSWORD`                        |                 :x:                  |          -          | SMTP password for sending emails.                                                                          |
-| `SMTP_TRANSPORT_LOGGING_ONLY_ENABLED`  |                 :x:                  |    Profile-based    | SMTP transport logging to only log emails instead of actually sending them.                                |
-| `SMTP_SENDER_NAME`                     |          :white_check_mark:          |          -          | Name of the sender for emails.                                                                             |
-| `SMTP_SENDER_EMAIL`                    |          :white_check_mark:          |          -          | Email address of the sender for emails.                                                                    |
+| `SMTP_HOST`                            |         :white_check_mark:**         |          -          | SMTP host for sending emails.                                                                              |
+| `SMTP_PORT`                            |         :white_check_mark:**         |          -          | SMTP port for sending emails.                                                                              |
+| `SMTP_USER`                            |                :x:**                 |          -          | SMTP user for sending emails.                                                                              |
+| `SMTP_PASSWORD`                        |                :x:**                 |          -          | SMTP password for sending emails.                                                                          |
+| `SMTP_TRANSPORT_LOGGING_ONLY_ENABLED`  |                :x:**                 |    Profile-based    | SMTP transport logging to only log emails instead of actually sending them.                                |
+| `SMTP_SENDER_NAME`                     |         :white_check_mark:**         |          -          | Name of the sender for emails.                                                                             |
+| `SMTP_SENDER_EMAIL`                    |         :white_check_mark:**         |          -          | Email address of the sender for emails.                                                                    |
 | `WEB_PORT`                             |                 :x:*                 |        8081         | The port where the proxy is served (used for gRPC-Web).                                                    |
 | `BACKEND_TAG`                          |                 :x:*                 |    `latest-dev`     | Tag of registry backend image to use for `registry` docker compose profile.                                |
 | `SENSITIVE_INFORMATION_RETENTION_DAYS` |                 :x:                  |    Profile-based    | Number of days sensitive information will be kept after an entity got deleted.                             |
 | `INVITATION_TOKEN_LIFETIME_IN_DAYS`    |                 :x:                  |          7          | Lifetime of invitation tokens in days.                                                                     |
 | `VERIFICATION_TOKEN_LIFETIME_IN_DAYS`  |                 :x:                  |          1          | Lifetime of verification tokens in days.                                                                   |
 | `FETCHER_IMPLEMENTATION`               |                 :x:                  |      `PYTHON`       | Fetcher implementation: `PYTHON` runs the fetcher plugins, `DUMMY` returns generated papers.               |
-| `PLUGIN_DIRECTORY`                     |                 :x:                  |      `plugins`      | The directory in which the plugins reside. The directory is relative to the root directory of the project. |
-| `PYTHON_EXECUTABLE`                    |                 :x:                  | `.venv/bin/python3` | Python executable used to run fetchers. Only used if `FETCHER_IMPLEMENTATION=PYTHON`.                      |
+| `PLUGIN_DIRECTORY`                     |                :x:***                |      `plugins`      | Directory of the plugins, relative to the root directory of the project.                                   |
+| `PYTHON_EXECUTABLE`                    |                :x:***                | `.venv/bin/python3` | Python executable used to run fetchers.                                                                    |
 | `FETCHER_RETRIES`                      |                 :x:                  |          3          | Number of retries after a fetcher call failed, e.g. because of a timeout. Must not be negative.            |
 | `FETCHER_RETRY_DELAY_IN_MILLIS`        |                 :x:                  |        1000         | Delay before the first retry of a failed fetcher call. It doubles with every further retry.                |
 
 \* only used when using the docker compose profiles.
+
+\*\* only used if `MAILER_IMPLEMENTATION=SMTP`. Variables marked as required are only required then.
+
+\*\*\* only used if `FETCHER_IMPLEMENTATION=PYTHON`.
 
 #### Profile-based Defaults
 
@@ -65,7 +69,7 @@ The `PROFILE` variable determines the default behavior of the application.
 | `AUTH_BYPASS_ENABLED`                  | `false`      | `false`                 | `true`                  |
 | `FRONTEND_BASE_URL`                    | -            | `http://localhost:5173` | `http://localhost:5173` |
 | `DATABASE_SEED_USER_ENABLED`           | `false`      | `true`                  | `true`                  |
-| `SMTP_TRANSPORT_LOGGING_ONLY_ENABLED`  | `false`      | `true`                  | `true`                  |
+| `SMTP_TRANSPORT_LOGGING_ONLY_ENABLED`  |  `false`**   | `true`                  | `true`                  |
 
 ### JWT Private/Public Key
 

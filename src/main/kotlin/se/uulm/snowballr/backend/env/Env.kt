@@ -45,16 +45,28 @@ data class Env(
         val jwtPublicKeyBase64: String,
     )
 
-    data class Mailer(
-        val mailerImplementation: MailerImplementationType,
-        val smtpHost: String,
-        val smtpPort: Int,
-        val smtpUser: String?,
-        val smtpPassword: String?,
-        val smtpTransportLoggingOnlyEnabled: Boolean,
-        val smtpSenderName: String,
-        val smtpSenderEmail: String,
-    )
+    /**
+     * The mailer configuration.
+     */
+    sealed interface Mailer {
+        /**
+         * Configuration for [MailerImplementationType.SMTP].
+         */
+        data class Smtp(
+            val host: String,
+            val port: Int,
+            val user: String?,
+            val password: String?,
+            val transportLoggingOnlyEnabled: Boolean,
+            val senderName: String,
+            val senderEmail: String,
+        ) : Mailer
+
+        /**
+         * Configuration for [MailerImplementationType.DUMMY].
+         */
+        data object Dummy : Mailer
+    }
 
     data class Lifetime(
         val sensitiveInformationRetentionDays: Int,
@@ -63,10 +75,26 @@ data class Env(
     )
 
     data class Plugins(
-        val fetcherImplementation: FetcherImplementationType,
-        val pluginDirectory: Path,
-        val pythonExecutable: String,
+        val fetcher: Fetcher,
         val fetcherRetries: Int,
         val fetcherRetryDelay: Duration,
-    )
+    ) {
+        /**
+         * The fetcher configuration.
+         */
+        sealed interface Fetcher {
+            /**
+             * Configuration for [FetcherImplementationType.PYTHON].
+             */
+            data class Python(
+                val pluginDirectory: Path,
+                val pythonExecutable: String,
+            ) : Fetcher
+
+            /**
+             * Configuration for [FetcherImplementationType.DUMMY].
+             */
+            data object Dummy : Fetcher
+        }
+    }
 }
