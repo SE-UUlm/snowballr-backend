@@ -10,7 +10,7 @@ import kotlin.time.Duration
  * @property miscellaneous Miscellaneous configuration, such as the logging level.
  * @property database Configuration related to the database connection, including user credentials.
  * @property encryption Configuration for encryption keys used in the application, such as JWT keys.
- * @property smtp Configuration for email settings, including SMTP host and credentials.
+ * @property mailer Configuration for sending emails, including the mailer implementation and SMTP settings.
  * @property lifetime Configuration for various lifetimes of tokens and sensitive information retention.
  * @property plugins Configuration for plugins.
  */
@@ -19,7 +19,7 @@ data class Env(
     val miscellaneous: Miscellaneous,
     val database: Database,
     val encryption: Encryption,
-    val smtp: SMTP,
+    val mailer: Mailer,
     val lifetime: Lifetime,
     val plugins: Plugins,
 ) {
@@ -45,7 +45,8 @@ data class Env(
         val jwtPublicKeyBase64: String,
     )
 
-    data class SMTP(
+    data class Mailer(
+        val mailerImplementation: MailerImplementationType,
         val smtpHost: String,
         val smtpPort: Int,
         val smtpUser: String?,
