@@ -187,12 +187,12 @@ private fun createMailer(envReader: EnvReader): Mailer {
     val isDebugLogging = env.miscellaneous.logLevel == "DEBUG" || env.miscellaneous.logLevel == "TRACE"
 
     return MailerBuilder
-        .withSMTPServer(env.smtp.smtpHost, env.smtp.smtpPort)
-        .withTransportModeLoggingOnly(env.smtp.smtpTransportLoggingOnlyEnabled)
+        .withSMTPServer(env.mailer.smtpHost, env.mailer.smtpPort)
+        .withTransportModeLoggingOnly(env.mailer.smtpTransportLoggingOnlyEnabled)
         .withDebugLogging(isDebugLogging)
         .apply {
-            env.smtp.smtpUser?.let { withSMTPServerUsername(it) }
-            env.smtp.smtpPassword?.let { withSMTPServerPassword(it) }
+            env.mailer.smtpUser?.let { withSMTPServerUsername(it) }
+            env.mailer.smtpPassword?.let { withSMTPServerPassword(it) }
         }
         .async()
         .buildMailer()
@@ -215,7 +215,7 @@ private fun Module.customServicesDeps() {
     singleOf(::CookieManager) { bind<ICookieManager>() }
     single<IEmailSender> {
         val envReader = get<EnvReader>()
-        when (envReader.env.smtp.mailerImplementation) {
+        when (envReader.env.mailer.mailerImplementation) {
             MailerImplementationType.SMTP -> SmtpEmailSender(envReader, get())
             MailerImplementationType.DUMMY -> DummyEmailSender()
         }

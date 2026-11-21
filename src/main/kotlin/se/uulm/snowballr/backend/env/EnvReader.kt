@@ -93,7 +93,7 @@ class EnvReader(
             miscellaneous = miscellaneous,
             database = database,
             encryption = buildEncryption(),
-            smtp = buildSmtp(defaults, activeProfile),
+            mailer = buildMailer(defaults, activeProfile),
             lifetime = buildLifetime(defaults),
             plugins = buildPlugins(activeProfile),
         )
@@ -164,13 +164,13 @@ class EnvReader(
     )
 
     /**
-     * Builds the SMTP configuration by reading and processing related environment variables.
+     * Builds the mailer configuration by reading and processing related environment variables.
      *
-     * @param defaults Default values for the SMTP configuration.
+     * @param defaults Default values for the mailer configuration.
      * @param profile The active application profile, used to forbid the dummy mailer implementation in production.
-     * @return An [Env.SMTP] object containing the SMTP configuration.
+     * @return An [Env.Mailer] object containing the mailer configuration.
      */
-    private fun buildSmtp(defaults: ProfileDefaults, profile: AppProfile): Env.SMTP {
+    private fun buildMailer(defaults: ProfileDefaults, profile: AppProfile): Env.Mailer {
         val mailerImplementation = envService.getOrDefault(
             MAILER_IMPLEMENTATION,
             DEFAULT_MAILER_IMPLEMENTATION,
@@ -192,7 +192,7 @@ class EnvReader(
                 defaults.smtpTransportLoggingOnlyEnabled,
             )
 
-        return Env.SMTP(
+        return Env.Mailer(
             mailerImplementation = mailerImplementation,
             smtpHost = envService[SMTP_HOST],
             smtpPort = envService[SMTP_PORT].toInt(),
