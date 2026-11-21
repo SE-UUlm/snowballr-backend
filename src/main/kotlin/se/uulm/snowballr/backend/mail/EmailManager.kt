@@ -1,17 +1,9 @@
 package se.uulm.snowballr.backend.mail
 
-import io.github.oshai.kotlinlogging.KotlinLogging
-import jakarta.mail.Message
-import org.simplejavamail.MailException
-import org.simplejavamail.api.mailer.Mailer
-import org.simplejavamail.email.EmailBuilder
-import org.simplejavamail.recipient.RecipientBuilder
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.email.EmailTemplate
 import se.uulm.snowballr.backend.model.exception.internal.email.MailSendFailedException
-
-private val logger = KotlinLogging.logger {}
 
 interface IEmailManager {
     /**
@@ -54,22 +46,18 @@ interface IEmailManager {
 }
 
 /**
- * The [EmailManager] class provides functionality to send emails using an SMTP mailer.
+ * The [EmailManager] class renders emails and creates the links contained in them.
  *
- * This class implements the [IEmailManager] and is responsible for:
- * - Initializing the underlying SMTP mailer with configuration values from [EnvReader].
- * - Sending invitation emails to new users.
- * - Sending account verification emails to registered users.
+ * Delivering the rendered emails is delegated to an [IEmailSender], e.g. [SmtpEmailSender] or [DummyEmailSender].
  *
- * @constructor Initializes the [EmailManager] with the environment reader to access SMTP settings.
- * @param envReader The environment reader that provides access to SMTP configuration settings.
- * @param mailer The mailer that is used to send emails.
+ * @param envReader The environment reader that provides access to the frontend base URL.
  * @param emailTemplateManager The manager that provides access to pre-compiled email templates.
+ * @param emailSender The sender that delivers the rendered emails.
  */
 class EmailManager(
     private val envReader: EnvReader,
-    private val mailer: Mailer,
     private val emailTemplateManager: EmailTemplateManager,
+    private val emailSender: IEmailSender,
 ) : IEmailManager {
     override fun sendVerificationEmail(to: String, data: EmailData.EmailVerification) {
         sendEmail(to, EmailTemplate.EMAIL_VERIFICATION, data)
@@ -80,36 +68,16 @@ class EmailManager(
     }
 
     /**
-     * Sends an email using the specified template and data.
+     * Renders the specified template with the given data and delivers the resulting email.
      *
      * @param to The recipient's email address.
      * @param template The email template to use for the email.
      * @param data The data model containing the information to populate the email template.
      */
     private fun sendEmail(to: String, template: EmailTemplate, data: EmailData) {
-        try {
-            val compiledTemplate = emailTemplateManager.getTemplate(template)
-            val htmlBody = compiledTemplate.apply(data)
+        val htmlBody = emailTemplateManager.getTemplate(template).apply(data)
 
-            val email = EmailBuilder
-                .startingBlank()
-                .withRecipients(
-                    RecipientBuilder()
-                        .withAddress(to)
-                        .withType(Message.RecipientType.TO)
-                        .build(),
-                )
-                .from(envReader.env.smtp.smtpSenderName, envReader.env.smtp.smtpSenderEmail)
-                .withSubject(data.subject)
-                .withHTMLText(htmlBody)
-                .buildEmailCompletedWithDefaultsAndOverrides()
-
-            mailer.sendMail(email)
-            logger.info { "Successfully queued email for delivery to $to with template '${template.name}'" }
-        } catch (e: MailException) {
-            logger.error(e) { "Mailer failed to send email to $to with template '${template.name}'" }
-            throw MailSendFailedException(to, e)
-        }
+        emailSender.send(to, data.subject, htmlBody)
     }
 
     override fun createVerificationLink(token: String): String =

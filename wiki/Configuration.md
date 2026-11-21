@@ -12,7 +12,8 @@ cp .env.example .env
 The `PROFILE` variable determines the default behavior of the application.
 
 - `PRODUCTION` (Default): For live deployments. Requires explicit configuration for critical settings like PORT and
-  DATABASE_HOST. Disables all development helpers and refuses to start with `FETCHER_IMPLEMENTATION=DUMMY`.
+  DATABASE_HOST. Disables all development helpers and refuses to start with `FETCHER_IMPLEMENTATION=DUMMY` or
+  `MAILER_IMPLEMENTATION=DUMMY`.
 - `DEVELOPMENT`: For local development. Provides convenient defaults for the server and database and automatically
   seeds a dummy user for easy interaction with the API.
 - `TESTING`: For local manual testing. Similar to development, but enables authentication bypass for easier testing of
@@ -32,6 +33,7 @@ The `PROFILE` variable determines the default behavior of the application.
 | `DATABASE_PASSWORD`                    |          :white_check_mark:          |          -          | Password for the database e.g. `postgres_password`.                                                        |
 | `JWT_PRIVATE_KEY_BASE64`               |          :white_check_mark:          |          -          | Base64 encoded private key for JWT authentication.                                                         |
 | `JWT_PUBLIC_KEY_BASE64`                |          :white_check_mark:          |          -          | Base64 encoded public key for JWT authentication.                                                          |
+| `MAILER_IMPLEMENTATION`                |                 :x:                  |       `SMTP`        | Mailer implementation: `SMTP` sends emails via SMTP, `DUMMY` keeps sent emails in memory.                  |
 | `SMTP_HOST`                            |          :white_check_mark:          |          -          | SMTP host for sending emails.                                                                              |
 | `SMTP_PORT`                            |          :white_check_mark:          |          -          | SMTP port for sending emails.                                                                              |
 | `SMTP_USER`                            |                 :x:                  |          -          | SMTP user for sending emails.                                                                              |
