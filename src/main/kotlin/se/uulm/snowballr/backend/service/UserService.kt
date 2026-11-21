@@ -16,6 +16,7 @@ import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.dto.user.UserField
 import se.uulm.snowballr.backend.model.dto.user.UserSettingsWithCriteria
+import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateUserException
 import se.uulm.snowballr.backend.model.exception.failedprecondition.EntityNotActiveException
@@ -164,6 +165,12 @@ class UserService(
         )
         emailManager.sendVerificationEmail(user.email, data)
         logger.info { "User ${user.id} registered (${user.email})" }
+
+        // The verification email is still sent above, so only the activation is skipped, not the email flow
+        if (envReader.env.miscellaneous.registrationAutoVerifyEnabled) {
+            userRepo.updateUser(user.copy(status = UserStatus.ACTIVE), setOf(UserField.STATUS))
+            logger.info { "User ${user.id} activated without email verification (registration auto-verify enabled)" }
+        }
     }
 
     override suspend fun updateUser(request: UpdateUserRequest, fields: Set<UserField>): User =

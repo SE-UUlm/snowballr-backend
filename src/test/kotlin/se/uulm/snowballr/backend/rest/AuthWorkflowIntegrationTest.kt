@@ -176,6 +176,7 @@ class AuthWorkflowIntegrationTest(@Autowired private val mvc: MockMvc) {
                 logLevel = "INFO",
                 authBypassEnabled = false,
                 frontendBaseUrl = "http://localhost:3000",
+                registrationAutoVerifyEnabled = false,
             )
             coJustRun { fetcherOrchestratorMock.enqueue(any()) }
 

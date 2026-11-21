@@ -67,6 +67,7 @@ class RegisterTest : UserServiceTest() {
                 "$testFrontendURL/verifyemail?token=$token"
             }
             every { envReaderMock.env.lifetime.verificationTokenLifeTimeInDays } returns 7
+            every { envReaderMock.env.miscellaneous.registrationAutoVerifyEnabled } returns false
             coJustRun { emailManagerMock.sendVerificationEmail(user.email, capture(emailDataSlot)) }
 
             service.register(getExampleRequest(user))
