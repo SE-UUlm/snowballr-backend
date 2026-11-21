@@ -50,7 +50,7 @@ data class Env(
      */
     sealed interface Mailer {
         /**
-         * Configuration for [MailerImplementationType.SMTP].
+         * Configuration for `MAILER_IMPLEMENTATION=SMTP`.
          */
         data class Smtp(
             val host: String,
@@ -63,7 +63,7 @@ data class Env(
         ) : Mailer
 
         /**
-         * Configuration for [MailerImplementationType.DUMMY].
+         * Configuration for `MAILER_IMPLEMENTATION=DUMMY`.
          */
         data object Dummy : Mailer
     }
@@ -84,7 +84,7 @@ data class Env(
          */
         sealed interface Fetcher {
             /**
-             * Configuration for [FetcherImplementationType.PYTHON].
+             * Configuration for `FETCHER_IMPLEMENTATION=PYTHON`.
              */
             data class Python(
                 val pluginDirectory: Path,
@@ -92,7 +92,7 @@ data class Env(
             ) : Fetcher
 
             /**
-             * Configuration for [FetcherImplementationType.DUMMY].
+             * Configuration for `FETCHER_IMPLEMENTATION=DUMMY`.
              */
             data object Dummy : Fetcher
         }
