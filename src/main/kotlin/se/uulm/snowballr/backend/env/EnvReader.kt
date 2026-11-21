@@ -124,7 +124,7 @@ class EnvReader(
         if (frontendBaseUrl.startsWith("http:")) {
             logger.warn {
                 "The frontend url is set to the 'http' protocol, hinting at a possible security issue." +
-                    " Prefer 'https' wherever you can."
+                        " Prefer 'https' wherever you can."
             }
         }
 
@@ -190,7 +190,7 @@ class EnvReader(
             MailerImplementationType.DUMMY -> {
                 check(profile != AppProfile.PRODUCTION) {
                     "$MAILER_IMPLEMENTATION=${MailerImplementationType.DUMMY} is not allowed with profile " +
-                        "${AppProfile.PRODUCTION}."
+                            "${AppProfile.PRODUCTION}."
                 }
                 logger.warn { "Using dummy mailer. Emails are kept in memory and not sent." }
 
@@ -238,7 +238,7 @@ class EnvReader(
             FetcherImplementationType.DUMMY -> {
                 check(profile != AppProfile.PRODUCTION) {
                     "$FETCHER_IMPLEMENTATION=${FetcherImplementationType.DUMMY} is not allowed with profile " +
-                        "${AppProfile.PRODUCTION}."
+                            "${AppProfile.PRODUCTION}."
                 }
                 logger.warn { "Using dummy fetchers. Fetched papers are generated and not real." }
 
@@ -322,4 +322,22 @@ class EnvReader(
         val seedUserEnabled: Boolean,
         val smtpTransportLoggingOnlyEnabled: Boolean,
     )
+}
+
+/**
+ * The values of the `MAILER_IMPLEMENTATION` variable.
+ */
+private enum class MailerImplementationType {
+    SMTP,
+    DUMMY
+
+}
+
+/**
+ * The values of the `FETCHER_IMPLEMENTATION` variable.
+ */
+private enum class FetcherImplementationType {
+    PYTHON,
+    DUMMY
+
 }
