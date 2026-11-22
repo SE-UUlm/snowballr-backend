@@ -1,0 +1,18 @@
+# Configures the main title of the documentation site.
+module-title = "SnowballR API Documentation"
+
+# Copyright message displayed in the footer.
+footer-content = "© 2026 SnowballR authors. All rights reserved."
+
+# The following fields configure the source control repository of the project.
+repository-type = "github"
+repository-url = "https://github.com/SE-UUlm/snowballr-backend/"
+repository-branch = "develop"
+repository-dir = "api/grpc/proto"
+
+# The markdown extensions supported by the main-page-content-file
+# See: https://python-markdown.github.io/extensions/#officially-supported-extensions
+markdown-extensions = ["fenced_code", "markdown_mermaidjs", "tables"]
+
+# Use custom template for rendering documentation
+template-path = "./docs"

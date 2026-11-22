@@ -18,7 +18,8 @@ detekt = "2.0.0-alpha.6"
 kotlinx-kover = "0.9.11"
 protobuf = "0.10.0"
 grpc-kotlin = "1.5.0"
-grpc = "1.85.1"
+# Must match the grpc-java version managed by Spring Boot (spring-boot-dependencies), since gRPC artifacts must share a version
+grpc = "1.84.1"
 protobuf-kotlin = "4.36.2"
 shadow-jar = "9.6.1"
 archunit = "1.5.1"
@@ -31,7 +32,6 @@ testcontainers = "2.0.5"
 kotlinx-serialization-json = "1.12.0"
 nanoid = "2.0.1"
 git-versioning = "7.0.0"
-undercouch-download = "5.7.0"
 ben-manes-versions = "0.66.0"
 spring-boot = "4.1.2"
 spring-dep-man = "1.1.7"
@@ -85,7 +85,6 @@ assertj-arrow-core = { module = "in.rcard:assertj-arrow-core", version.ref = "as
 grpc-kotlin = { module = "io.grpc:grpc-kotlin-stub", version.ref = "grpc-kotlin" }
 grpc-protobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc" }
 grpc-services = { module = "io.grpc:grpc-services", version.ref = "grpc" }
-grpc-netty = { module = "io.grpc:grpc-netty-shaded", version.ref = "grpc" }
 protobuf-kotlin = { module = "com.google.protobuf:protobuf-kotlin", version.ref = "protobuf-kotlin" }
 protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", version.ref = "protobuf-kotlin" }
 
@@ -106,6 +105,7 @@ spring-doc = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui", ver
 spring-boot-test= { module = "org.springframework.boot:spring-boot-starter-webmvc-test" }
 spring-boot-starter-security = { module = "org.springframework.boot:spring-boot-starter-security" }
 spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
+spring-boot-starter-grpc-server = { module = "org.springframework.boot:spring-boot-starter-grpc-server" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
@@ -115,7 +115,6 @@ protobuf = { id = "com.google.protobuf", version.ref = "protobuf" }
 shadow-jar = { id = "com.gradleup.shadow", version.ref = "shadow-jar" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 git-versioning = { id = "me.qoomon.git-versioning", version.ref = "git-versioning" }
-undercouch-download = { id = "de.undercouch.download", version.ref = "undercouch-download" }
 ben-manes-versions = { id = "io.github.ben-manes.versions", version.ref = "ben-manes-versions" }
 spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
 spring-framework-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }

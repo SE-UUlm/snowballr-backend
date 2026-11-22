@@ -10,12 +10,16 @@ private val logger = KotlinLogging.logger {}
 @SpringBootApplication
 class SnowballRApplication
 
-fun startRestServer(port: Int = 8090): ConfigurableApplicationContext {
-    logger.info { "Starting REST server on port $port" }
+/**
+ * Starts the Spring application, which serves the REST API on [port] and the gRPC API on [grpcPort].
+ */
+fun startRestServer(grpcPort: Int, port: Int = 8090): ConfigurableApplicationContext {
+    logger.info { "Starting REST server on port $port and gRPC server on port $grpcPort" }
     return SpringApplicationBuilder(SnowballRApplication::class.java)
         .properties(
             mapOf(
                 "server.port" to port,
+                "spring.grpc.server.port" to grpcPort,
                 "spring.threads.virtual.enabled" to true,
                 "spring.main.banner-mode" to "off",
             ),

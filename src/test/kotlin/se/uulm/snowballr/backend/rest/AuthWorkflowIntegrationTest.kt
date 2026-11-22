@@ -59,7 +59,11 @@ import se.uulm.snowballr.backend.serviceLayerDeps
  * [se.uulm.snowballr.backend.integration.IntegrationTest], this runs against a single shared database for the
  * lifetime of the class, since there is only one, sequential, test method here.
  */
-@SpringBootTest(classes = [SnowballRApplication::class])
+@SpringBootTest(
+    classes = [SnowballRApplication::class],
+    // Bind the gRPC server to a free port, so the test doesn't depend on 9090 being available
+    properties = ["spring.grpc.server.port=0"],
+)
 @AutoConfigureMockMvc
 @Tag("integration")
 class AuthWorkflowIntegrationTest(@Autowired private val mvc: MockMvc) {
@@ -170,7 +174,6 @@ class AuthWorkflowIntegrationTest(@Autowired private val mvc: MockMvc) {
                 authBypassEnabled = false,
                 frontendBaseUrl = "http://localhost:3000",
             )
-            every { envReaderMock.env.http.port } returns 8080
             coJustRun { fetcherOrchestratorMock.enqueue(any()) }
 
             startKoin {

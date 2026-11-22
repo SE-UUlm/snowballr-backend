@@ -1,0 +1,43 @@
+name: Publish an API Client
+description: Builds a generated TS API client and publishes it to the specified channel on NPM
+inputs:
+    client:
+        description: The client to publish, either `rest` or `grpc`
+        required: true
+    channel:
+        description: The NPM channel where the package should be published
+        required: true
+runs:
+    using: composite
+    steps:
+        - name: Validate inputs
+          shell: bash
+          env:
+              CLIENT: ${{ inputs.client }}
+          run: |
+              case "$CLIENT" in
+                  rest|grpc) ;;
+                  *) echo "::error::Unknown client '$CLIENT', expected 'rest' or 'grpc'"; exit 1 ;;
+              esac
+
+        - name: Common Setup
+          uses: ./.github/workflows/setup-all/
+
+        - name: Setup Node.js
+          uses: actions/setup-node@v7
+          with:
+              node-version: 24
+              registry-url: "https://registry.npmjs.org"
+
+        - name: Build TS Client
+          shell: bash
+          run: ./gradlew buildTs${{ inputs.client == 'rest' && 'Rest' || 'Grpc' }}Client
+
+        - name: Verify API consistency
+          shell: bash
+          run: git diff --exit-code
+
+        - name: Publish NPM package
+          shell: bash
+          working-directory: build/generated/ts-${{ inputs.client }}-client
+          run: npm publish --access public --tag ${{ inputs.channel }}

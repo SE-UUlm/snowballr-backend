@@ -184,3 +184,18 @@ jobs:
             # Test whether a diff exists after recreating the api spec
             - name: Test API spec consistency
               run: git diff --exit-code
+
+    lint-grpc-api:
+        name: Lint the gRPC API definition
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v7
+
+            - name: Run protolint
+              uses: yoheimuta/action-protolint@v1
+              with:
+                  github_token: ${{ secrets.GITHUB_TOKEN }}
+                  reporter: github-check
+                  fail_on_error: true
+                  protolint_flags: -config_path=api/grpc/.protolint.yaml api/grpc/proto/*.proto
