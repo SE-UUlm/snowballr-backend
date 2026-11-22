@@ -34,6 +34,31 @@ import kotlin.time.Duration
 
 private val logger = KotlinLogging.logger { }
 
+/** Placeholder for values that are undefined because their divisor is zero. */
+private const val NOT_AVAILABLE = "n/a"
+
+/**
+ * Formats the processing times of a fetcher job for the debug log.
+ *
+ * Each stage is listed with its time and its share of the total time, followed by the total time and the time per
+ * paper. The shares are not available if the total time is zero, and the time per paper is not available if no
+ * papers were processed.
+ *
+ * @param stageTimes The processing stages in order, each with its time in milliseconds.
+ * @param paperCount The number of papers processed in the job.
+ */
+@Suppress("MagicNumber")
+private fun formatProcessingTimes(stageTimes: List<Pair<String, Long>>, paperCount: Int): String {
+    val totalMs = stageTimes.sumOf { (_, time) -> time }
+    fun share(time: Long) = if (totalMs == 0L) NOT_AVAILABLE else "${(time * 1000.0 / totalMs).roundToInt() / 10.0}%"
+    val perPaper = if (paperCount == 0) NOT_AVAILABLE else "${(totalMs * 100.0 / paperCount).roundToInt() / 100.0}"
+
+    val stageLines = stageTimes.joinToString("\n") { (stage, time) ->
+        "  - ${"$stage:".padEnd(9)} ${time.toString().padStart(6)} ms - ${share(time).padStart(5)}"
+    }
+    return "Processing Times:\n$stageLines\n  total: $totalMs ms / $paperCount papers - $perPaper ms/paper"
+}
+
 interface IFetcherOrchestrator {
     /**
      * Start the fetcher orchestrator.
@@ -158,22 +183,17 @@ class FetcherOrchestrator(
         val (_, addingTime) = measureTime { runAddingPapersToProject(job, creationResults) }
 
         logger.info { "Finished fetcher processing job for paper ${job.paperId}" }
-        @Suppress("MagicNumber")
         logger.debug {
-            val totalMs = fetchingTime + dedupTime + creationTime + citationTime + addingTime
-            val totalPaper = creationResults.allRefs.size
-            fun per(t: Long) = "${(t / totalMs.toDouble() * 1000.0).roundToInt() / 10.0}%"
-            val perPaper = (totalMs / totalPaper * 100.0).roundToInt() / 100.0
-
-            """
-            Processing Times:
-              - fetching: ${fetchingTime.toString().padStart(6, ' ')} ms - ${per(fetchingTime).padStart(4, ' ')}
-              - dedup:    ${dedupTime.toString().padStart(6, ' ')} ms - ${per(dedupTime).padStart(4, ' ')}
-              - creation: ${creationTime.toString().padStart(6, ' ')} ms - ${per(creationTime).padStart(4, ' ')}
-              - citation: ${citationTime.toString().padStart(6, ' ')} ms - ${per(citationTime).padStart(4, ' ')}
-              - adding:   ${addingTime.toString().padStart(6, ' ')} ms - ${per(addingTime).padStart(4, ' ')}
-              total: $totalMs ms / $totalPaper papers - $perPaper ms/paper
-            """.trimIndent()
+            formatProcessingTimes(
+                stageTimes = listOf(
+                    "fetching" to fetchingTime,
+                    "dedup" to dedupTime,
+                    "creation" to creationTime,
+                    "citation" to citationTime,
+                    "adding" to addingTime,
+                ),
+                paperCount = creationResults.allRefs.size,
+            )
         }
     }
 
