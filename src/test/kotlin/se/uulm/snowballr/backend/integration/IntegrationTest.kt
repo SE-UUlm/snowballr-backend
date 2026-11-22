@@ -104,6 +104,8 @@ open class IntegrationTest : KoinTest {
         every { envReaderMock.env.encryption } returns Env.Encryption(privateKeyBase64, publicKeyBase64)
         // Mock Env.Lifetime since it's used by the InvitationService
         every { envReaderMock.env.lifetime } returns Env.Lifetime(30, 7, 1)
+        // Mock registration auto-verify since it's read by UserService.register
+        every { envReaderMock.env.miscellaneous.registrationAutoVerifyEnabled } returns false
 
         // Test database
         single<IDatabase> { db }
@@ -194,7 +196,6 @@ open class IntegrationTest : KoinTest {
         val link = "https://example.com/verify"
         coEvery { emailManagerMock.createVerificationLink(capture(verificationToken)) } returns link
         every { envReaderMock.env.lifetime.verificationTokenLifeTimeInDays } returns 1
-        every { envReaderMock.env.miscellaneous.registrationAutoVerifyEnabled } returns false
         val verificationData = EmailData.EmailVerification(user.firstName, link, "tomorrow")
         coJustRun { emailManagerMock.sendVerificationEmail(any(), verificationData) }
 
