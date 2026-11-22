@@ -61,9 +61,10 @@ def search_papers(search_query: str, options: dict[str, str]) -> list[Paper]:
         "search": search_query,
         "select": fields,
         "per_page": 25,
-    } | _oa_params(options)
+    }
+    headers = _oa_headers(options)
 
-    data = request_with_retry(url, {}, params, _request_interval(options), _api_key(options))
+    data = request_with_retry(url, headers, params, _request_interval(options), _api_key(options))
     papers = safe_get(data, "results", [])
 
     return list(map(_paper_from_response, papers))
@@ -107,11 +108,12 @@ def _construct_paper_id(paper: Paper, options: dict[str, str]) -> Optional[str]:
             continue
 
         url = f"{base_url}/works/{prefix}:{quote(external_id.value, safe='/')}"
-        params = {"select": "id"} | _oa_params(options)
+        params = {"select": "id"}
+        headers = _oa_headers(options)
 
         try:
             data = request_with_retry(
-                url, {}, params, _request_interval(options), _api_key(options)
+                url, headers, params, _request_interval(options), _api_key(options)
             )
         except HTTPError as e:
             if e.response is not None and e.response.status_code == 404:
@@ -132,7 +134,7 @@ def _fetch_all_pages(specific_param: str, options: dict[str, str]) -> list[Paper
     use page number-based pagination (free API).
     API reference: https://help.openalex.org/api/paging/
     """
-    params = _oa_params(options)
+    headers = _oa_headers(options)
     per_page = 100
     ref_url = f"{base_url}/works?{specific_param}&select={fields}&per_page={per_page}"
 
@@ -144,7 +146,7 @@ def _fetch_all_pages(specific_param: str, options: dict[str, str]) -> list[Paper
 
     interval = _request_interval(options)
     papers = []
-    for page in paginate_with_retry(ref_url, next_url, {}, params, interval, _api_key(options)):
+    for page in paginate_with_retry(ref_url, next_url, headers, {}, interval, _api_key(options)):
         papers += safe_get(page, "results", [])
 
     return list(map(_paper_from_response, papers))
@@ -270,13 +272,13 @@ def _external_ids_from_response(res) -> list[ExternalId]:
     ]
 
 
-def _oa_params(options: dict[str, str]) -> dict[str, str]:
-    params = {}
+def _oa_headers(options: dict[str, str]) -> dict[str, str]:
+    headers = {}
 
     if _has_api_key(options):
-        params["api_key"] = options["API_KEY"]
+        headers["Authorization"] = f"Bearer {options['API_KEY']}"
 
-    return params
+    return headers
 
 
 def _request_interval(options: dict[str, str]) -> float:
