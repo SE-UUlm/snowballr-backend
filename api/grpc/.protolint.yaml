@@ -1,0 +1,12 @@
+lint:
+    rules:
+        all_default: true
+
+        remove:
+            # Disable max line length rule due to markdown tables being difficult
+            # to format.
+            - MAX_LINE_LENGTH
+            # Disable the necessity of field comments
+            - FIELDS_HAVE_COMMENT
+            # Disable the prohibition of prepositions in field names
+            - FIELD_NAMES_EXCLUDE_PREPOSITIONS
