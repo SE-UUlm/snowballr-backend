@@ -46,9 +46,7 @@ interface IEmailManager {
 }
 
 /**
- * The [EmailManager] class renders emails and creates the links contained in them.
- *
- * Delivering the rendered emails is delegated to an [IEmailSender], e.g. [SmtpEmailSender] or [DummyEmailSender].
+ * The [EmailManager] class is responsible for creating and sending emails.
  *
  * @param envReader The environment reader that provides access to the frontend base URL.
  * @param emailTemplateManager The manager that provides access to pre-compiled email templates.
@@ -68,7 +66,7 @@ class EmailManager(
     }
 
     /**
-     * Renders the specified template with the given data and delivers the resulting email.
+     * Sends an email using the specified template and data.
      *
      * @param to The recipient's email address.
      * @param template The email template to use for the email.

@@ -19,12 +19,12 @@ class DummyEmailSender : IEmailSender {
     /**
      * Returns a snapshot of all emails sent so far, in the order they were sent.
      */
-    fun getSentEmails(): List<SentEmail> = synchronized(sentEmails) { sentEmails.toList() }
+    internal fun getSentEmails(): List<SentEmail> = synchronized(sentEmails) { sentEmails.toList() }
 
     /**
      * Removes all emails sent so far.
      */
-    fun clearSentEmails() {
+    internal fun clearSentEmails() {
         synchronized(sentEmails) { sentEmails.clear() }
     }
 

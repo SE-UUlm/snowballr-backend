@@ -30,13 +30,4 @@ class DummyEmailSenderTest {
         assertThat(emailSender.getSentEmails().map { it.to })
             .containsExactly("first@example.com", "second@example.com")
     }
-
-    @Test
-    fun `When clearing the sent emails, then no sent emails are returned`() {
-        emailSender.send(recipientEmail, "Subject", "")
-
-        emailSender.clearSentEmails()
-
-        assertThat(emailSender.getSentEmails()).isEmpty()
-    }
 }

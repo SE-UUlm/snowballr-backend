@@ -22,20 +22,20 @@ class SmtpEmailSender(
     private val mailer: Mailer,
 ) : IEmailSender {
     override fun send(to: String, subject: String, htmlBody: String) {
-        try {
-            val email = EmailBuilder
-                .startingBlank()
-                .withRecipients(
-                    RecipientBuilder()
-                        .withAddress(to)
-                        .withType(Message.RecipientType.TO)
-                        .build(),
-                )
-                .from(envReader.env.mailer.smtpSenderName, envReader.env.mailer.smtpSenderEmail)
-                .withSubject(subject)
-                .withHTMLText(htmlBody)
-                .buildEmailCompletedWithDefaultsAndOverrides()
+        val email = EmailBuilder
+            .startingBlank()
+            .withRecipients(
+                RecipientBuilder()
+                    .withAddress(to)
+                    .withType(Message.RecipientType.TO)
+                    .build(),
+            )
+            .from(envReader.env.mailer.smtpSenderName, envReader.env.mailer.smtpSenderEmail)
+            .withSubject(subject)
+            .withHTMLText(htmlBody)
+            .buildEmailCompletedWithDefaultsAndOverrides()
 
+        try {
             mailer.sendMail(email)
             logger.info { "Successfully queued email for delivery to $to" }
         } catch (e: MailException) {
