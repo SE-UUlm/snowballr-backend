@@ -151,6 +151,14 @@ class UserService(
         val passwordHash = PasswordUtils.hashPassword(request.password)
         val user = userRepo.createUser(request, passwordHash)
 
+        if (envReader.env.miscellaneous.registrationAutoVerifyEnabled) {
+            userRepo.updateUser(user.copy(status = UserStatus.ACTIVE), setOf(UserField.STATUS))
+            logger.info {
+                "User ${user.id} registered (${user.email}) and activated (registration auto-verify)"
+            }
+            return
+        }
+
         // Generate and save verification token for the user
         val verificationToken = NanoId.generate(VERIFICATION_TOKEN_LENGTH)
         verificationTokenRepo.saveVerificationToken(user.id, verificationToken)
@@ -165,12 +173,6 @@ class UserService(
         )
         emailManager.sendVerificationEmail(user.email, data)
         logger.info { "User ${user.id} registered (${user.email})" }
-
-        // The verification email is still sent above, so only the activation is skipped, not the email flow
-        if (envReader.env.miscellaneous.registrationAutoVerifyEnabled) {
-            userRepo.updateUser(user.copy(status = UserStatus.ACTIVE), setOf(UserField.STATUS))
-            logger.info { "User ${user.id} activated without email verification (registration auto-verify enabled)" }
-        }
     }
 
     override suspend fun updateUser(request: UpdateUserRequest, fields: Set<UserField>): User =

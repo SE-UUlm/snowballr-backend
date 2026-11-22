@@ -45,6 +45,7 @@ class RegisterTest : UserServiceTest() {
 
         coEvery { userRepoMock.doesUserExistByEmail(user.email) } returns false
         coEvery { userRepoMock.createUser(getExampleRequest(user), any()) } returns user
+        every { envReaderMock.env.miscellaneous.registrationAutoVerifyEnabled } returns false
         coJustRun { verificationTokenRepoMock.saveVerificationToken(user.id, any()) }
         every { emailManagerMock.createVerificationLink(any()) } returns verificationLink
         every { envReaderMock.env.lifetime.verificationTokenLifeTimeInDays } returns 1
@@ -86,23 +87,20 @@ class RegisterTest : UserServiceTest() {
         }
 
     @Test
-    fun `When registration auto-verify is enabled, then the verification email is sent and the user is activated`() =
+    fun `When registration auto-verify is enabled, then the user is activated without a verification token or email`() =
         runTest {
             val user = DataBuilder.createExampleUser(status = UserStatus.ACTIVE_UNCONFIRMED)
             val activatedUser = user.copy(status = UserStatus.ACTIVE)
 
             coEvery { userRepoMock.doesUserExistByEmail(user.email) } returns false
             coEvery { userRepoMock.createUser(getExampleRequest(user), any()) } returns user
-            coJustRun { verificationTokenRepoMock.saveVerificationToken(user.id, any()) }
-            every { emailManagerMock.createVerificationLink(any()) } returns "verification-link"
-            every { envReaderMock.env.lifetime.verificationTokenLifeTimeInDays } returns 1
             every { envReaderMock.env.miscellaneous.registrationAutoVerifyEnabled } returns true
-            coJustRun { emailManagerMock.sendVerificationEmail(user.email, any()) }
             coEvery { userRepoMock.updateUser(activatedUser, setOf(UserField.STATUS)) } returns activatedUser
 
             service.register(getExampleRequest(user))
 
-            coVerify(exactly = 1) { emailManagerMock.sendVerificationEmail(user.email, any()) }
             coVerify(exactly = 1) { userRepoMock.updateUser(activatedUser, setOf(UserField.STATUS)) }
+            coVerify(exactly = 0) { verificationTokenRepoMock.saveVerificationToken(any(), any()) }
+            coVerify(exactly = 0) { emailManagerMock.sendVerificationEmail(any(), any()) }
         }
 }
