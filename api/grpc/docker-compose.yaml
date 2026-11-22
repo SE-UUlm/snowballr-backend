@@ -1,5 +1,0 @@
-services:
-  api-docs:
-    build: .
-    ports:
-      - "8000:80"

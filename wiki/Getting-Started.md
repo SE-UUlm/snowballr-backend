@@ -38,6 +38,10 @@ The fastest way to get started is to use the provided Docker setup.
 The proxy is used to enable gRPC-Web support for the backend. It listens on the port specified by the `WEB_PORT`
 environment variable (default: `8081`).
 
+The backend image also serves the generated gRPC API documentation at
+[http://localhost:8090/grpc-docs/](http://localhost:8090/grpc-docs/). It is only available in the Docker image, not
+when running the backend from source.
+
 ### Docker Compose Profiles
 
 We provide several docker compose profiles for different setups. Use `docker compose --profile <profile> up` to start

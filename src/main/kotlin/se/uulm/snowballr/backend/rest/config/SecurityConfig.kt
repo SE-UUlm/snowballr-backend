@@ -46,6 +46,8 @@ class SecurityConfig(
                     "/swagger/**",
                     "/swagger-ui/**",
                     "/api-docs/swagger-config",
+                    GrpcDocsConfig.GRPC_DOCS_ROUTE,
+                    "${GrpcDocsConfig.GRPC_DOCS_ROUTE}/**",
                 ).permitAll()
                 it.anyRequest().authenticated()
             }
