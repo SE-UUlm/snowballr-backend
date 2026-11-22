@@ -79,7 +79,7 @@ class EnvReader(
     val env: Env
 
     init {
-        val activeProfile = envService.getOrDefault(PROFILE, DEFAULT_PROFILE, AppProfile::fromString)
+        val activeProfile = envService.getEnumOrDefault(PROFILE, DEFAULT_PROFILE)
         logger.info { "Application starting with profile: $activeProfile" }
 
         val defaults = defaultsForProfile(activeProfile)
@@ -171,11 +171,7 @@ class EnvReader(
      * @return An [Env.Mailer] object containing the mailer configuration.
      */
     private fun buildMailer(defaults: ProfileDefaults, profile: AppProfile): Env.Mailer {
-        val mailerImplementation = envService.getOrDefault(
-            MAILER_IMPLEMENTATION,
-            DEFAULT_MAILER_IMPLEMENTATION,
-            MailerImplementationType::fromString,
-        )
+        val mailerImplementation = envService.getEnumOrDefault(MAILER_IMPLEMENTATION, DEFAULT_MAILER_IMPLEMENTATION)
 
         check(profile != AppProfile.PRODUCTION || mailerImplementation != MailerImplementationType.DUMMY) {
             "$MAILER_IMPLEMENTATION=${MailerImplementationType.DUMMY} is not allowed with profile " +
@@ -232,11 +228,7 @@ class EnvReader(
      * @return An [Env.Plugins] object containing the plugins configuration.
      */
     private fun buildPlugins(profile: AppProfile): Env.Plugins {
-        val fetcherImplementation = envService.getOrDefault(
-            FETCHER_IMPLEMENTATION,
-            DEFAULT_FETCHER_IMPLEMENTATION,
-            FetcherImplementationType::fromString,
-        )
+        val fetcherImplementation = envService.getEnumOrDefault(FETCHER_IMPLEMENTATION, DEFAULT_FETCHER_IMPLEMENTATION)
 
         check(profile != AppProfile.PRODUCTION || fetcherImplementation != FetcherImplementationType.DUMMY) {
             "$FETCHER_IMPLEMENTATION=${FetcherImplementationType.DUMMY} is not allowed with profile " +

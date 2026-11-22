@@ -9,16 +9,4 @@ package se.uulm.snowballr.backend.env
 enum class MailerImplementationType {
     SMTP,
     DUMMY,
-    ;
-
-    companion object {
-        /**
-         * Parses a string to a [MailerImplementationType]. The matching is case-insensitive.
-         *
-         * @param value The string value to parse.
-         * @return The corresponding [MailerImplementationType], or null if the [value] doesn't match any of them.
-         */
-        fun fromString(value: String): MailerImplementationType? =
-            entries.firstOrNull { it.name.equals(value.trim(), ignoreCase = true) }
-    }
 }

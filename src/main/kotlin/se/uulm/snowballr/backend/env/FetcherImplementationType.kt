@@ -9,16 +9,4 @@ package se.uulm.snowballr.backend.env
 enum class FetcherImplementationType {
     PYTHON,
     DUMMY,
-    ;
-
-    companion object {
-        /**
-         * Parses a string to a [FetcherImplementationType]. The matching is case-insensitive.
-         *
-         * @param value The string value to parse.
-         * @return The corresponding [FetcherImplementationType], or null if the [value] doesn't match any of them.
-         */
-        fun fromString(value: String): FetcherImplementationType? =
-            entries.firstOrNull { it.name.equals(value.trim(), ignoreCase = true) }
-    }
 }
