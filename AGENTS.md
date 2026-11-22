@@ -13,8 +13,6 @@ existing docs over restating them here. If you must summarize, keep it short and
 - SnowballR Backend: https://github.com/SE-UUlm/snowballr-backend
 - SnowballR Frontend: https://github.com/SE-UUlm/snowballr-frontend
 - SnowballR CI: https://github.com/SE-UUlm/snowballr-ci
-- SnowballR Mock Backend: https://github.com/SE-UUlm/snowballr-mock-backend
-- SnowballR Backend (legacy): https://github.com/SE-UUlm/snowballr-backend-old
 
 ### Canonical documentation and what each covers
 
