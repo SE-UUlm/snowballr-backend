@@ -74,6 +74,12 @@ class AuthenticationService(
         // Check whether the user exists
         val user = repo.getUserById(verificationToken.userId).getOrThrow()
 
+        if (user.status != UserStatus.ACTIVE_UNCONFIRMED) {
+            logger.debug { "Email verification failed: user ${user.id} has status ${user.status}" }
+            verificationTokenRepo.deleteVerificationToken(token)
+            throw VerificationTokenNotFoundException()
+        }
+
         // Update the user's status to active
         val updatedUser = user.copy(status = UserStatus.ACTIVE)
         repo.updateUser(updatedUser, setOf(UserField.STATUS))
