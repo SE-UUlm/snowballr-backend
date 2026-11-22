@@ -20,7 +20,7 @@ fetcher_information = FetcherInformation(
     description=(
         "OpenAlex is a free and open catalog of the global research system, indexing scholarly "
         "works, authors, and sources across all research fields. Supports paper search, forward "
-        "references , and backward references.\n\n"
+        "references, and backward references.\n\n"
         "Without an API key, requests share a small free daily budget per IP address, and "
         "references are limited to the first 10,000 results. With a free API key, each user gets "
         "their own daily budget and all references are retrieved."
@@ -298,7 +298,7 @@ def _api_key(options: dict[str, str]) -> str:
 
 
 def _has_api_key(options: dict[str, str]) -> bool:
-    return "API_KEY" in options and options["API_KEY"] != ""
+    return _api_key(options) != ""
 
 
 fetcher_plugin(
