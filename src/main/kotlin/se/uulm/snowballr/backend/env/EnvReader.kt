@@ -323,21 +323,3 @@ class EnvReader(
         val smtpTransportLoggingOnlyEnabled: Boolean,
     )
 }
-
-/**
- * The values of the `MAILER_IMPLEMENTATION` variable.
- */
-private enum class MailerImplementationType {
-    SMTP,
-    DUMMY
-
-}
-
-/**
- * The values of the `FETCHER_IMPLEMENTATION` variable.
- */
-private enum class FetcherImplementationType {
-    PYTHON,
-    DUMMY
-
-}
