@@ -1,7 +1,5 @@
 package se.uulm.snowballr.backend.fetcher
 
-import io.mockk.every
-import io.mockk.mockk
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
@@ -12,7 +10,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.env.Env
-import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.model.dto.paper.Author
 import se.uulm.snowballr.backend.model.dto.paper.ExternalId
 import se.uulm.snowballr.backend.model.dto.paper.ExternalIdType
@@ -58,7 +55,7 @@ class PythonPluginFetcherManagerTest {
     fun setUp() {
         pluginDirectory = Files.createTempDirectory("python-fetcher-test")
         fetcherDirectory = pluginDirectory.resolve("fetchers")
-        fetcherManager = PythonPluginFetcherManager(createEnvReader(pluginDirectory))
+        fetcherManager = PythonPluginFetcherManager(createConfig(pluginDirectory))
     }
 
     @AfterEach
@@ -485,7 +482,7 @@ class PythonPluginFetcherManagerTest {
     @Test
     fun `When a fetcher exceeds the configured timeout, then a timeout FetcherException is thrown`() = runTest {
         val timeoutFetcherManager = PythonPluginFetcherManager(
-            createEnvReader(pluginDirectory),
+            createConfig(pluginDirectory),
             executionTimeoutMillis = 100L,
             forceKillGraceMillis = 50L,
         )
@@ -511,7 +508,7 @@ class PythonPluginFetcherManagerTest {
     @Test
     fun `When a timed out fetcher ignores SIGTERM, then it is force killed after grace period`() = runTest {
         val timeoutFetcherManager = PythonPluginFetcherManager(
-            createEnvReader(pluginDirectory),
+            createConfig(pluginDirectory),
             executionTimeoutMillis = 2_000L,
             forceKillGraceMillis = 100L,
         )
@@ -687,19 +684,10 @@ class PythonPluginFetcherManagerTest {
         return condition()
     }
 
-    private fun createEnvReader(pluginDirectory: Path): EnvReader {
+    private fun createConfig(pluginDirectory: Path): Env.Plugins.Fetcher.Python {
         val venvPython = Path.of(".venv/bin/python3").toAbsolutePath()
         val pythonExecutable = if (venvPython.exists()) venvPython.toString() else "python3"
 
-        val pluginEnv = mockk<Env.Plugins>()
-        every { pluginEnv.pluginDirectory } returns pluginDirectory
-        every { pluginEnv.pythonExecutable } returns pythonExecutable
-
-        val env = mockk<Env>()
-        every { env.plugins } returns pluginEnv
-
-        val envReader = mockk<EnvReader>()
-        every { envReader.env } returns env
-        return envReader
+        return Env.Plugins.Fetcher.Python(pluginDirectory, pythonExecutable)
     }
 }

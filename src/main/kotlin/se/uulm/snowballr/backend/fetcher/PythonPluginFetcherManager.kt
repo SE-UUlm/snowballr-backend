@@ -9,7 +9,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
-import se.uulm.snowballr.backend.env.EnvReader
+import se.uulm.snowballr.backend.env.Env
 import se.uulm.snowballr.backend.model.exception.FetcherException
 import se.uulm.snowballr.backend.model.exception.UnauthorizedFetcherPathException
 import se.uulm.snowballr.backend.model.exception.notfound.FetcherNotFoundException
@@ -46,15 +46,15 @@ private val resources = buildResources(FETCHER_RESOURCES_ROOT) {
 }
 
 class PythonPluginFetcherManager(
-    envReader: EnvReader,
+    config: Env.Plugins.Fetcher.Python,
     resourceLoader: (String) -> InputStream? = { resource ->
         PythonPluginFetcherManager::class.java.getResourceAsStream(resource)
     },
     private val executionTimeoutMillis: Long = 30_000L,
     private val forceKillGraceMillis: Long = 1_000L,
 ) : IFetcherManager {
-    private val root = envReader.env.plugins.pluginDirectory.resolve("fetchers")
-    private val pythonExecutable = envReader.env.plugins.pythonExecutable
+    private val root = config.pluginDirectory.resolve("fetchers")
+    private val pythonExecutable = config.pythonExecutable
 
     init {
         logger.info {

@@ -173,31 +173,30 @@ class EnvReader(
     private fun buildMailer(defaults: ProfileDefaults, profile: AppProfile): Env.Mailer {
         val mailerImplementation = envService.getEnumOrDefault(MAILER_IMPLEMENTATION, DEFAULT_MAILER_IMPLEMENTATION)
 
-        check(profile != AppProfile.PRODUCTION || mailerImplementation != MailerImplementationType.DUMMY) {
-            "$MAILER_IMPLEMENTATION=${MailerImplementationType.DUMMY} is not allowed with profile " +
-                "${AppProfile.PRODUCTION}."
-        }
-
-        if (mailerImplementation == MailerImplementationType.DUMMY) {
-            logger.warn { "Using dummy mailer. Emails are kept in memory and not sent." }
-        }
-
-        val smtpTransportLoggingOnlyEnabled =
-            envService.getBooleanOrDefault(
-                SMTP_TRANSPORT_LOGGING_ONLY_ENABLED,
-                defaults.smtpTransportLoggingOnlyEnabled,
+        return when (mailerImplementation) {
+            MailerImplementationType.SMTP -> Env.Mailer.Smtp(
+                host = envService[SMTP_HOST],
+                port = envService[SMTP_PORT].toInt(),
+                user = envService.getOrNull(SMTP_USER),
+                password = envService.getOrNull(SMTP_PASSWORD),
+                transportLoggingOnlyEnabled = envService.getBooleanOrDefault(
+                    SMTP_TRANSPORT_LOGGING_ONLY_ENABLED,
+                    defaults.smtpTransportLoggingOnlyEnabled,
+                ),
+                senderName = envService[SMTP_SENDER_NAME],
+                senderEmail = envService[SMTP_SENDER_EMAIL],
             )
 
-        return Env.Mailer(
-            mailerImplementation = mailerImplementation,
-            smtpHost = envService[SMTP_HOST],
-            smtpPort = envService[SMTP_PORT].toInt(),
-            smtpUser = envService.getOrNull(SMTP_USER),
-            smtpPassword = envService.getOrNull(SMTP_PASSWORD),
-            smtpTransportLoggingOnlyEnabled = smtpTransportLoggingOnlyEnabled,
-            smtpSenderName = envService[SMTP_SENDER_NAME],
-            smtpSenderEmail = envService[SMTP_SENDER_EMAIL],
-        )
+            MailerImplementationType.DUMMY -> {
+                check(profile != AppProfile.PRODUCTION) {
+                    "$MAILER_IMPLEMENTATION=${MailerImplementationType.DUMMY} is not allowed with profile " +
+                        "${AppProfile.PRODUCTION}."
+                }
+                logger.warn { "Using dummy mailer. Emails are kept in memory and not sent." }
+
+                Env.Mailer.Dummy
+            }
+        }
     }
 
     private fun buildLifetime(defaults: ProfileDefaults): Env.Lifetime {
@@ -230,19 +229,25 @@ class EnvReader(
     private fun buildPlugins(profile: AppProfile): Env.Plugins {
         val fetcherImplementation = envService.getEnumOrDefault(FETCHER_IMPLEMENTATION, DEFAULT_FETCHER_IMPLEMENTATION)
 
-        check(profile != AppProfile.PRODUCTION || fetcherImplementation != FetcherImplementationType.DUMMY) {
-            "$FETCHER_IMPLEMENTATION=${FetcherImplementationType.DUMMY} is not allowed with profile " +
-                "${AppProfile.PRODUCTION}."
-        }
+        val fetcher = when (fetcherImplementation) {
+            FetcherImplementationType.PYTHON -> Env.Plugins.Fetcher.Python(
+                pluginDirectory = envService.getPathOrDefault(PLUGIN_DIRECTORY, DEFAULT_PLUGIN_DIRECTORY).normalize(),
+                pythonExecutable = envService.getStringOrDefault(PYTHON_EXECUTABLE, DEFAULT_PYTHON_EXECUTABLE),
+            )
 
-        if (fetcherImplementation == FetcherImplementationType.DUMMY) {
-            logger.warn { "Using dummy fetchers. Fetched papers are generated and not real." }
+            FetcherImplementationType.DUMMY -> {
+                check(profile != AppProfile.PRODUCTION) {
+                    "$FETCHER_IMPLEMENTATION=${FetcherImplementationType.DUMMY} is not allowed with profile " +
+                        "${AppProfile.PRODUCTION}."
+                }
+                logger.warn { "Using dummy fetchers. Fetched papers are generated and not real." }
+
+                Env.Plugins.Fetcher.Dummy
+            }
         }
 
         return Env.Plugins(
-            fetcherImplementation = fetcherImplementation,
-            pluginDirectory = envService.getPathOrDefault(PLUGIN_DIRECTORY, DEFAULT_PLUGIN_DIRECTORY).normalize(),
-            pythonExecutable = envService.getStringOrDefault(PYTHON_EXECUTABLE, DEFAULT_PYTHON_EXECUTABLE),
+            fetcher = fetcher,
             fetcherRetries = envService.getOrDefault(FETCHER_RETRIES, DEFAULT_FETCHER_RETRIES) {
                 it.toIntOrNull()?.takeIf { retries -> retries >= 0 }
             },

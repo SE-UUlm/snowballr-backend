@@ -1,12 +1,9 @@
 package se.uulm.snowballr.backend.env
 
 /**
- * Determines which email sender implementation is used to send emails.
- *
- * - **SMTP**: Sends emails via the configured SMTP server.
- * - **DUMMY**: Keeps sent emails in memory instead of sending them. Not allowed in production.
+ * The values of the `MAILER_IMPLEMENTATION` variable.
  */
-enum class MailerImplementationType {
+internal enum class MailerImplementationType {
     SMTP,
     DUMMY,
 }
