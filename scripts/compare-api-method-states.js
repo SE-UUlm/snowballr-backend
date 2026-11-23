@@ -2,7 +2,7 @@
  * Script to compare API methods between all-available-calls.md, all-implemented-calls.md and all-used-calls.md
  *
  * This script assumes that the "get-all-used-calls.js" script in the frontend repository has been run.
- * It also assumes that the "calc-impl-progress.js" script has been run.
+ * It also assumes that the "list-api-calls.js" script has been run.
  *
  * Usage: node scripts/compare-api-method-states.js
  */
