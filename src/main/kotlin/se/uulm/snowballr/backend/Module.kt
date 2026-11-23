@@ -33,14 +33,18 @@ import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.env.EnvService
 import se.uulm.snowballr.backend.env.FetcherImplementationType
 import se.uulm.snowballr.backend.env.IEnvService
+import se.uulm.snowballr.backend.env.MailerImplementationType
 import se.uulm.snowballr.backend.fetcher.DummyFetcherManager
 import se.uulm.snowballr.backend.fetcher.FetcherOrchestrator
 import se.uulm.snowballr.backend.fetcher.IFetcherManager
 import se.uulm.snowballr.backend.fetcher.IFetcherOrchestrator
 import se.uulm.snowballr.backend.fetcher.PythonPluginFetcherManager
+import se.uulm.snowballr.backend.mail.DummyEmailSender
 import se.uulm.snowballr.backend.mail.EmailManager
 import se.uulm.snowballr.backend.mail.EmailTemplateManager
 import se.uulm.snowballr.backend.mail.IEmailManager
+import se.uulm.snowballr.backend.mail.IEmailSender
+import se.uulm.snowballr.backend.mail.SmtpEmailSender
 import se.uulm.snowballr.backend.matching.IPaperMatcher
 import se.uulm.snowballr.backend.matching.PaperMatcher
 import se.uulm.snowballr.backend.repository.CriterionTableRepo
@@ -183,12 +187,12 @@ private fun createMailer(envReader: EnvReader): Mailer {
     val isDebugLogging = env.miscellaneous.logLevel == "DEBUG" || env.miscellaneous.logLevel == "TRACE"
 
     return MailerBuilder
-        .withSMTPServer(env.smtp.smtpHost, env.smtp.smtpPort)
-        .withTransportModeLoggingOnly(env.smtp.smtpTransportLoggingOnlyEnabled)
+        .withSMTPServer(env.mailer.smtpHost, env.mailer.smtpPort)
+        .withTransportModeLoggingOnly(env.mailer.smtpTransportLoggingOnlyEnabled)
         .withDebugLogging(isDebugLogging)
         .apply {
-            env.smtp.smtpUser?.let { withSMTPServerUsername(it) }
-            env.smtp.smtpPassword?.let { withSMTPServerPassword(it) }
+            env.mailer.smtpUser?.let { withSMTPServerUsername(it) }
+            env.mailer.smtpPassword?.let { withSMTPServerPassword(it) }
         }
         .async()
         .buildMailer()
@@ -209,6 +213,13 @@ private fun Module.customServicesDeps() {
         }
     }
     singleOf(::CookieManager) { bind<ICookieManager>() }
+    single<IEmailSender> {
+        val envReader = get<EnvReader>()
+        when (envReader.env.mailer.mailerImplementation) {
+            MailerImplementationType.SMTP -> SmtpEmailSender(envReader, get())
+            MailerImplementationType.DUMMY -> DummyEmailSender()
+        }
+    }
     singleOf(::EmailManager) { bind<IEmailManager>() }
     singleOf(::AuthenticationManager) { bind<IAuthenticationManager>() }
     single<IPaperMatcher> { PaperMatcher(PaperMatcher.defaultConfig) }

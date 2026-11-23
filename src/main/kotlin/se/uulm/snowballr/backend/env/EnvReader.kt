@@ -25,6 +25,7 @@ private const val JWT_PRIVATE_KEY_BASE64 = "JWT_PRIVATE_KEY_BASE64"
 private const val JWT_PUBLIC_KEY_BASE64 = "JWT_PUBLIC_KEY_BASE64"
 
 // SMTP
+private const val MAILER_IMPLEMENTATION = "MAILER_IMPLEMENTATION"
 private const val SMTP_HOST = "SMTP_HOST"
 private const val SMTP_PORT = "SMTP_PORT"
 private const val SMTP_USER = "SMTP_USER"
@@ -53,6 +54,7 @@ private const val DEFAULT_SENSITIVE_INFORMATION_RETENTION_DAYS = 30
 private const val DEFAULT_DATABASE_HOST = "localhost"
 private const val DEFAULT_INVITATION_TOKEN_LIFETIME_IN_DAYS = 7
 private const val DEFAULT_VERIFICATION_TOKEN_LIFETIME_IN_DAYS = 1
+private val DEFAULT_MAILER_IMPLEMENTATION = MailerImplementationType.SMTP
 private val DEFAULT_FETCHER_IMPLEMENTATION = FetcherImplementationType.PYTHON
 private val DEFAULT_PLUGIN_DIRECTORY = Path.of("plugins")
 private const val DEFAULT_PYTHON_EXECUTABLE = ".venv/bin/python3"
@@ -77,7 +79,7 @@ class EnvReader(
     val env: Env
 
     init {
-        val activeProfile = envService.getOrDefault(PROFILE, DEFAULT_PROFILE, AppProfile::fromString)
+        val activeProfile = envService.getEnumOrDefault(PROFILE, DEFAULT_PROFILE)
         logger.info { "Application starting with profile: $activeProfile" }
 
         val defaults = defaultsForProfile(activeProfile)
@@ -91,7 +93,7 @@ class EnvReader(
             miscellaneous = miscellaneous,
             database = database,
             encryption = buildEncryption(),
-            smtp = buildSmtp(defaults),
+            mailer = buildMailer(defaults, activeProfile),
             lifetime = buildLifetime(defaults),
             plugins = buildPlugins(activeProfile),
         )
@@ -162,19 +164,32 @@ class EnvReader(
     )
 
     /**
-     * Builds the SMTP configuration by reading and processing related environment variables.
+     * Builds the mailer configuration by reading and processing related environment variables.
      *
-     * @param defaults Default values for the SMTP configuration.
-     * @return An [Env.SMTP] object containing the SMTP configuration.
+     * @param defaults Default values for the mailer configuration.
+     * @param profile The active application profile, used to forbid the dummy mailer implementation in production.
+     * @return An [Env.Mailer] object containing the mailer configuration.
      */
-    private fun buildSmtp(defaults: ProfileDefaults): Env.SMTP {
+    private fun buildMailer(defaults: ProfileDefaults, profile: AppProfile): Env.Mailer {
+        val mailerImplementation = envService.getEnumOrDefault(MAILER_IMPLEMENTATION, DEFAULT_MAILER_IMPLEMENTATION)
+
+        check(profile != AppProfile.PRODUCTION || mailerImplementation != MailerImplementationType.DUMMY) {
+            "$MAILER_IMPLEMENTATION=${MailerImplementationType.DUMMY} is not allowed with profile " +
+                "${AppProfile.PRODUCTION}."
+        }
+
+        if (mailerImplementation == MailerImplementationType.DUMMY) {
+            logger.warn { "Using dummy mailer. Emails are kept in memory and not sent." }
+        }
+
         val smtpTransportLoggingOnlyEnabled =
             envService.getBooleanOrDefault(
                 SMTP_TRANSPORT_LOGGING_ONLY_ENABLED,
                 defaults.smtpTransportLoggingOnlyEnabled,
             )
 
-        return Env.SMTP(
+        return Env.Mailer(
+            mailerImplementation = mailerImplementation,
             smtpHost = envService[SMTP_HOST],
             smtpPort = envService[SMTP_PORT].toInt(),
             smtpUser = envService.getOrNull(SMTP_USER),
@@ -213,13 +228,9 @@ class EnvReader(
      * @return An [Env.Plugins] object containing the plugins configuration.
      */
     private fun buildPlugins(profile: AppProfile): Env.Plugins {
-        val fetcherImplementation = envService.getOrDefault(
-            FETCHER_IMPLEMENTATION,
-            DEFAULT_FETCHER_IMPLEMENTATION,
-            FetcherImplementationType::fromString,
-        )
+        val fetcherImplementation = envService.getEnumOrDefault(FETCHER_IMPLEMENTATION, DEFAULT_FETCHER_IMPLEMENTATION)
 
-        check(!(profile == AppProfile.PRODUCTION && fetcherImplementation == FetcherImplementationType.DUMMY)) {
+        check(profile != AppProfile.PRODUCTION || fetcherImplementation != FetcherImplementationType.DUMMY) {
             "$FETCHER_IMPLEMENTATION=${FetcherImplementationType.DUMMY} is not allowed with profile " +
                 "${AppProfile.PRODUCTION}."
         }

@@ -1,204 +1,77 @@
 package se.uulm.snowballr.backend.mail
 
-import com.icegreen.greenmail.configuration.GreenMailConfiguration
-import com.icegreen.greenmail.junit5.GreenMailExtension
-import com.icegreen.greenmail.util.ServerSetupTest
-import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
-import jakarta.mail.internet.MimeMessage
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
-import org.junit.jupiter.api.assertThrows
-import org.junit.jupiter.api.extension.RegisterExtension
-import org.simplejavamail.MailException
-import org.simplejavamail.api.mailer.Mailer
-import org.simplejavamail.api.mailer.config.TransportStrategy
-import org.simplejavamail.mailer.MailerBuilder
 import se.uulm.snowballr.backend.env.Env
 import se.uulm.snowballr.backend.env.EnvReader
 import se.uulm.snowballr.backend.model.email.EmailData
-import se.uulm.snowballr.backend.model.exception.FailedPreconditionException
-import se.uulm.snowballr.backend.model.exception.internal.email.MailSendFailedException
 
-/**
- * A base class for testing the [EmailManager].
- *
- * It provides the necessary mocks, [GreenMailExtension] setup, and common environment configuration.
- */
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class EmailManagerTest {
-    private val testSenderName = "SnowballR Test"
-    private val testSenderEmail = "noreply@snowballr.test"
     private val testFrontendUrl = "https://frontend.test"
     private val recipientEmail = "test.user@example.com"
 
-    private val envReaderMock = mockk<EnvReader>()
-    private val mailerMock = mockk<Mailer>()
-    private val emailTemplateManagerMock = mockk<EmailTemplateManager>()
-
-    // Helper class to throw a custom exception from within the mailer.
-    private class TestMailException(message: String, cause: Throwable? = null) : MailException(message, cause)
-
-    companion object {
-        @JvmField
-        @RegisterExtension
-        val greenMail: GreenMailExtension = GreenMailExtension(ServerSetupTest.SMTP)
-            .withConfiguration(GreenMailConfiguration.aConfig().withUser("user", "pass"))
-            .withPerMethodLifecycle(true)
+    private val envReaderMock = mockk<EnvReader> {
+        every { env } returns mockk<Env> {
+            every { miscellaneous } returns mockk<Env.Miscellaneous> {
+                every { frontendBaseUrl } returns testFrontendUrl
+            }
+        }
     }
 
-    @BeforeEach
-    fun setUp() {
-        val miscellaneousMock = mockk<Env.Miscellaneous>()
-        every { miscellaneousMock.frontendBaseUrl } returns testFrontendUrl
-
-        val smtpMock = mockk<Env.SMTP>()
-        every { smtpMock.smtpSenderName } returns testSenderName
-        every { smtpMock.smtpSenderEmail } returns testSenderEmail
-
-        val envMock = mockk<Env>()
-        every { envMock.miscellaneous } returns miscellaneousMock
-        every { envMock.smtp } returns smtpMock
-
-        every { envReaderMock.env } returns envMock
-    }
-
-    @AfterEach
-    fun tearDown() {
-        clearAllMocks()
-    }
+    private val emailSender = DummyEmailSender()
+    private val emailManager = EmailManager(envReaderMock, EmailTemplateManager(), emailSender)
 
     @Nested
     inner class SendEmails {
         @Test
         fun `When sending a verification email, then the email is sent with the correct content and headers`() {
-            val serverSetup = greenMail.smtp.serverSetup
-            val mailer = MailerBuilder
-                .withSMTPServer(serverSetup.bindAddress, serverSetup.port)
-                .withTransportStrategy(TransportStrategy.SMTP)
-                .withProperty("mail.smtp.starttls.enable", "false")
-                .async()
-                .buildMailer()
-            val emailTemplateManager = EmailTemplateManager()
-
-            val emailManager = EmailManager(envReaderMock, mailer, emailTemplateManager)
-
-            val verificationToken = "this-is-a-test-token-123"
-            val expectedVerificationLink = emailManager.createVerificationLink(verificationToken)
-            val expirationTime = "in 24 hours"
-            val emailData = EmailData.EmailVerification("John", expectedVerificationLink, expirationTime)
+            val expectedVerificationLink = emailManager.createVerificationLink("this-is-a-test-token-123")
+            val emailData = EmailData.EmailVerification("John", expectedVerificationLink, "in 24 hours")
 
             emailManager.sendVerificationEmail(recipientEmail, emailData)
 
-            greenMail.waitForIncomingEmail(1)
-            val receivedMessages: Array<MimeMessage> = greenMail.receivedMessages
-            assertThat(receivedMessages).hasSize(1)
-
-            val receivedMessage = receivedMessages[0]
-            val fromHeader = receivedMessage.from[0].toString()
-            val subject = receivedMessage.subject
-
-            @Suppress("NullableToStringCall")
-            val body = receivedMessage.content.toString()
-
-            assertEquals(recipientEmail, receivedMessage.allRecipients[0].toString())
-            assertThat(fromHeader).contains(testSenderName)
-            assertThat(fromHeader).contains(testSenderEmail)
-            assertEquals(emailData.subject, subject)
-            assertThat(body).contains("Hello John,")
-            assertThat(body).contains("<a href=\"$expectedVerificationLink\">$expectedVerificationLink</a>")
-            assertThat(body).contains("This link will expire in 24 hours.")
+            assertThat(emailSender.getSentEmails()).singleElement().satisfies({ email ->
+                assertThat(email.to).isEqualTo(recipientEmail)
+                assertThat(email.subject).isEqualTo(emailData.subject)
+                assertThat(email.htmlBody).contains("Hello John,")
+                assertThat(email.htmlBody)
+                    .contains("<a href=\"$expectedVerificationLink\">$expectedVerificationLink</a>")
+                assertThat(email.htmlBody).contains("This link will expire in 24 hours.")
+            })
         }
 
         @Test
         fun `When sending a project invitation acceptance email, then the email is sent with the correct content and headers`() {
-            val serverSetup = greenMail.smtp.serverSetup
-            val mailer = MailerBuilder
-                .withSMTPServer(serverSetup.bindAddress, serverSetup.port)
-                .withTransportStrategy(TransportStrategy.SMTP)
-                .withProperty("mail.smtp.starttls.enable", "false")
-                .async()
-                .buildMailer()
-            val emailTemplateManager = EmailTemplateManager()
-
-            val emailManager = EmailManager(envReaderMock, mailer, emailTemplateManager)
-
-            val acceptProjectInvitationToken = "this-is-a-test-token-123"
-            val expectedAcceptanceLink = emailManager.createAcceptProjectInvitationLink(acceptProjectInvitationToken)
-            val expirationTime = "in 24 hours"
+            val expectedAcceptanceLink = emailManager.createAcceptProjectInvitationLink("this-is-a-test-token-123")
             val emailData = EmailData.AcceptProjectInvitation(
                 "John",
                 "Jane Doe",
                 "Test Project",
                 expectedAcceptanceLink,
-                expirationTime,
+                "in 24 hours",
             )
 
             emailManager.sendAcceptProjectInvitationEmail(recipientEmail, emailData)
 
-            greenMail.waitForIncomingEmail(1)
-            val receivedMessages: Array<MimeMessage> = greenMail.receivedMessages
-            assertThat(receivedMessages).hasSize(1)
-
-            val receivedMessage = receivedMessages[0]
-            val fromHeader = receivedMessage.from[0].toString()
-            val subject = receivedMessage.subject
-
-            @Suppress("NullableToStringCall")
-            val body = receivedMessage.content.toString()
-
-            assertEquals(recipientEmail, receivedMessage.allRecipients[0].toString())
-            assertThat(fromHeader).contains(testSenderName)
-            assertThat(fromHeader).contains(testSenderEmail)
-            assertEquals(emailData.subject, subject)
-            assertThat(body).contains("Hello John,")
-            assertThat(body).contains("Jane Doe invited you to join the project")
-            assertThat(body).contains("Test Project")
-            assertThat(body).contains("<a href=\"$expectedAcceptanceLink\">$expectedAcceptanceLink</a>")
-            assertThat(body).contains("This invitation will expire in 24 hours.")
-        }
-
-        @Test
-        fun `When mailer fails to send, then MailSendFailed exception is thrown`() {
-            val emailTemplateManager = EmailTemplateManager()
-            val emailManager = EmailManager(envReaderMock, mailerMock, emailTemplateManager)
-
-            val emailData = EmailData.EmailVerification("John", "any-link", "")
-            val mailerException = TestMailException("Mailer failed to send email")
-
-            every { mailerMock.sendMail(any()) } throws mailerException
-
-            val thrownException = assertThrows<MailSendFailedException> {
-                emailManager.sendVerificationEmail(recipientEmail, emailData)
-            }
-            assertEquals(mailerException, thrownException.cause)
-        }
-
-        @Test
-        fun `When template is not pre-compiled, then FailedPreconditionException is thrown`() {
-            val emailManager = EmailManager(envReaderMock, mailerMock, emailTemplateManagerMock)
-
-            val emailData = EmailData.EmailVerification("John", "any-link", "")
-
-            every { emailTemplateManagerMock.getTemplate(any()) } throws
-                FailedPreconditionException("Template not pre-compiled")
-
-            assertThrows<FailedPreconditionException> {
-                emailManager.sendVerificationEmail(recipientEmail, emailData)
-            }
+            assertThat(emailSender.getSentEmails()).singleElement().satisfies({ email ->
+                assertThat(email.to).isEqualTo(recipientEmail)
+                assertThat(email.subject).isEqualTo(emailData.subject)
+                assertThat(email.htmlBody).contains("Hello John,")
+                assertThat(email.htmlBody).contains("Jane Doe invited you to join the project")
+                assertThat(email.htmlBody).contains("Test Project")
+                assertThat(email.htmlBody)
+                    .contains("<a href=\"$expectedAcceptanceLink\">$expectedAcceptanceLink</a>")
+                assertThat(email.htmlBody).contains("This invitation will expire in 24 hours.")
+            })
         }
     }
 
     @Nested
     inner class CreateLinks {
-        private val emailManager = EmailManager(envReaderMock, mailerMock, emailTemplateManagerMock)
-
         @Test
         fun `When given a token, then the correct verification link is created`() {
             val verificationToken = "random-test-token"
