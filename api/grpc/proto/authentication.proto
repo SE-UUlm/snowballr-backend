@@ -22,17 +22,6 @@ message VerifyEmailRequest {
   string token = 1;
 }
 
-// Request to request the reset of the user's password.
-message RequestPasswordResetRequest {
-  string email = 1;
-}
-
-// Request to actually reset the user's password.
-message PasswordResetRequest {
-  string token = 1;
-  string new_password = 2;
-}
-
 // Request to reset the password of the user while being logged in.
 message PasswordChangeRequest {
   string old_password = 1;

@@ -3,8 +3,6 @@
 syntax = "proto3";
 package snowballr;
 
-import "google/protobuf/field_mask.proto";
-
 // The decision based on the review of a paper.
 enum ReviewDecision {
   // Unspecified review decision.
@@ -34,11 +32,5 @@ message Review {
     string project_paper_id = 1;
     ReviewDecision decision = 2;
     repeated string selected_criteria_ids = 3;
-  }
-
-  // Request to update a review.
-  message Update {
-    Review review = 1;
-    google.protobuf.FieldMask mask = 2;
   }
 }

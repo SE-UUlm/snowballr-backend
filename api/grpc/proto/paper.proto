@@ -3,7 +3,6 @@
 syntax = "proto3";
 package snowballr;
 
-import "base.proto";
 import "google/protobuf/field_mask.proto";
 
 // An author of a paper.
@@ -39,12 +38,6 @@ message Paper {
   message Update {
     Paper paper = 1;
     google.protobuf.FieldMask mask = 2;
-  }
-
-  // Request to update the PDF of a paper.
-  message PdfUpdate {
-    string paper_id = 1;
-    Blob pdf = 2;
   }
 
   // External ID of a paper, e.g. DOI, URL, etc. that can be used to identify the paper.

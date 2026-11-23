@@ -22,11 +22,6 @@ message BoolValue {
   bool value = 1;
 }
 
-// Binary data.
-message Blob {
-  bytes data = 1;
-}
-
 // A link with a label and a URL.
 message Link {
   string label = 1;
