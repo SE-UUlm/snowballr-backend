@@ -23,6 +23,7 @@ services:
         environment:
             PROFILE: ${PROFILE:-}
             PORT: ${PORT:-8080}
+            REST_API_ENABLED: ${REST_API_ENABLED:-}
             DATABASE_HOST: db # use db service as db host
             LOG_LEVEL: ${LOG_LEVEL:-}
             AUTH_BYPASS_ENABLED: ${AUTH_BYPASS_ENABLED:-}
@@ -85,6 +86,7 @@ services:
         environment:
             PROFILE: ${PROFILE:-}
             PORT: ${PORT:-8080}
+            REST_API_ENABLED: ${REST_API_ENABLED:-}
             DATABASE_HOST: db # use db service as db host
             LOG_LEVEL: ${LOG_LEVEL:-}
             AUTH_BYPASS_ENABLED: ${AUTH_BYPASS_ENABLED:-}
@@ -148,6 +150,7 @@ services:
         environment:
             PROFILE: ${PROFILE:-}
             PORT: ${PORT:-8080}
+            REST_API_ENABLED: ${REST_API_ENABLED:-}
             DATABASE_HOST: ${DATABASE_HOST:-db}
             LOG_LEVEL: ${LOG_LEVEL:-}
             AUTH_BYPASS_ENABLED: ${AUTH_BYPASS_ENABLED:-}

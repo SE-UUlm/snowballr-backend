@@ -23,6 +23,8 @@ import com.tngtech.archunit.library.Architectures.layeredArchitecture
 import com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices
 import com.tngtech.archunit.library.metrics.ArchitectureMetrics
 import com.tngtech.archunit.library.metrics.MetricsComponents
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty
+import org.springframework.web.bind.annotation.RestController
 
 private const val BASE_PACKAGE = "se.uulm.snowballr.backend"
 
@@ -203,6 +205,17 @@ private class StructureRules {
                     "are silently lost. Use RequestContext, which mirrors requestId and userId into the MDC " +
                     "via a ThreadContextElement",
             )
+            .check(classes)
+    }
+
+    @ArchTest
+    fun `When a class is a REST controller, then it should be behind the REST API feature flag`(classes: JavaClasses) {
+        classes()
+            .that()
+            .areAnnotatedWith(RestController::class.java)
+            .should()
+            .beAnnotatedWith(ConditionalOnBooleanProperty::class.java)
+            .because("the REST API must stay disabled unless REST_API_ENABLED is set")
             .check(classes)
     }
 }

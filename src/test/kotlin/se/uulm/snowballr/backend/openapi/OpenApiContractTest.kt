@@ -22,6 +22,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import se.uulm.snowballr.backend.auth.IAuthenticationManager
 import se.uulm.snowballr.backend.auth.ICookieManager
 import se.uulm.snowballr.backend.env.EnvReader
+import se.uulm.snowballr.backend.rest.REST_API_ENABLED_PROPERTY
 import se.uulm.snowballr.backend.rest.SnowballRApplication
 import se.uulm.snowballr.backend.service.IAuthenticationService
 import se.uulm.snowballr.backend.service.IProjectService
@@ -43,8 +44,11 @@ import java.io.File
  */
 @SpringBootTest(
     classes = [SnowballRApplication::class],
-    // Bind the gRPC server to a free port, so the test doesn't depend on 9090 being available
-    properties = ["spring.grpc.server.port=0"],
+    properties = [
+        // Bind the gRPC server to a free port, so the test doesn't depend on 9090 being available
+        "spring.grpc.server.port=0",
+        "$REST_API_ENABLED_PROPERTY=true",
+    ],
 )
 @AutoConfigureMockMvc
 @Tag("openapi")

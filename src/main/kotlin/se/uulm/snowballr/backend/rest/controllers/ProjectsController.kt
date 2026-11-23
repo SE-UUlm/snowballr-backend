@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.rest.controllers
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -11,11 +12,13 @@ import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.outgoing.project.ProjectResponse
+import se.uulm.snowballr.backend.rest.REST_API_ENABLED_PROPERTY
 import se.uulm.snowballr.backend.rest.onRequest
 import se.uulm.snowballr.backend.service.IProjectService
 import java.util.UUID
 
 @RestController
+@ConditionalOnBooleanProperty(REST_API_ENABLED_PROPERTY)
 @RequestMapping(Routes.PROJECTS_ROUTE)
 class ProjectsController(private val projectService: IProjectService) {
     @GetMapping

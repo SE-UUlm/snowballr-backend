@@ -9,6 +9,7 @@ private const val PROFILE = "PROFILE"
 
 // Http
 private const val PORT = "PORT"
+private const val REST_API_ENABLED = "REST_API_ENABLED"
 
 // Miscellaneous
 private const val LOG_LEVEL = "LOG_LEVEL"
@@ -49,6 +50,7 @@ private const val FETCHER_RETRY_DELAY_IN_MILLIS = "FETCHER_RETRY_DELAY_IN_MILLIS
 // Default values
 private val DEFAULT_PROFILE = AppProfile.PRODUCTION
 private const val DEFAULT_PORT = 8080
+private const val DEFAULT_REST_API_ENABLED = false
 const val DEFAULT_LOG_LEVEL = "DEBUG"
 private const val DEFAULT_SENSITIVE_INFORMATION_RETENTION_DAYS = 30
 private const val DEFAULT_DATABASE_HOST = "localhost"
@@ -108,6 +110,7 @@ class EnvReader(
     private fun buildHttp(defaults: ProfileDefaults): Env.Http {
         return Env.Http(
             port = envService.getRequiredOrDefault(PORT, defaults.port, String::toIntOrNull),
+            restApiEnabled = envService.getBooleanOrDefault(REST_API_ENABLED, DEFAULT_REST_API_ENABLED),
         )
     }
 

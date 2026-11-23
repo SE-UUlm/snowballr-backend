@@ -25,6 +25,7 @@ The `PROFILE` variable determines the default behavior of the application.
 |----------------------------------------|:------------------------------------:|:-------------------:|------------------------------------------------------------------------------------------------------------|
 | `PROFILE`                              |                 :x:                  |    `PRODUCTION`     | Sets the configuration profile (`PRODUCTION`, `DEVELOPMENT`, `TESTING`).                                   |
 | `PORT`                                 | :white_check_mark: (in `PRODUCTION`) |        8080         | The port where the backend is served.                                                                      |
+| `REST_API_ENABLED`                     |                 :x:                  |       `false`       | Serves the REST API and its OpenAPI/Swagger docs. Off in every profile until the migration is done.        |
 | `DATABASE_HOST`                        | :white_check_mark: (in `PRODUCTION`) |     `localhost`     | Hostname of the database connection.                                                                       |
 | `LOG_LEVEL`                            |                 :x:                  |    Profile-based    | The log level to use. One of `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, or `OFF`.                          |
 | `AUTH_BYPASS_ENABLED`                  |                 :x:                  |    Profile-based    | Bypasses authentication and uses the dummy user for all whitelisted requests.                              |

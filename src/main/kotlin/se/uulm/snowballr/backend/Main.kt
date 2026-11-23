@@ -34,7 +34,7 @@ fun main() {
     addDbShutdownHook()
     initializeSchedulerManager()
 
-    startRestServer(grpcPort = env.http.port)
+    startRestServer(grpcPort = env.http.port, restApiEnabled = env.http.restApiEnabled)
 }
 
 /**
