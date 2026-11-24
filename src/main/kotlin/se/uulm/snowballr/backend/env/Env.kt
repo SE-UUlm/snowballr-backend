@@ -6,7 +6,7 @@ import kotlin.time.Duration
 /**
  * Represents the environment configuration for the application.
  *
- * @property http Configuration related to the HTTP server, such as the port number.
+ * @property http Configuration related to the HTTP server, such as the port number and whether the REST API is enabled.
  * @property miscellaneous Miscellaneous configuration, such as the logging level.
  * @property database Configuration related to the database connection, including user credentials.
  * @property encryption Configuration for encryption keys used in the application, such as JWT keys.
@@ -25,6 +25,8 @@ data class Env(
 ) {
     data class Http(
         val port: Int,
+        // The REST API is still being migrated to and lacks input validation, so it is off by default
+        val restApiEnabled: Boolean,
     )
 
     data class Miscellaneous(

@@ -1,5 +1,6 @@
 package se.uulm.snowballr.backend.rest.controllers
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -10,10 +11,12 @@ import se.uulm.snowballr.backend.context.RequestContext
 import se.uulm.snowballr.backend.model.auth.AuthenticationStatus
 import se.uulm.snowballr.backend.model.incoming.authentication.ChangePasswordRequest
 import se.uulm.snowballr.backend.model.incoming.authentication.LoginRequest
+import se.uulm.snowballr.backend.rest.REST_API_ENABLED_PROPERTY
 import se.uulm.snowballr.backend.rest.onRequest
 import se.uulm.snowballr.backend.service.IAuthenticationService
 
 @RestController
+@ConditionalOnBooleanProperty(REST_API_ENABLED_PROPERTY)
 @RequestMapping(Routes.AUTH_ROUTE)
 class AuthController(private val authService: IAuthenticationService) {
     @PostMapping("/login")
