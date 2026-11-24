@@ -17,17 +17,25 @@ import se.uulm.snowballr.backend.service.IAuthenticationService
 @RequestMapping(Routes.AUTH_ROUTE)
 class AuthController(private val authService: IAuthenticationService) {
     @PostMapping("/login")
-    fun login(@RequestBody request: LoginRequest) = onRequest { authService.login(request) }
+    fun login(@RequestBody request: LoginRequest) {
+        onRequest { authService.login(request) }
+    }
 
     @PostMapping("/logout")
-    fun logout() = onRequest { authService.logout() }
+    fun logout() {
+        onRequest { authService.logout() }
+    }
 
     @GetMapping("/status")
     fun getAuthStatus(): AuthenticationStatus = RequestContext.current().authStatus
 
     @PostMapping("/verify-email")
-    fun verifyEmail(@RequestParam token: String) = onRequest { authService.verifyEmail(token) }
+    fun verifyEmail(@RequestParam token: String) {
+        onRequest { authService.verifyEmail(token) }
+    }
 
     @PostMapping("/change-password")
-    fun changePassword(@RequestBody request: ChangePasswordRequest) = onRequest { authService.changePassword(request) }
+    fun changePassword(@RequestBody request: ChangePasswordRequest) {
+        onRequest { authService.changePassword(request) }
+    }
 }
