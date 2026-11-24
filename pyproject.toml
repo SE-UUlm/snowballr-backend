@@ -5,6 +5,7 @@ include = [
     "tools/fetcher-cli/cli.py",
     "src/main/resources/plugins/fetchers/IEEEXplore.py",
     "src/main/resources/plugins/fetchers/SemanticScholar.py",
+    "src/main/resources/plugins/fetchers/OpenAlex.py",
     "src/main/resources/plugins/fetchers/lib/snowballr.py",
 ]
 
@@ -20,5 +21,6 @@ include = [
     "tools/fetcher-cli/cli.py",
     "src/main/resources/plugins/fetchers/IEEEXplore.py",
     "src/main/resources/plugins/fetchers/SemanticScholar.py",
+    "src/main/resources/plugins/fetchers/OpenAlex.py",
     "src/main/resources/plugins/fetchers/lib/snowballr.py",
 ]

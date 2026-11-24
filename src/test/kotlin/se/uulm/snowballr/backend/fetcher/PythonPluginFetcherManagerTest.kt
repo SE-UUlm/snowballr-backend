@@ -67,8 +67,8 @@ class PythonPluginFetcherManagerTest {
     fun `When the manager is initialized, then bundled plugin resources are copied`() {
         assertThat(fetcherDirectory.resolve("IEEEXplore.py").exists()).isTrue()
         assertThat(fetcherDirectory.resolve("SemanticScholar.py").exists()).isTrue()
+        assertThat(fetcherDirectory.resolve("OpenAlex.py").exists()).isTrue()
         assertThat(fetcherDirectory.resolve("lib").resolve("snowballr.py").exists()).isTrue()
-        assertThat(fetcherDirectory.resolve("lib").resolve("xploreapi.py").exists()).isTrue()
     }
 
     @Test
@@ -91,7 +91,7 @@ class PythonPluginFetcherManagerTest {
 
             val availableFetchers = fetcherManager.getAvailableFetchers().map { it.id }
 
-            assertThat(availableFetchers).contains("IEEEXplore", "SemanticScholar", "custom_fetcher")
+            assertThat(availableFetchers).contains("IEEEXplore", "SemanticScholar", "OpenAlex", "custom_fetcher")
             assertThat(availableFetchers).doesNotContain("README", "nested_fetcher")
         }
 

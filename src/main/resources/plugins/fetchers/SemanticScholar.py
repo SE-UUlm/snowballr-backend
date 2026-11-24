@@ -1,6 +1,6 @@
-import urllib.parse
 from typing import Any, Optional
 
+from requests import HTTPError
 from snowballr import (
     Author,
     ExternalId,
@@ -44,7 +44,7 @@ id_metadata_key: str = "SemanticScholarId"
 corpus_id_metadata_key: str = "SemanticScholarCorpusId"
 
 base_url = "https://api.semanticscholar.org/graph/v1"
-fields = "corpusId,title,externalIds,abstract,publicationDate,year,venue,publicationTypes,authors"
+fields = "corpusId,title,externalIds,abstract,publicationDate,year,venue,publicationVenue,authors"
 
 
 def search_papers(search_query: str, options: dict[str, str]) -> list[Paper]:
@@ -56,7 +56,7 @@ def search_papers(search_query: str, options: dict[str, str]) -> list[Paper]:
     """
     url = f"{base_url}/paper/search"
     params = {
-        "query": urllib.parse.quote_plus(search_query),
+        "query": search_query,
         "fields": fields,
         "limit": 25,
     }
@@ -103,8 +103,14 @@ def _get_references(
         return f"{url}?offset={next_offset}" if next_offset is not None else None
 
     paper_objects = []
-    for page in paginate_with_retry(url, next_url, headers, params, timeout_seconds):
-        paper_objects += safe_get(page, "data", [])
+    try:
+        for page in paginate_with_retry(url, next_url, headers, params, timeout_seconds):
+            paper_objects += safe_get(page, "data", [])
+    except HTTPError as e:
+        is_not_found = e.response is not None and e.response.status_code == 404
+        if is_not_found and not paper_objects:
+            return []
+        raise
 
     return list(map(lambda obj: _paper_from_response(safe_get(obj, obj_key, {})), paper_objects))
 
@@ -162,7 +168,7 @@ def _paper_from_response(res) -> Paper:
     date_str = safe_get(res, "publicationDate", "") or str(safe_get(res, "year", "0"))
     year = int(str(date_str)[:4] or "0")
 
-    publication_type = next(iter(safe_get(res, "publicationTypes", [])), "")
+    venue = safe_get(res, "publicationVenue", {})
 
     metadata = {}
     paper_id = res["paperId"]
@@ -179,8 +185,8 @@ def _paper_from_response(res) -> Paper:
         abstract=safe_get(res, "abstract", ""),
         year=year,
         publisher="",
-        publication_type=publication_type,
-        publication_name=safe_get(res, "venue", ""),
+        publication_type=safe_get(venue, "type", ""),
+        publication_name=safe_get(venue, "name", safe_get(res, "venue", "")),
         authors=authors,
         fetcher_metadata=metadata,
     )
@@ -204,7 +210,7 @@ def _external_ids_from_response(res) -> list[ExternalId]:
         "ACL": ("ACL", ""),
         "PubMed": ("PUB_MED", ""),
         "Medline": ("MEDLINE", ""),
-        "PubMedCentral": ("PUB_MED_CENTRAL", "PMC"),  # PubMedCentral required 'PMC' prefix
+        "PubMedCentral": ("PUB_MED_CENTRAL", "PMC"),  # PubMedCentral requires 'PMC' prefix
         "DBLP": ("DBLP", ""),
     }
 
