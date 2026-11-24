@@ -15,6 +15,7 @@ private const val REST_API_ENABLED = "REST_API_ENABLED"
 private const val LOG_LEVEL = "LOG_LEVEL"
 private const val AUTH_BYPASS_ENABLED = "AUTH_BYPASS_ENABLED"
 private const val FRONTEND_BASE_URL = "FRONTEND_BASE_URL"
+private const val REGISTRATION_AUTO_VERIFY_ENABLED = "REGISTRATION_AUTO_VERIFY_ENABLED"
 
 // Database
 private const val DATABASE_PASSWORD = "DATABASE_PASSWORD"
@@ -87,7 +88,7 @@ class EnvReader(
         val defaults = defaultsForProfile(activeProfile)
 
         // Build miscellaneous config to access `authBypassEnabled` for database config
-        val miscellaneous = buildMiscellaneous(defaults)
+        val miscellaneous = buildMiscellaneous(defaults, activeProfile)
         val database = buildDatabase(defaults, miscellaneous.authBypassEnabled)
 
         env = Env(
@@ -118,9 +119,10 @@ class EnvReader(
      * Builds the miscellaneous configuration by reading and processing related environment variables.
      *
      * @param defaults Default values for the miscellaneous configuration.
+     * @param profile The active application profile, used to forbid registration auto-verify in production.
      * @return An [Env.Miscellaneous] object containing the miscellaneous configuration.
      */
-    private fun buildMiscellaneous(defaults: ProfileDefaults): Env.Miscellaneous {
+    private fun buildMiscellaneous(defaults: ProfileDefaults, profile: AppProfile): Env.Miscellaneous {
         val frontendBaseUrl = envService.getRequiredStringOrDefault(FRONTEND_BASE_URL, defaults.frontendBaseUrl)
             .trim().trimEnd('/')
 
@@ -131,10 +133,22 @@ class EnvReader(
             }
         }
 
+        val registrationAutoVerifyEnabled = envService.getBooleanOrDefault(
+            REGISTRATION_AUTO_VERIFY_ENABLED,
+            defaults.registrationAutoVerifyEnabled,
+        )
+        if (registrationAutoVerifyEnabled) {
+            check(profile != AppProfile.PRODUCTION) {
+                "$REGISTRATION_AUTO_VERIFY_ENABLED=true is not allowed with profile ${AppProfile.PRODUCTION}."
+            }
+            logger.warn { "Registration auto-verify is enabled. Newly registered users are activated immediately." }
+        }
+
         return Env.Miscellaneous(
             logLevel = envService.getStringOrDefault(LOG_LEVEL, defaults.logLevel),
             authBypassEnabled = envService.getBooleanOrDefault(AUTH_BYPASS_ENABLED, defaults.authBypassEnabled),
             frontendBaseUrl = frontendBaseUrl,
+            registrationAutoVerifyEnabled = registrationAutoVerifyEnabled,
         )
     }
 
@@ -278,6 +292,7 @@ class EnvReader(
             frontendBaseUrl = "http://localhost:5173",
             seedUserEnabled = true,
             smtpTransportLoggingOnlyEnabled = true,
+            registrationAutoVerifyEnabled = true,
         )
 
         AppProfile.DEVELOPMENT -> ProfileDefaults(
@@ -289,6 +304,7 @@ class EnvReader(
             frontendBaseUrl = "http://localhost:5173",
             seedUserEnabled = true,
             smtpTransportLoggingOnlyEnabled = true,
+            registrationAutoVerifyEnabled = false,
         )
 
         AppProfile.PRODUCTION -> ProfileDefaults(
@@ -300,6 +316,7 @@ class EnvReader(
             frontendBaseUrl = null,
             seedUserEnabled = false,
             smtpTransportLoggingOnlyEnabled = false,
+            registrationAutoVerifyEnabled = false,
         )
     }
 
@@ -314,6 +331,7 @@ class EnvReader(
      * @property frontendBaseUrl The base URL for the frontend application.
      * @property seedUserEnabled Whether the seed user is enabled.
      * @property smtpTransportLoggingOnlyEnabled Whether SMTP transport logging is enabled.
+     * @property registrationAutoVerifyEnabled Whether newly registered users are activated without email verification.
      */
     private data class ProfileDefaults(
         val port: Int?,
@@ -324,5 +342,6 @@ class EnvReader(
         val frontendBaseUrl: String?,
         val seedUserEnabled: Boolean,
         val smtpTransportLoggingOnlyEnabled: Boolean,
+        val registrationAutoVerifyEnabled: Boolean,
     )
 }

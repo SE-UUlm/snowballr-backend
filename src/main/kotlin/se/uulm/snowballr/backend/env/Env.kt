@@ -34,6 +34,8 @@ data class Env(
         val authBypassEnabled: Boolean,
         // Guaranteed to not contain a trailing slash
         val frontendBaseUrl: String,
+        // Activates newly registered users immediately instead of waiting for email verification
+        val registrationAutoVerifyEnabled: Boolean,
     )
 
     data class Database(

@@ -29,6 +29,7 @@ The `PROFILE` variable determines the default behavior of the application.
 | `DATABASE_HOST`                        | :white_check_mark: (in `PRODUCTION`) |     `localhost`     | Hostname of the database connection.                                                                       |
 | `LOG_LEVEL`                            |                 :x:                  |    Profile-based    | The log level to use. One of `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, or `OFF`.                          |
 | `AUTH_BYPASS_ENABLED`                  |                 :x:                  |    Profile-based    | Bypasses authentication and uses the dummy user for all whitelisted requests.                              |
+| `REGISTRATION_AUTO_VERIFY_ENABLED`     |                 :x:                  |    Profile-based    | Activates new users on registration; no verification token or email is created.                            |
 | `FRONTEND_BASE_URL`                    | :white_check_mark: (in `PRODUCTION`) |    Profile-based    | Base URL of the frontend application, used for generating URLs in emails.                                  |
 | `DATABASE_SEED_USER_ENABLED`           |                 :x:                  |    Profile-based    | Inserts a dummy user into the database on startup.                                                         |
 | `DATABASE_PASSWORD`                    |          :white_check_mark:          |          -          | Password for the database e.g. `postgres_password`.                                                        |
@@ -68,6 +69,7 @@ The `PROFILE` variable determines the default behavior of the application.
 | `LOG_LEVEL`                            | `DEBUG`      | `DEBUG`                 | `TRACE`                 |
 | `SENSITIVE_INFORMATION_RETENTION_DAYS` | `30`         | `30`                    | `30`                    |
 | `AUTH_BYPASS_ENABLED`                  | `false`      | `false`                 | `true`                  |
+| `REGISTRATION_AUTO_VERIFY_ENABLED`     | `false`      | `false`                 | `true`                  |
 | `FRONTEND_BASE_URL`                    | -            | `http://localhost:5173` | `http://localhost:5173` |
 | `DATABASE_SEED_USER_ENABLED`           | `false`      | `true`                  | `true`                  |
 | `SMTP_TRANSPORT_LOGGING_ONLY_ENABLED`  |  `false`**   | `true`                  | `true`                  |

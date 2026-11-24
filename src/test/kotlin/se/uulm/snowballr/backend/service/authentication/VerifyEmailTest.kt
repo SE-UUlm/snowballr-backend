@@ -49,6 +49,23 @@ class VerifyEmailTest : AuthenticationServiceTest() {
     }
 
     @Test
+    fun `When the user is not unconfirmed, then a VerificationTokenNotFoundException is thrown and the token is deleted`() =
+        runTest {
+            val user = DataBuilder.createExampleUser(status = UserStatus.DELETED)
+            val token = DataBuilder.createExampleVerificationToken(userId = user.id)
+
+            coEvery { verificationTokenRepoMock.getVerificationTokenByValue(token.token) } returns
+                Result.success(token)
+            coEvery { userRepoMock.getUserById(user.id) } returns Result.success(user)
+            coJustRun { verificationTokenRepoMock.deleteVerificationToken(token.token) }
+
+            assertThrows<VerificationTokenNotFoundException> { service.verifyEmail(token.token) }
+
+            coVerify(exactly = 1) { verificationTokenRepoMock.deleteVerificationToken(token.token) }
+            coVerify(exactly = 0) { userRepoMock.updateUser(any(), any()) }
+        }
+
+    @Test
     fun `When a valid token is provided and all operations succeed, then the token is successfully deleted afterwards`() =
         runTest {
             val user = DataBuilder.createExampleUser(status = UserStatus.ACTIVE_UNCONFIRMED)

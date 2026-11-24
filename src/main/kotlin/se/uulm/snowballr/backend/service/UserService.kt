@@ -16,6 +16,7 @@ import se.uulm.snowballr.backend.model.dto.project.ProjectStatus
 import se.uulm.snowballr.backend.model.dto.user.User
 import se.uulm.snowballr.backend.model.dto.user.UserField
 import se.uulm.snowballr.backend.model.dto.user.UserSettingsWithCriteria
+import se.uulm.snowballr.backend.model.dto.user.UserStatus
 import se.uulm.snowballr.backend.model.email.EmailData
 import se.uulm.snowballr.backend.model.exception.alreadyexists.entity.DuplicateUserException
 import se.uulm.snowballr.backend.model.exception.failedprecondition.EntityNotActiveException
@@ -149,6 +150,14 @@ class UserService(
         // Hash the password and create the user
         val passwordHash = PasswordUtils.hashPassword(request.password)
         val user = userRepo.createUser(request, passwordHash)
+
+        if (envReader.env.miscellaneous.registrationAutoVerifyEnabled) {
+            userRepo.updateUser(user.copy(status = UserStatus.ACTIVE), setOf(UserField.STATUS))
+            logger.info {
+                "User ${user.id} registered (${user.email}) and activated (registration auto-verify)"
+            }
+            return
+        }
 
         // Generate and save verification token for the user
         val verificationToken = NanoId.generate(VERIFICATION_TOKEN_LENGTH)
