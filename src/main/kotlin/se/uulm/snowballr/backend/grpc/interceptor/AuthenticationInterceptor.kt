@@ -61,8 +61,6 @@ private val PUBLIC_METHODS =
         SnowballRGrpcKt.registerMethod.fullMethodName,
         SnowballRGrpcKt.verifyEmailMethod.fullMethodName,
         SnowballRGrpcKt.loginMethod.fullMethodName,
-        SnowballRGrpcKt.requestPasswordResetMethod.fullMethodName,
-        SnowballRGrpcKt.resetPasswordMethod.fullMethodName,
         SnowballRGrpcKt.acceptProjectInvitationMethod.fullMethodName,
     )
 

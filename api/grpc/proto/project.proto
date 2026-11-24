@@ -211,12 +211,6 @@ message Project {
       string paper_id = 3;
     }
 
-    // Request to update a project paper.
-    message Update {
-      Paper project_paper = 1;
-      google.protobuf.FieldMask mask = 2;
-    }
-
     // Request to search for project papers according to a query.
     message SearchQuery {
       string project_id = 1;

@@ -214,34 +214,6 @@ service SnowballR {
   // @auth
   rpc RenewSession(Nothing) returns (Nothing);
 
-  // If the provided email address belongs to an active user, the server sends a
-  // challenge/token to that address. This token must then be sent
-  // alongside a new password
-  // (see [ResetPassword](#service-snowballr.SnowballR-ResetPassword)) in order
-  // to update a lost or forgotten password.
-  //
-  // ## Errors
-  // | Error Code | Description |
-  // | :--- | :--- |
-  // | `INVALID_ARGUMENT` | The email address is not a valid email address. If the email address is valid, but has not yet been registered, this error does not occur. |
-  // | `INTERNAL` | The verification email could not be sent. |
-  rpc RequestPasswordReset(RequestPasswordResetRequest) returns (Nothing);
-
-  // After requesting a password reset email using
-  // [RequestPasswordReset](#service-snowballr.SnowballR-RequestPasswordReset),
-  // this call may be used to actually set the new password. To verify the
-  // ownership of the account, the token sent via email must also be provided
-  // and valid. The new password must follow the same rules as during
-  // [registration](#service-snowballr.SnowballR-Register).
-  //
-  // ## Errors
-  // | Error Code | Description |
-  // | :--- | :--- |
-  // | `INVALID_ARGUMENT` | Either the provided token is invalid, or the new password does not meet the rules specified in [Register](#service-snowballr.SnowballR-Register). |
-  // | `FAILED_PRECONDITION` | The user is not active (i.e., in state `USER_STATUS_ACTIVE`). |
-  // | `UNAUTHENTICATED` | The provided token could not be found or has expired. |
-  rpc ResetPassword(PasswordResetRequest) returns (Nothing);
-
   // Set a new password using the old password.
   // The new password must follow the same rules as during
   // [registration](#service-snowballr.SnowballR-Register). This serves no
@@ -338,21 +310,6 @@ service SnowballR {
   // @auth
   rpc SoftDeleteUser(Id) returns (Nothing);
 
-  // Allow a previously soft-deleted user to log in again.
-  // The calling user is **required to be an admin**.
-  //
-  // ## Errors
-  // | Error Code | Description |
-  // | :--- | :--- |
-  // | `INVALID_ARGUMENT` | The user ID is not a valid UUID. |
-  // | `NOT_FOUND` | No user with the provided ID was found. |
-  // | `PERMISSION_DENIED` | The calling user is not a server admin. |
-  // | `FAILED_PRECONDITION` | The user to be restored is not deleted (i.e., not in state `USER_STATUS_DELETED`). |
-  // | `UNAUTHENTICATED` | The user is not signed in. |
-  //
-  // @auth
-  rpc SoftUndeleteUser(Id) returns (Nothing);
-
   // Get the user-specific settings for the calling user. The user settings are returned and **guaranteed to be specified**.
   //
   // ## Errors
@@ -378,18 +335,6 @@ service SnowballR {
   //
   // @auth
   rpc UpdateUserSettings(UserSettings.Update) returns (UserSettings);
-
-  // Get all project papers that the calling user can review. It is not
-  // guaranteed that the returned papers belong to the same project.
-  // The returned paper list **may be empty** if no papers can be reviewed.
-  //
-  // ## Errors
-  // | Error Code | Description |
-  // | :--- | :--- |
-  // | `UNAUTHENTICATED` | The user is not signed in. |
-  //
-  // @auth
-  rpc GetAllPapersToReview(Nothing) returns (Project.Paper.List);
 
   // Get all project papers from the project identified by its ID that
   // the calling user can review.
@@ -622,17 +567,6 @@ service SnowballR {
   // @auth
   rpc GetAllProjects(Nothing) returns (Project.List);
 
-  // Get a list of all projects that are marked as deleted.
-  //
-  // ## Errors
-  // | Error Code | Description |
-  // | :--- | :--- |
-  // | `PERMISSION_DENIED` | The calling user is not a server admin. |
-  // | `UNAUTHENTICATED` | The user is not signed in. |
-  //
-  // @auth
-  rpc GetAllDeletedProjects(Nothing) returns (Project.List);
-
   // Get a list of all projects the specified user is a member of and that are
   // marked as deleted.
   //
@@ -646,17 +580,6 @@ service SnowballR {
   //
   // @auth
   rpc GetAllDeletedProjectsForUser(Id) returns (Project.List);
-
-  // Get a list of all projects that are marked as archived.
-  //
-  // ## Errors
-  // | Error Code | Description |
-  // | :--- | :--- |
-  // | `PERMISSION_DENIED` | The calling user is not a server admin. |
-  // | `UNAUTHENTICATED` | The user is not signed in. |
-  //
-  // @auth
-  rpc GetAllArchivedProjects(Nothing) returns (Project.List);
 
   // Get a list of all active projects the specified user is a member of.
   // Projects that the user is invited to are excluded.
@@ -780,21 +703,6 @@ service SnowballR {
   //
   // @auth
   rpc SoftDeleteProject(Id) returns (Nothing);
-
-  // Restore a previously deleted project to the **active** state.
-  // The calling user is **required to be a project admin**.
-  //
-  // ## Errors
-  // | Error Code | Description |
-  // | :--- | :--- |
-  // | `INVALID_ARGUMENT` | The project ID is not a valid UUID. |
-  // | `NOT_FOUND` | No project with the provided ID was found. |
-  // | `PERMISSION_DENIED` | The calling user is neither a server admin nor a project admin of the project. |
-  // | `FAILED_PRECONDITION` | The project to be restored is not deleted (i.e., not in state `PROJECT_STATUS_DELETED`). |
-  // | `UNAUTHENTICATED` | The user is not signed in. |
-  //
-  // @auth
-  rpc SoftUndeleteProject(Id) returns (Nothing);
 
   // Get information about the specified project.
   // The response only includes attributes specified in the field mask or all attributes when the field mask is not
@@ -968,39 +876,6 @@ service SnowballR {
   // @auth
   rpc AddPaperToProject(Project.Paper.Add) returns (Project.Paper);
 
-  // Update all attributes specified in the field mask for the project paper with the provided ID,
-  // except the fields `local_id`, `decision`, `stage`, and `reviews`. Furthermore, the underlying paper
-  // cannot be modified; use the [UpdatePaper](#service-snowballr.SnowballR-UpdatePaper) call for this. The updated
-  // project paper is returned and **guaranteed to be specified**.
-  // The calling user is **required to be a project admin**.
-  //
-  // ## Errors
-  // | Error Code | Description |
-  // | :--- | :--- |
-  // | `INVALID_ARGUMENT` | The project paper ID or paper ID is not a valid UUID. |
-  // | `NOT_FOUND` | No project paper with the provided ID or paper with the provided ID was found. |
-  // | `PERMISSION_DENIED` | The calling user is neither a server admin nor a project admin of the project the project paper belongs to. |
-  // | `UNAUTHENTICATED` | The user is not signed in. |
-  //
-  // @auth
-  rpc UpdateProjectPaper(Project.Paper.Update) returns (Project.Paper);
-
-  // Permanently remove the specified project paper from the project. All
-  // references to this project paper will also be deleted. **This cannot be
-  // undone**.
-  // The calling user is **required to be a project admin**.
-  //
-  // ## Errors
-  // | Error Code | Description |
-  // | :--- | :--- |
-  // | `INVALID_ARGUMENT` | The project paper ID is not a valid UUID. |
-  // | `NOT_FOUND` | No project paper with the provided ID was found. |
-  // | `PERMISSION_DENIED` | The calling user is neither a server admin nor a project admin of the project the project paper belongs to. |
-  // | `UNAUTHENTICATED` | The user is not signed in. |
-  //
-  // @auth
-  rpc RemovePaperFromProject(Id) returns (Nothing);
-
   // Get a review by its ID.
   //
   // ## Errors
@@ -1046,41 +921,6 @@ service SnowballR {
   //
   // @auth
   rpc CreateReview(Review.Create) returns (Review);
-
-  // Update all attributes specified in the field mask for the review with the given ID, except the `user_id` field.
-  // The updated review is returned and **guaranteed to be specified**. Only the
-  // owner of a review is allowed to update a review and must be a member of the project the review is in.
-  // A user is the owner of a review if the review's `user_id` matches the user's `id`.
-  //
-  // ## Errors
-  // | Error Code | Description |
-  // | :--- | :--- |
-  // | `INVALID_ARGUMENT` | At least one (updated) review detail did not meet the requirements: The review ID must be a valid UUID, the decision must be specified, and if given, the selected criteria IDs must be a list of valid UUIDs. |
-  // | `NOT_FOUND` | No review with the provided ID was found. |
-  // | `PERMISSION_DENIED` | The calling user is neither a server admin, the owner of the review, nor in the same project as the review. |
-  // | `FAILED_PRECONDITION` | The project paper is in a state in which no further modifications to the review are allowed, or the project is not active (i.e., it is archived or deleted). |
-  // | `UNAUTHENTICATED` | The user is not signed in. |
-  //
-  // @auth
-  rpc UpdateReview(Review.Update) returns (Review);
-
-  // Permanently remove the specified review from the project paper. **This
-  // cannot be undone**. Only the owner of a review is allowed to delete a
-  // review. The owner of the review must be a member of the project the
-  // review is in, in order to remove it. A user is the owner of a review if the
-  // review's `user_id` matches the user's `id`.
-  //
-  // ## Errors
-  // | Error Code | Description |
-  // | :--- | :--- |
-  // | `INVALID_ARGUMENT` | The review ID is not a valid UUID. |
-  // | `NOT_FOUND` | No review with the provided ID was found. |
-  // | `PERMISSION_DENIED` | The calling user is neither a server admin, the owner of the review, nor in the same project as the review. |
-  // | `FAILED_PRECONDITION` | The project paper is in a state in which no deletions of reviews are allowed anymore, or the project is not active (i.e., it is archived or deleted). |
-  // | `UNAUTHENTICATED` | The user is not signed in. |
-  //
-  // @auth
-  rpc DeleteReview(Id) returns (Nothing);
 
   // Get a paper by its ID.
   //
@@ -1210,32 +1050,4 @@ service SnowballR {
   //
   // @auth
   rpc GetBackwardReferencedPapers(Id) returns (Paper.List);
-
-  // Get a paper's PDF as a blob.
-  //
-  // ## Errors
-  // | Error Code | Description |
-  // | :--- | :--- |
-  // | `INVALID_ARGUMENT` | The paper ID is not a valid UUID. |
-  // | `NOT_FOUND` | No paper with the provided ID was found. |
-  // | `FAILED_PRECONDITION` | The paper has no attached PDF (see [Paper.has_pdf](#message-snowballr.Paper)). |
-  // | `UNAUTHENTICATED` | The user is not signed in. |
-  //
-  // @auth
-  rpc GetPaperPdf(Id) returns (Blob);
-
-  // Set or overwrite the PDF for the specified paper. This call may also be
-  // used to remove the PDF of a paper by omitting the `pdf` field.
-  // The paper's `has_pdf` field is automatically updated by the server.
-  //
-  // ## Errors
-  // | Error Code | Description |
-  // | :--- | :--- |
-  // | `INVALID_ARGUMENT` | The PDF is not in the correct format, or the paper ID is not a valid UUID. |
-  // | `NOT_FOUND` | No paper with the provided ID was found. |
-  // | `RESOURCE_EXHAUSTED` | The PDF was rejected by the server, e.g., because it is too large. |
-  // | `UNAUTHENTICATED` | The user is not signed in. |
-  //
-  // @auth
-  rpc SetPaperPdf(Paper.PdfUpdate) returns (Nothing);
 }

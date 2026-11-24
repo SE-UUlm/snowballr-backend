@@ -24,9 +24,6 @@ jobs:
                   ignore-links: "https://snowballr.informatik.uni-ulm.de*,https://snowballr-dev.informatik.uni-ulm.de*,https://deepwiki.com/*,https://stackoverflow.com/*,https://medium.com/*,https://www.npmjs.com/package/@se-uulm/snowballr-api-client,http://localhost*"
                   ignore-paths: "src/,AGENTS.md,CLAUDE.md,api/grpc/docs/"
 
-            - name: Calculate implementation progress (dry run)
-              run: node scripts/calc-impl-progress.js update-wiki
-
     publish-wiki:
         name: Publish Wiki
         if: github.ref_name == 'develop' && github.ref_type == 'branch'
@@ -37,9 +34,6 @@ jobs:
         steps:
             - name: Checkout code
               uses: actions/checkout@v7
-
-            - name: Calculate implementation progress
-              run: node scripts/calc-impl-progress.js update-wiki
 
             - name: Publish Wiki
               uses: SE-UUlm/snowballr-ci/src/wiki-publish@v1

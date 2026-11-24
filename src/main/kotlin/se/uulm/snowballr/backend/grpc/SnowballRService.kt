@@ -122,14 +122,8 @@ class SnowballRService :
         Authentication.AuthenticationStatusResponse.newBuilder()
             .setAuthenticationStatus(RequestContext.current().authStatus.toGrpc()).build()
 
-    /** Renew Session is handled in the [authenticationInterceptor]. */
+    /** Renew Session is handled in the authentication interceptor. */
     override suspend fun renewSession(request: Base.Nothing): Base.Nothing = Base.Nothing.getDefaultInstance()
-
-    override suspend fun requestPasswordReset(request: Authentication.RequestPasswordResetRequest): Base.Nothing =
-        super.requestPasswordReset(request)
-
-    override suspend fun resetPassword(request: Authentication.PasswordResetRequest): Base.Nothing =
-        super.resetPassword(request)
 
     override suspend fun changePassword(request: Authentication.PasswordChangeRequest) = returnNothing {
         authenticationService.changePassword(
@@ -186,11 +180,6 @@ class SnowballRService :
     override suspend fun softDeleteUser(request: Base.Id) = returnNothing {
         userService.softDeleteUser(parseUserId(request))
     }
-
-    override suspend fun softUndeleteUser(request: Base.Id): Base.Nothing = super.softUndeleteUser(request)
-
-    override suspend fun getAllPapersToReview(request: Base.Nothing): ProjectOuterClass.Project.Paper.List =
-        super.getAllPapersToReview(request)
 
     override suspend fun getPapersToReviewForProject(request: Base.Id): ProjectOuterClass.Project.Paper.List =
         projectPaperService.getPapersToReviewForProject(parseProjectId(request)).toGrpc()
@@ -291,14 +280,8 @@ class SnowballRService :
     override suspend fun getAllProjects(request: Base.Nothing): ProjectOuterClass.Project.List =
         projectService.getAllProjects().toGrpc()
 
-    override suspend fun getAllDeletedProjects(request: Base.Nothing): ProjectOuterClass.Project.List =
-        super.getAllDeletedProjects(request)
-
     override suspend fun getAllDeletedProjectsForUser(request: Base.Id): ProjectOuterClass.Project.List =
         projectService.getAllDeletedProjectsForUser(parseUserId(request)).toGrpc()
-
-    override suspend fun getAllArchivedProjects(request: Base.Nothing): ProjectOuterClass.Project.List =
-        super.getAllArchivedProjects(request)
 
     override suspend fun getAllProjectsForUser(request: Base.Id): ProjectOuterClass.Project.List =
         projectService.getAllProjectsForUser(parseUserId(request)).toGrpc()
@@ -365,8 +348,6 @@ class SnowballRService :
     override suspend fun softDeleteProject(request: Base.Id) = returnNothing {
         projectService.softDeleteProject(parseProjectId(request))
     }
-
-    override suspend fun softUndeleteProject(request: Base.Id): Base.Nothing = super.softUndeleteProject(request)
 
     override suspend fun getProjectInformation(
         request: ProjectOuterClass.Project.Information.Get,
@@ -461,12 +442,6 @@ class SnowballRService :
         stage = request.stage.toInt(),
     ).toGrpc()
 
-    override suspend fun updateProjectPaper(
-        request: ProjectOuterClass.Project.Paper.Update,
-    ): ProjectOuterClass.Project.Paper = super.updateProjectPaper(request)
-
-    override suspend fun removePaperFromProject(request: Base.Id): Base.Nothing = super.removePaperFromProject(request)
-
     override suspend fun getReviewById(request: Base.Id): ReviewOuterClass.Review =
         reviewService.getReviewById(parseReviewId(request)).toGrpc()
 
@@ -481,11 +456,6 @@ class SnowballRService :
                 selectedCriteriaIds = request.selectedCriteriaIdsList.map { parseUUID(it, EntityType.CRITERION) },
             ),
         ).toGrpc()
-
-    override suspend fun updateReview(request: ReviewOuterClass.Review.Update): ReviewOuterClass.Review =
-        super.updateReview(request)
-
-    override suspend fun deleteReview(request: Base.Id): Base.Nothing = super.deleteReview(request)
 
     override suspend fun getPaperById(request: Base.Id): PaperOuterClass.Paper =
         paperService.getPaperById(parsePaperId(request)).toGrpc()
@@ -547,9 +517,4 @@ class SnowballRService :
 
     override suspend fun getBackwardReferencedPapers(request: Base.Id): PaperOuterClass.Paper.List =
         paperService.getBackwardReferencedPapers(parsePaperId(request)).toGrpc()
-
-    override suspend fun getPaperPdf(request: Base.Id): Base.Blob = super.getPaperPdf(request)
-
-    override suspend fun setPaperPdf(request: PaperOuterClass.Paper.PdfUpdate): Base.Nothing =
-        super.setPaperPdf(request)
 }
