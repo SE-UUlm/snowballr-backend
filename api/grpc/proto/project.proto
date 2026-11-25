@@ -226,6 +226,7 @@ message Project {
   }
 }
 
+// Combination of project ID and paper ID that can be used to identify a project paper.
 message ProjectPaperRequest {
   string project_id = 1;
   // The UUID of the paper, not the project paper
