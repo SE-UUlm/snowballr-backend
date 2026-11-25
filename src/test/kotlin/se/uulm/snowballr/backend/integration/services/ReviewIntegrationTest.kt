@@ -120,7 +120,7 @@ class ReviewIntegrationTest : IntegrationTest() {
                 ),
             )
 
-            val updatedProjectPaper = projectPaperService.getProjectPaperById(projectPaper.id)
+            val updatedProjectPaper = projectPaperService.getProjectPaper(projectPaper.projectId, projectPaper.paper.id)
             assertEquals(PaperDecision.ACCEPTED, updatedProjectPaper.decision)
         }
 
@@ -136,7 +136,7 @@ class ReviewIntegrationTest : IntegrationTest() {
                 ),
             )
 
-            val updatedProjectPaper = projectPaperService.getProjectPaperById(projectPaper.id)
+            val updatedProjectPaper = projectPaperService.getProjectPaper(projectPaper.projectId, projectPaper.paper.id)
             assertEquals(PaperDecision.DECLINED, updatedProjectPaper.decision)
         }
 
@@ -144,7 +144,7 @@ class ReviewIntegrationTest : IntegrationTest() {
         fun `When a paper is added to a project, then it initially has an unreviewed decision`() = runTest {
             val (_, projectPaper) = setupProjectAndPaperForReview()
 
-            val fetchedProjectPaper = projectPaperService.getProjectPaperById(projectPaper.id)
+            val fetchedProjectPaper = projectPaperService.getProjectPaper(projectPaper.projectId, projectPaper.paper.id)
             assertEquals(PaperDecision.UNREVIEWED, fetchedProjectPaper.decision)
         }
 
@@ -184,7 +184,7 @@ class ReviewIntegrationTest : IntegrationTest() {
         fun `When a paper is added to a project, then it can be retrieved by its project paper ID`() = runTest {
             val (_, projectPaper) = setupProjectAndPaperForReview()
 
-            val fetched = projectPaperService.getProjectPaperById(projectPaper.id)
+            val fetched = projectPaperService.getProjectPaper(projectPaper.projectId, projectPaper.paper.id)
             assertEquals(projectPaper.id, fetched.id)
         }
     }

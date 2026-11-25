@@ -66,6 +66,34 @@ class ProjectPaperTableRepoTest :
     }
 
     @Nested
+    inner class GetProjectPaper {
+        @Test
+        fun `When a project paper is found, then a successful result with the correct project paper is returned`() =
+            runTest {
+                val projectId = insertProjectAndGetId(createdBy = testUserId)
+                val paperId = insertPaperAndGetId()
+                insertProjectPaperAndGetId(paperId = paperId, projectId = projectId, createdBy = testUserId)
+
+                val result = repo.getProjectPaper(projectId, paperId)
+
+                val projectPaper = assertResultSuccess(result)
+                assertEquals(projectId, projectPaper.projectId)
+                assertEquals(paperId, projectPaper.paperId)
+                assertEquals(0, projectPaper.localPaperId)
+                assertEquals(0, projectPaper.stage)
+                assertEquals(PaperDecision.ACCEPTED, projectPaper.decision)
+                assertEquals(testUserId, projectPaper.createdBy)
+            }
+
+        @Test
+        fun `When a project paper is not found, then a failed result with a NotFoundException is returned`() = runTest {
+            val result = repo.getProjectPaper(UUID.randomUUID(), UUID.randomUUID())
+
+            assertResultFailure<NotFoundException>(result)
+        }
+    }
+
+    @Nested
     inner class GetProjectPaperByRelativeId {
         @Test
         fun `When no project with the given id exists, then a failed result with a ProjectPaperNotFoundException is returned`() =

@@ -338,6 +338,7 @@ tasks.register<Exec>("buildTsRestClient") {
 val tsGrpcClientDir: Provider<Directory> = layout.buildDirectory.dir("generated/ts-grpc-client")
 
 tasks.register<Exec>("buildTsGrpcClient") {
+    dependsOn("generateProto")
     description = "Installs npm dependencies for the generated TypeScript gRPC client and builds it"
     group = "publishing"
     workingDir = tsGrpcClientDir.get().asFile

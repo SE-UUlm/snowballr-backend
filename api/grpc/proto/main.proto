@@ -352,20 +352,20 @@ service SnowballR {
   rpc GetPapersToReviewForProject(Id) returns (Project.Paper.List);
 
   // Get the project paper with the succeeding local ID (`local_id`) of the project paper
-  // identified by the provided global ID (`id`). It is **guaranteed** that the
+  // identified by the project ID and the paper ID. It is **guaranteed** that the
   // returned paper is in the same project as the provided one.
   //
   // ## Errors
   // | Error Code | Description |
   // | :--- | :--- |
-  // | `INVALID_ARGUMENT` | The project paper ID is not a valid UUID. |
-  // | `NOT_FOUND` | No project paper with the provided ID was found. |
+  // | `INVALID_ARGUMENT` | The project ID or the paper ID is not a valid UUID. |
+  // | `NOT_FOUND` | No project paper with the provided IDs was found. |
   // | `PERMISSION_DENIED` | The calling user is neither a server admin nor a member of the project the project paper belongs to. |
   // | `FAILED_PRECONDITION` | There is no next project paper in the project. |
   // | `UNAUTHENTICATED` | The user is not signed in. |
   //
   // @auth
-  rpc GetNextPaper(Id) returns (Project.Paper);
+  rpc GetNextPaper(ProjectPaperRequest) returns (Project.Paper);
 
   // Get the next project paper that the calling user can review. Papers with
   // lower local IDs are preferred. It is **guaranteed** that the returned paper
@@ -374,30 +374,30 @@ service SnowballR {
   // ## Errors
   // | Error Code | Description |
   // | :--- | :--- |
-  // | `INVALID_ARGUMENT` | The project paper ID is not a valid UUID. |
-  // | `NOT_FOUND` | No project paper with the provided ID was found. |
+  // | `INVALID_ARGUMENT` | The project ID or the paper ID is not a valid UUID. |
+  // | `NOT_FOUND` | No project paper with the provided IDs was found. |
   // | `PERMISSION_DENIED` | The calling user is neither a server admin nor a member of the project the project paper belongs to. |
   // | `FAILED_PRECONDITION` | There is no next project paper available to review in the project. |
   // | `UNAUTHENTICATED` | The user is not signed in. |
   //
   // @auth
-  rpc GetNextPaperToReview(Id) returns (Project.Paper);
+  rpc GetNextPaperToReview(ProjectPaperRequest) returns (Project.Paper);
 
   // Get the project paper with the previous local ID (`local_id`) of the project paper
-  // identified by the provided global ID (`id`). It is **guaranteed** that the
+  // identified by the project ID and the paper ID. It is **guaranteed** that the
   // returned paper is in the same project as the provided one.
   //
   // ## Errors
   // | Error Code | Description |
   // | :--- | :--- |
-  // | `INVALID_ARGUMENT` | The project paper ID is not a valid UUID. |
-  // | `NOT_FOUND` | No project paper with the provided ID was found. |
+  // | `INVALID_ARGUMENT` | The project ID or the paper ID is not a valid UUID. |
+  // | `NOT_FOUND` | No project paper with the provided IDs was found. |
   // | `PERMISSION_DENIED` | The calling user is neither a server admin nor a member of the project the project paper belongs to. |
   // | `FAILED_PRECONDITION` | There is no previous project paper in the project. |
   // | `UNAUTHENTICATED` | The user is not signed in. |
   //
   // @auth
-  rpc GetPreviousPaper(Id) returns (Project.Paper);
+  rpc GetPreviousPaper(ProjectPaperRequest) returns (Project.Paper);
 
   // Get the list of papers on the reading list of the calling user.
   //
@@ -818,22 +818,22 @@ service SnowballR {
   // @auth
   rpc DeleteCriterion(Id) returns (Nothing);
 
-  // Get a project paper by its ID.
+  // Get a project paper by its project ID and paper ID.
   //
   // ## Errors
   // | Error Code | Description |
   // | :--- | :--- |
-  // | `INVALID_ARGUMENT` | The project paper ID is not a valid UUID. |
-  // | `NOT_FOUND` | No project paper with the provided ID was found. |
+  // | `INVALID_ARGUMENT` | The project ID or the paper ID is not a valid UUID. |
+  // | `NOT_FOUND` | No project paper with the provided IDs was found. |
   // | `PERMISSION_DENIED` | The calling user is neither a server admin nor a member of the project the project paper belongs to. |
   // | `UNAUTHENTICATED` | The user is not signed in. |
   //
   // @auth
-  rpc GetProjectPaperById(Id) returns (Project.Paper);
+  rpc GetProjectPaper(ProjectPaperRequest) returns (Project.Paper);
 
   // Get a project paper using the project ID and the relative ID (`local_id`) within that
   // project. The relative ID is only **unique within its project**, not globally.
-  // Prefer [GetProjectPaperById](#service-snowballr.SnowballR-GetProjectPaperById) wherever possible.
+  // Prefer [GetProjectPaper](#service-snowballr.SnowballR-GetProjectPaper) wherever possible.
   //
   // ## Errors
   // | Error Code | Description |

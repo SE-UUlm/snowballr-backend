@@ -184,14 +184,30 @@ class SnowballRService :
     override suspend fun getPapersToReviewForProject(request: Base.Id): ProjectOuterClass.Project.Paper.List =
         projectPaperService.getPapersToReviewForProject(parseProjectId(request)).toGrpc()
 
-    override suspend fun getNextPaper(request: Base.Id): ProjectOuterClass.Project.Paper =
-        projectPaperService.getNextPaper(parseProjectPaperId(request)).toGrpc()
+    override suspend fun getNextPaper(request: ProjectOuterClass.ProjectPaperRequest): ProjectOuterClass.Project.Paper {
+        val projectId = parseUUID(request.projectId, EntityType.PROJECT)
+        val paperId = parseUUID(request.paperId, EntityType.PAPER)
 
-    override suspend fun getNextPaperToReview(request: Base.Id): ProjectOuterClass.Project.Paper =
-        projectPaperService.getNextPaperToReview(parseProjectPaperId(request)).toGrpc()
+        return projectPaperService.getNextPaper(projectId, paperId).toGrpc()
+    }
 
-    override suspend fun getPreviousPaper(request: Base.Id): ProjectOuterClass.Project.Paper =
-        projectPaperService.getPreviousPaper(parseProjectPaperId(request)).toGrpc()
+    override suspend fun getNextPaperToReview(
+        request: ProjectOuterClass.ProjectPaperRequest,
+    ): ProjectOuterClass.Project.Paper {
+        val projectId = parseUUID(request.projectId, EntityType.PROJECT)
+        val paperId = parseUUID(request.paperId, EntityType.PAPER)
+
+        return projectPaperService.getNextPaperToReview(projectId, paperId).toGrpc()
+    }
+
+    override suspend fun getPreviousPaper(
+        request: ProjectOuterClass.ProjectPaperRequest,
+    ): ProjectOuterClass.Project.Paper {
+        val projectId = parseUUID(request.projectId, EntityType.PROJECT)
+        val paperId = parseUUID(request.paperId, EntityType.PAPER)
+
+        return projectPaperService.getPreviousPaper(projectId, paperId).toGrpc()
+    }
 
     override suspend fun getUserSettings(request: Base.Nothing): UserSettingsOuterClass.UserSettings =
         userService.getUserSettings().toGrpc()
@@ -421,8 +437,14 @@ class SnowballRService :
         criterionService.deleteCriterion(parseCriterionId(request))
     }
 
-    override suspend fun getProjectPaperById(request: Base.Id): ProjectOuterClass.Project.Paper =
-        projectPaperService.getProjectPaperById(parseProjectPaperId(request)).toGrpc()
+    override suspend fun getProjectPaper(
+        request: ProjectOuterClass.ProjectPaperRequest,
+    ): ProjectOuterClass.Project.Paper {
+        val projectId = parseUUID(request.projectId, EntityType.PROJECT)
+        val paperId = parseUUID(request.paperId, EntityType.PAPER)
+
+        return projectPaperService.getProjectPaper(projectId, paperId).toGrpc()
+    }
 
     override suspend fun getProjectPaperByRelativeId(
         request: ProjectOuterClass.Project.Paper.Get,

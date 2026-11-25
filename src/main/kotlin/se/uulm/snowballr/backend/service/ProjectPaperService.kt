@@ -32,9 +32,9 @@ private val logger = KotlinLogging.logger {}
 
 interface IProjectPaperService {
     /**
-     * Service implementation of [SnowballRService.getProjectPaperById].
+     * Service implementation of [SnowballRService.getProjectPaper].
      */
-    suspend fun getProjectPaperById(projectPaperId: UUID): ProjectPaperResponse
+    suspend fun getProjectPaper(projectId: UUID, paperId: UUID): ProjectPaperResponse
 
     /**
      * Service implementation of [SnowballRService.getProjectPaperByRelativeId].
@@ -59,17 +59,17 @@ interface IProjectPaperService {
     /**
      * Service implementation of [SnowballRService.getNextPaper].
      */
-    suspend fun getNextPaper(projectPaperId: UUID): ProjectPaperResponse
+    suspend fun getNextPaper(projectId: UUID, paperId: UUID): ProjectPaperResponse
 
     /**
      * Service implementation of [SnowballRService.getPreviousPaper].
      */
-    suspend fun getPreviousPaper(projectPaperId: UUID): ProjectPaperResponse
+    suspend fun getPreviousPaper(projectId: UUID, paperId: UUID): ProjectPaperResponse
 
     /**
      * Service implementation of [SnowballRService.getNextPaperToReview].
      */
-    suspend fun getNextPaperToReview(projectPaperId: UUID): ProjectPaperResponse
+    suspend fun getNextPaperToReview(projectId: UUID, paperId: UUID): ProjectPaperResponse
 }
 
 private typealias ProjectPaperFilter =
@@ -103,11 +103,11 @@ class ProjectPaperService(
     private val accessChecker: IProjectPaperAccessChecker,
     private val projectAccessChecker: IProjectAccessChecker,
 ) : IProjectPaperService {
-    override suspend fun getProjectPaperById(projectPaperId: UUID): ProjectPaperResponse =
+    override suspend fun getProjectPaper(projectId: UUID, paperId: UUID): ProjectPaperResponse =
         withUser(userRepo) { currentUser ->
-            val projectPaper = repo.getProjectPaperById(projectPaperId).getOrThrow()
+            projectAccessChecker.isAllowedToReadProject(currentUser, projectId)
 
-            projectAccessChecker.isAllowedToReadProject(currentUser, projectPaper.projectId)
+            val projectPaper = repo.getProjectPaper(projectId, paperId).getOrThrow()
 
             projectPaper.toProjectPaperResponse()
         }
@@ -156,18 +156,17 @@ class ProjectPaperService(
             projectPaper.toProjectPaperResponse(paper)
         }
 
-    override suspend fun getNextPaper(projectPaperId: UUID): ProjectPaperResponse =
-        getAdjacentPaper(projectPaperId, PaperNavigationDirection.NEXT)
+    override suspend fun getNextPaper(projectId: UUID, paperId: UUID): ProjectPaperResponse =
+        getAdjacentPaper(projectId, paperId, PaperNavigationDirection.NEXT)
 
-    override suspend fun getPreviousPaper(projectPaperId: UUID): ProjectPaperResponse =
-        getAdjacentPaper(projectPaperId, PaperNavigationDirection.PREVIOUS)
+    override suspend fun getPreviousPaper(projectId: UUID, paperId: UUID): ProjectPaperResponse =
+        getAdjacentPaper(projectId, paperId, PaperNavigationDirection.PREVIOUS)
 
-    override suspend fun getNextPaperToReview(projectPaperId: UUID): ProjectPaperResponse =
+    override suspend fun getNextPaperToReview(projectId: UUID, paperId: UUID): ProjectPaperResponse =
         withUser(userRepo) { currentUser ->
-            val projectPaper = repo.getProjectPaperById(projectPaperId).getOrThrow()
-            val projectId = projectPaper.projectId
-
             projectAccessChecker.isAllowedToReadProject(currentUser, projectId)
+
+            val projectPaper = repo.getProjectPaper(projectId, paperId).getOrThrow()
 
             val projectPapers =
                 repo.getSubsequentProjectPapers(projectId, projectPaper.localPaperId, projectPaper.stage)
@@ -203,6 +202,7 @@ class ProjectPaperService(
             id = this.id,
             stage = this.stage,
             decision = this.decision,
+            projectId = this.projectId,
             localPaperId = this.localPaperId,
             paper = paperResponse,
             reviews = reviews,
@@ -231,11 +231,10 @@ class ProjectPaperService(
         val paperBackwardReferencesMap = mutableMapOf<Paper, List<UUID>>()
         val projectPaperReviewsMap = mutableMapOf<ProjectPaper, List<ReviewResponse>>()
 
-        for (projectPaper in projectPapersWithPapers) {
-            val paper = projectPaper.paper
+        for ((projectPaper, paper) in projectPapersWithPapers) {
             paperBackwardReferencesMap[paper] = citationTableRepo.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
-            projectPaperReviewsMap[projectPaper.projectPaper] = reviewTableRepo
-                .getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaper.projectPaper.id)
+            projectPaperReviewsMap[projectPaper] = reviewTableRepo
+                .getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaper.id)
                 .map { ReviewResponse.fromReviewWithSelectedCriteriaIds(it) }
         }
 
@@ -247,10 +246,10 @@ class ProjectPaperService(
     }
 
     /**
-     * Retrieves the following project paper based on the provided project paper ID and the following paper computation
-     * logic.
+     * Retrieves the following project paper based on the project paper and the direction.
      *
-     * @param projectPaperId The unique identifier of the current project paper.
+     * @param projectId The project ID of the project paper.
+     * @param paperId The paper ID of the project paper.
      * @param direction The navigation direction indicating whether to retrieve the next or previous paper.
      * Containing the relative ID of the following paper.
      * @return The gRPC representation of the following project paper, including its associated metadata.
@@ -259,14 +258,14 @@ class ProjectPaperService(
      * @throws UnauthorizedException If the user does not have the required access to the project.
      */
     private suspend fun getAdjacentPaper(
-        projectPaperId: UUID,
+        projectId: UUID,
+        paperId: UUID,
         direction: PaperNavigationDirection,
     ): ProjectPaperResponse = withUser(userRepo) { currentUser ->
-        val projectPaper = repo.getProjectPaperById(projectPaperId).getOrThrow()
+        projectAccessChecker.isAllowedToReadProject(currentUser, projectId)
 
-        projectAccessChecker.isAllowedToReadProject(currentUser, projectPaper.projectId)
+        val projectPaper = repo.getProjectPaper(projectId, paperId).getOrThrow()
 
-        val projectId = projectRepo.getProjectById(projectPaper.projectId).getOrThrow().id
         val adjacentPaper = repo.getAdjacentPaper(projectId, projectPaper.localPaperId, direction).getOrThrow()
         val paper = paperRepo.getPaperById(adjacentPaper.paperId).getOrThrow()
 
