@@ -42,7 +42,6 @@ class CreateReviewTest : ReviewServiceTest() {
         reviewDecisionMatrix = DataBuilder.createExampleReviewDecisionMatrix(),
     )
     private val paperId = UUID.randomUUID()
-    private val projectPaperId = UUID.randomUUID()
     private val decision = ReviewDecision.ACCEPTED
     private val defaultCriterion = UUID.randomUUID()
     private val defaultProjectCriterion = DataBuilder.createExampleProjectCriterion(
@@ -91,12 +90,13 @@ class CreateReviewTest : ReviewServiceTest() {
     ) {
         val currentUser = DataBuilder.createExampleUser(id = userId)
         val projectPaper = DataBuilder.createExampleProjectPaper(
-            id = projectPaperId,
+            paperId = paperId,
             projectId = project.id,
             decision = initialPaperDecision,
         )
         val review = DataBuilder.createExampleReview(
-            projectPaperId = projectPaperId,
+            projectId = project.id,
+            paperId = paperId,
             decision = decision,
             userId = currentUser.id,
         )
@@ -135,15 +135,15 @@ class CreateReviewTest : ReviewServiceTest() {
         if (stopBefore == reviewRepoMock::getAllReviewsForProjectPaper) {
             return
         }
-        coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaperId) } returns existingReviews
+        coEvery { reviewRepoMock.getAllReviewsForProjectPaper(project.id, paperId) } returns existingReviews
         if (stopBefore == reviewRepoMock::createReview) {
             return
         }
         coEvery {
-            reviewRepoMock.createReview(validCreateReviewRequest, projectPaperId, currentUser.id)
+            reviewRepoMock.createReview(validCreateReviewRequest, currentUser.id)
         } returns Result.success(review)
         coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } returns listOf(defaultProjectCriterion)
-        coJustRun { projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, updatedPaperDecision) }
+        coJustRun { projectPaperRepoMock.updateProjectPaperDecision(project.id, paperId, updatedPaperDecision) }
         if (project.status != ProjectStatus.ACTIVE_LOCKED) {
             coJustRun {
                 projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id), setOf(ProjectField.STATUS))
@@ -160,7 +160,7 @@ class CreateReviewTest : ReviewServiceTest() {
         mockCreateReview(failAt = failAt)
 
         assertThrows<TestSpecificException> { service.createReview(validCreateReviewRequest) }
-        coVerify(exactly = 0) { reviewRepoMock.createReview(any(), any(), any()) }
+        coVerify(exactly = 0) { reviewRepoMock.createReview(any(), any()) }
     }
 
     @Test
@@ -181,15 +181,16 @@ class CreateReviewTest : ReviewServiceTest() {
     @Test
     fun `When a user already reviewed the project paper, then a DuplicateReviewException is thrown`() = runTest {
         val firstReview = DataBuilder.createExampleReview(
-            projectPaperId = projectPaperId,
+            projectId = project.id,
+            paperId = paperId,
             decision = decision,
             userId = userId,
         )
         mockCreateReview(stopBefore = reviewRepoMock::getAllReviewsForProjectPaper)
-        coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaperId) } returns listOf(firstReview)
+        coEvery { reviewRepoMock.getAllReviewsForProjectPaper(project.id, paperId) } returns listOf(firstReview)
 
         assertThrows<DuplicateReviewException> { service.createReview(validCreateReviewRequest) }
-        coVerify(exactly = 0) { reviewRepoMock.createReview(any(), any(), any()) }
+        coVerify(exactly = 0) { reviewRepoMock.createReview(any(), any()) }
     }
 
     @Test
@@ -200,14 +201,15 @@ class CreateReviewTest : ReviewServiceTest() {
         )
 
         assertThrows<FailedPreconditionException> { service.createReview(validCreateReviewRequest) }
-        coVerify(exactly = 0) { reviewRepoMock.createReview(any(), any(), any()) }
+        coVerify(exactly = 0) { reviewRepoMock.createReview(any(), any()) }
     }
 
     @Test
     fun `When another user reviewed the project paper but not finally decided it, then the paper decision is updated accordingly to the review decision matrix`() =
         runTest {
             val reviewByAnotherUser = DataBuilder.createExampleReview(
-                projectPaperId = projectPaperId,
+                projectId = project.id,
+                paperId = paperId,
                 decision = decision,
                 userId = UUID.randomUUID(),
             )
@@ -220,7 +222,7 @@ class CreateReviewTest : ReviewServiceTest() {
             service.createReview(validCreateReviewRequest)
 
             coVerify(exactly = 1) {
-                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.ACCEPTED)
+                projectPaperRepoMock.updateProjectPaperDecision(project.id, paperId, PaperDecision.ACCEPTED)
             }
         }
 
@@ -228,12 +230,14 @@ class CreateReviewTest : ReviewServiceTest() {
     fun `When the paper is not finally decided after the required number of reviews, then the paper is only accepted if the next review is an acceptance`() =
         runTest {
             val firstReview = DataBuilder.createExampleReview(
-                projectPaperId = projectPaperId,
+                projectId = project.id,
+                paperId = paperId,
                 decision = ReviewDecision.MAYBE,
                 userId = UUID.randomUUID(),
             )
             val secondReview = DataBuilder.createExampleReview(
-                projectPaperId = projectPaperId,
+                projectId = project.id,
+                paperId = paperId,
                 decision = ReviewDecision.MAYBE,
                 userId = UUID.randomUUID(),
             )
@@ -246,7 +250,7 @@ class CreateReviewTest : ReviewServiceTest() {
             service.createReview(validCreateReviewRequest)
 
             coVerify(exactly = 1) {
-                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.ACCEPTED)
+                projectPaperRepoMock.updateProjectPaperDecision(project.id, paperId, PaperDecision.ACCEPTED)
             }
         }
 
@@ -274,7 +278,8 @@ class CreateReviewTest : ReviewServiceTest() {
             service.createReview(validCreateReviewRequest)
             coVerify(exactly = 1) {
                 projectPaperRepoMock.updateProjectPaperDecision(
-                    projectPaperId,
+                    project.id,
+                    paperId,
                     PaperDecision.IN_REVIEW,
                 )
             }
@@ -290,7 +295,8 @@ class CreateReviewTest : ReviewServiceTest() {
                 category = CriterionCategory.HARD_EXCLUSION,
             )
             val review = DataBuilder.createExampleReview(
-                projectPaperId = projectPaperId,
+                projectId = project.id,
+                paperId = paperId,
                 decision = ReviewDecision.DECLINED,
                 userId = userId,
             )
@@ -301,13 +307,13 @@ class CreateReviewTest : ReviewServiceTest() {
 
             mockCreateReview(stopBefore = reviewRepoMock::createReview)
             coEvery {
-                reviewRepoMock.createReview(createReviewRequest, projectPaperId, userId)
+                reviewRepoMock.createReview(createReviewRequest, userId)
             } returns Result.success(review)
             coEvery {
                 criterionRepoMock.getAllProjectCriteria(project.id)
             } returns listOf(exclusionCriterion, hardExclusionCriterion)
             coJustRun {
-                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.DECLINED)
+                projectPaperRepoMock.updateProjectPaperDecision(project.id, paperId, PaperDecision.DECLINED)
             }
             coJustRun {
                 projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id), setOf(ProjectField.STATUS))
@@ -316,7 +322,7 @@ class CreateReviewTest : ReviewServiceTest() {
             service.createReview(createReviewRequest)
 
             coVerify(exactly = 1) {
-                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.DECLINED)
+                projectPaperRepoMock.updateProjectPaperDecision(project.id, paperId, PaperDecision.DECLINED)
             }
         }
 
@@ -328,17 +334,20 @@ class CreateReviewTest : ReviewServiceTest() {
                 reviewDecisionMatrix = DataBuilder.createExampleReviewDecisionMatrix(numberOfReviewers = 2),
             )
             val firstReview = DataBuilder.createExampleReview(
-                projectPaperId = projectPaperId,
+                projectId = project.id,
+                paperId = paperId,
                 decision = ReviewDecision.MAYBE,
                 userId = UUID.randomUUID(),
             )
             val secondReview = DataBuilder.createExampleReview(
-                projectPaperId = projectPaperId,
+                projectId = project.id,
+                paperId = paperId,
                 decision = ReviewDecision.ACCEPTED,
                 userId = UUID.randomUUID(),
             )
             val declineReview = DataBuilder.createExampleReview(
-                projectPaperId = projectPaperId,
+                projectId = project.id,
+                paperId = paperId,
                 decision = ReviewDecision.DECLINED,
                 userId = userId,
             )
@@ -350,11 +359,11 @@ class CreateReviewTest : ReviewServiceTest() {
                 stopBefore = reviewRepoMock::createReview,
             )
             coEvery {
-                reviewRepoMock.createReview(createReviewRequest, projectPaperId, userId)
+                reviewRepoMock.createReview(createReviewRequest, userId)
             } returns Result.success(declineReview)
             coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } returns listOf(defaultProjectCriterion)
             coJustRun {
-                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.DECLINED)
+                projectPaperRepoMock.updateProjectPaperDecision(project.id, paperId, PaperDecision.DECLINED)
             }
             coJustRun {
                 projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id), setOf(ProjectField.STATUS))
@@ -362,7 +371,7 @@ class CreateReviewTest : ReviewServiceTest() {
 
             service.createReview(createReviewRequest)
             coVerify(exactly = 1) {
-                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.DECLINED)
+                projectPaperRepoMock.updateProjectPaperDecision(project.id, paperId, PaperDecision.DECLINED)
             }
         }
 
@@ -373,7 +382,8 @@ class CreateReviewTest : ReviewServiceTest() {
                 category = CriterionCategory.HARD_EXCLUSION,
             )
             val acceptedReview = DataBuilder.createExampleReview(
-                projectPaperId = projectPaperId,
+                projectId = project.id,
+                paperId = paperId,
                 decision = ReviewDecision.ACCEPTED,
                 userId = userId,
             )
@@ -384,13 +394,13 @@ class CreateReviewTest : ReviewServiceTest() {
 
             mockCreateReview(stopBefore = reviewRepoMock::createReview)
             coEvery {
-                reviewRepoMock.createReview(createReviewRequest, projectPaperId, userId)
+                reviewRepoMock.createReview(createReviewRequest, userId)
             } returns Result.success(acceptedReview)
             coEvery {
                 criterionRepoMock.getAllProjectCriteria(project.id)
             } returns listOf(defaultProjectCriterion, hardExclusionCriterion)
             coJustRun {
-                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.IN_REVIEW)
+                projectPaperRepoMock.updateProjectPaperDecision(project.id, paperId, PaperDecision.IN_REVIEW)
             }
             coJustRun {
                 projectRepoMock.updateProject(getUpdateProjectStatusRequest(project.id), setOf(ProjectField.STATUS))
@@ -398,7 +408,7 @@ class CreateReviewTest : ReviewServiceTest() {
 
             service.createReview(createReviewRequest)
             coVerify(exactly = 1) {
-                projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, PaperDecision.IN_REVIEW)
+                projectPaperRepoMock.updateProjectPaperDecision(project.id, paperId, PaperDecision.IN_REVIEW)
             }
         }
 
@@ -423,11 +433,11 @@ class CreateReviewTest : ReviewServiceTest() {
             )
             mockCreateReview(stopBefore = reviewRepoMock::createReview)
             coEvery {
-                reviewRepoMock.createReview(createReviewRequest, projectPaperId, userId)
+                reviewRepoMock.createReview(createReviewRequest, userId)
             } returns Result.failure(CriteriaNotInProjectException(listOf(foreignCriterionId), project.id))
 
             assertThrows<CriteriaNotInProjectException> { service.createReview(createReviewRequest) }
-            coVerify(exactly = 0) { projectPaperRepoMock.updateProjectPaperDecision(any(), any()) }
+            coVerify(exactly = 0) { projectPaperRepoMock.updateProjectPaperDecision(any(), any(), any()) }
             coVerify(exactly = 0) { projectRepoMock.updateProject(any(), any()) }
         }
 }

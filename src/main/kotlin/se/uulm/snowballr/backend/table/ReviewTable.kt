@@ -57,10 +57,14 @@ object ReviewTable : UUIDTable("review") {
 
 /**
  * Creates a [Review] from this [ResultRow].
+ *
+ * The row must come from [ReviewTable] joined with [ProjectPaperTable], since the project and paper ID of the review
+ * are read from the joined project paper.
  */
 fun ResultRow.toReview() = Review(
     id = this[ReviewTable.id].value,
-    projectPaperId = this[ReviewTable.projectPaperId].value,
+    projectId = this[ProjectPaperTable.projectId].value,
+    paperId = this[ProjectPaperTable.paperId].value,
     userId = this[ReviewTable.userId].value,
     decision = this[ReviewTable.decision],
     createdAt = this[ReviewTable.createdAt],

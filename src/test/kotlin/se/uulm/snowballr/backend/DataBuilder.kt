@@ -266,14 +266,16 @@ object DataBuilder {
 
     fun createExampleReview(
         id: UUID = UUID.randomUUID(),
-        projectPaperId: UUID = UUID.randomUUID(),
+        projectId: UUID = UUID.randomUUID(),
+        paperId: UUID = UUID.randomUUID(),
         userId: UUID = UUID.randomUUID(),
         decision: ReviewDecision = ReviewDecision.ACCEPTED,
         createdAt: OffsetDateTime = OffsetDateTime.now(),
         modifiedAt: OffsetDateTime? = null,
     ) = Review(
         id = id,
-        projectPaperId = projectPaperId,
+        projectId = projectId,
+        paperId = paperId,
         userId = userId,
         decision = decision,
         createdAt = createdAt,

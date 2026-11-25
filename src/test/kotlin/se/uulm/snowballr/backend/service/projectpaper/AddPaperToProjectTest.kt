@@ -39,7 +39,10 @@ class AddPaperToProjectTest : ProjectPaperServiceTest() {
             coEvery { projectPaperRepoMock.addPaperToProject(project.id, paper.id, 0, user.id) } returns projectPaper
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id) } returns backwardReferences
             coEvery {
-                reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaper.id)
+                reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(
+                    projectPaper.projectId,
+                    projectPaper.paperId,
+                )
             } returns reviews
 
             val addedProjectPaper = service.addPaperToProject(project.id, paper.id, 0)

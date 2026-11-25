@@ -6,10 +6,13 @@ import java.util.UUID
 
 /**
  * DTO of [ReviewTable].
+ *
+ * The reviewed project paper is identified by the [projectId] and [paperId].
  */
 data class Review(
     val id: UUID,
-    val projectPaperId: UUID,
+    val projectId: UUID,
+    val paperId: UUID,
     val userId: UUID,
     val decision: ReviewDecision,
     val createdAt: OffsetDateTime,

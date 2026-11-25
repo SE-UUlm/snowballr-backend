@@ -9,6 +9,7 @@ import org.junit.jupiter.api.assertThrows
 import se.uulm.snowballr.backend.model.dto.review.ReviewDecision
 import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.invalidargument.CriteriaNotInProjectException
+import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectPaperNotFoundException
 import se.uulm.snowballr.backend.model.incoming.review.CreateReviewRequest
 import se.uulm.snowballr.backend.repository.RepositoryHelper.assignCriterionToReview
 import se.uulm.snowballr.backend.repository.RepositoryHelper.insertCriterionAndGetId
@@ -57,7 +58,8 @@ class ReviewTableRepoTest : RepositoryTest(
 
             val review = assertResultSuccess(result)
             assertEquals(reviewId, review.id)
-            assertEquals(projectPaperId, review.projectPaperId)
+            assertEquals(projectId, review.projectId)
+            assertEquals(paperId, review.paperId)
             assertEquals(testUserId, review.userId)
             assertEquals(ReviewDecision.ACCEPTED, review.decision)
         }
@@ -79,7 +81,7 @@ class ReviewTableRepoTest : RepositoryTest(
             val projectPaperId =
                 insertProjectPaperAndGetId(paperId = paperId, projectId = projectId, createdBy = testUserId)
             val reviewId = insertReviewAndGetId(projectPaperId, userId = testUserId)
-            val reviews = repo.getAllReviewsForProjectPaper(projectPaperId)
+            val reviews = repo.getAllReviewsForProjectPaper(projectId, paperId)
 
             assertThat(reviews).hasSize(1)
             assertThat(reviews).anyMatch { it.id == reviewId }
@@ -90,7 +92,7 @@ class ReviewTableRepoTest : RepositoryTest(
             val projectId = insertProjectAndGetId(createdBy = testUserId)
             val paperId1 = insertPaperAndGetId()
             val paperId2 = insertPaperAndGetId()
-            val noReviewProjectPaperId = insertProjectPaperAndGetId(
+            insertProjectPaperAndGetId(
                 paperId = paperId1,
                 projectId = projectId,
                 createdBy = testUserId,
@@ -101,7 +103,7 @@ class ReviewTableRepoTest : RepositoryTest(
                 createdBy = testUserId,
             )
             val reviewId = insertReviewAndGetId(reviewProjectPaperId, userId = testUserId)
-            val reviews = repo.getAllReviewsForProjectPaper(noReviewProjectPaperId)
+            val reviews = repo.getAllReviewsForProjectPaper(projectId, paperId1)
 
             assertThat(reviews).hasSize(0)
             assertThat(reviews).noneMatch { it.id == reviewId }
@@ -125,7 +127,7 @@ class ReviewTableRepoTest : RepositoryTest(
                 )
                 val reviewId1 = insertReviewAndGetId(projectPaperId1, userId = testUserId)
                 val reviewId2 = insertReviewAndGetId(projectPaperId2, userId = testUserId)
-                val reviews = repo.getAllReviewsForProjectPaper(projectPaperId1)
+                val reviews = repo.getAllReviewsForProjectPaper(projectId, paperId1)
 
                 assertThat(reviews).hasSize(1)
                 assertThat(reviews).anyMatch { it.id == reviewId1 }
@@ -147,7 +149,7 @@ class ReviewTableRepoTest : RepositoryTest(
                 assignCriterionToReview(reviewId, criterionId1)
                 val criterionId2 = insertCriterionAndGetId(projectId = projectId, createdBy = testUserId)
                 assignCriterionToReview(reviewId, criterionId2)
-                val reviews = repo.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaperId)
+                val reviews = repo.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectId, paperId)
 
                 assertThat(reviews).hasSize(1)
                 assertThat(reviews).anyMatch { it.review.id == reviewId }
@@ -161,7 +163,7 @@ class ReviewTableRepoTest : RepositoryTest(
             val projectId = insertProjectAndGetId(createdBy = testUserId)
             val paperId1 = insertPaperAndGetId()
             val paperId2 = insertPaperAndGetId()
-            val noReviewProjectPaperId = insertProjectPaperAndGetId(
+            insertProjectPaperAndGetId(
                 paperId = paperId1,
                 projectId = projectId,
                 createdBy = testUserId,
@@ -174,7 +176,7 @@ class ReviewTableRepoTest : RepositoryTest(
             val reviewId = insertReviewAndGetId(reviewProjectPaperId, userId = testUserId)
             val criterionId = insertCriterionAndGetId(projectId = projectId, createdBy = testUserId)
             assignCriterionToReview(reviewId, criterionId)
-            val reviews = repo.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(noReviewProjectPaperId)
+            val reviews = repo.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectId, paperId1)
 
             assertThat(reviews).hasSize(0)
             assertThat(reviews).noneMatch { it.review.id == reviewId }
@@ -202,7 +204,7 @@ class ReviewTableRepoTest : RepositoryTest(
                 val reviewId2 = insertReviewAndGetId(projectPaperId2, userId = testUserId)
                 val criterionId2 = insertCriterionAndGetId(projectId = projectId, createdBy = testUserId)
                 assignCriterionToReview(reviewId2, criterionId2)
-                val reviews = repo.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaperId1)
+                val reviews = repo.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectId, paperId1)
 
                 assertThat(reviews).hasSize(1)
                 assertThat(reviews).anyMatch { it.review.id == reviewId1 }
@@ -227,27 +229,37 @@ class ReviewTableRepoTest : RepositoryTest(
         fun `When a review is created, then the correct review is returned`() = runTest {
             val projectId = insertProjectAndGetId(createdBy = testUserId)
             val paperId = insertPaperAndGetId()
-            val projectPaperId =
-                insertProjectPaperAndGetId(paperId = paperId, projectId = projectId, createdBy = testUserId)
+            insertProjectPaperAndGetId(paperId = paperId, projectId = projectId, createdBy = testUserId)
             val userId = insertUserAndGetId(email = "existing.reviewer@example.com")
 
-            val review = repo.createReview(createReviewRequest(projectId, paperId), projectPaperId, userId).getOrThrow()
+            val review = repo.createReview(createReviewRequest(projectId, paperId), userId).getOrThrow()
 
-            assertEquals(projectPaperId, review.projectPaperId)
+            assertEquals(projectId, review.projectId)
+            assertEquals(paperId, review.paperId)
             assertEquals(ReviewDecision.ACCEPTED, review.decision)
             assertEquals(userId, review.userId)
         }
+
+        @Test
+        fun `When a review is created for a paper that is not in the project, then a ProjectPaperNotFoundException is returned`() =
+            runTest {
+                val projectId = insertProjectAndGetId(createdBy = testUserId)
+                val paperId = insertPaperAndGetId()
+
+                val result = repo.createReview(createReviewRequest(projectId, paperId), testUserId)
+
+                assertResultFailure<ProjectPaperNotFoundException>(result)
+            }
 
         @Test
         fun `When a review is created, but the assigned user does not exist, then a SQLException is thrown`() =
             runTest {
                 val projectId = insertProjectAndGetId(createdBy = testUserId)
                 val paperId = insertPaperAndGetId()
-                val projectPaperId =
-                    insertProjectPaperAndGetId(paperId = paperId, projectId = projectId, createdBy = testUserId)
+                insertProjectPaperAndGetId(paperId = paperId, projectId = projectId, createdBy = testUserId)
 
                 assertThrows<SQLException> {
-                    repo.createReview(createReviewRequest(projectId, paperId), projectPaperId, UUID.randomUUID())
+                    repo.createReview(createReviewRequest(projectId, paperId), UUID.randomUUID())
                 }
             }
 
@@ -262,7 +274,7 @@ class ReviewTableRepoTest : RepositoryTest(
                 insertReviewAndGetId(projectPaperId, userId)
 
                 assertThrows<SQLException> {
-                    repo.createReview(createReviewRequest(projectId, paperId), projectPaperId, userId)
+                    repo.createReview(createReviewRequest(projectId, paperId), userId)
                 }
             }
 
@@ -271,14 +283,13 @@ class ReviewTableRepoTest : RepositoryTest(
             runTest {
                 val projectId = insertProjectAndGetId(createdBy = testUserId)
                 val paperId = insertPaperAndGetId()
-                val projectPaperId =
-                    insertProjectPaperAndGetId(paperId = paperId, projectId = projectId, createdBy = testUserId)
+                insertProjectPaperAndGetId(paperId = paperId, projectId = projectId, createdBy = testUserId)
                 val userId = insertUserAndGetId(email = "reviewing.user.with.criteria@example.com")
                 val selectedCriterion = insertCriterionAndGetId(projectId = projectId, createdBy = testUserId)
 
                 val createReviewWithCriteriaRequest = createReviewRequest(projectId, paperId, listOf(selectedCriterion))
 
-                val review = repo.createReview(createReviewWithCriteriaRequest, projectPaperId, userId).getOrThrow()
+                val review = repo.createReview(createReviewWithCriteriaRequest, userId).getOrThrow()
 
                 val selectedCriteria = reviewHasCriterionRepo.getSelectedCriteriaIdsForReviewById(review.id)
                 assertThat(selectedCriteria).hasSize(1)
@@ -291,7 +302,7 @@ class ReviewTableRepoTest : RepositoryTest(
                 val projectId = insertProjectAndGetId(createdBy = testUserId)
                 val otherProjectId = insertProjectAndGetId(createdBy = testUserId)
                 val paperId = insertPaperAndGetId()
-                val projectPaperId = insertProjectPaperAndGetId(
+                insertProjectPaperAndGetId(
                     paperId = paperId,
                     projectId = projectId,
                     createdBy = testUserId,
@@ -300,10 +311,10 @@ class ReviewTableRepoTest : RepositoryTest(
                 val foreignCriterion = insertCriterionAndGetId(projectId = otherProjectId, createdBy = testUserId)
                 val request = createReviewRequest(projectId, paperId, listOf(projectCriterion, foreignCriterion))
 
-                val result = repo.createReview(request, projectPaperId, testUserId)
+                val result = repo.createReview(request, testUserId)
 
                 assertResultFailure<CriteriaNotInProjectException>(result)
-                assertThat(repo.getAllReviewsForProjectPaper(projectPaperId)).isEmpty()
+                assertThat(repo.getAllReviewsForProjectPaper(projectId, paperId)).isEmpty()
             }
 
         @Test
@@ -311,7 +322,7 @@ class ReviewTableRepoTest : RepositoryTest(
             runTest {
                 val projectId = insertProjectAndGetId(createdBy = testUserId)
                 val paperId = insertPaperAndGetId()
-                val projectPaperId = insertProjectPaperAndGetId(
+                insertProjectPaperAndGetId(
                     paperId = paperId,
                     projectId = projectId,
                     createdBy = testUserId,
@@ -320,7 +331,6 @@ class ReviewTableRepoTest : RepositoryTest(
 
                 val result = repo.createReview(
                     createReviewRequest(projectId, paperId, listOf(userCriterion)),
-                    projectPaperId,
                     testUserId,
                 )
 
@@ -332,7 +342,7 @@ class ReviewTableRepoTest : RepositoryTest(
             runTest {
                 val projectId = insertProjectAndGetId(createdBy = testUserId)
                 val paperId = insertPaperAndGetId()
-                val projectPaperId = insertProjectPaperAndGetId(
+                insertProjectPaperAndGetId(
                     paperId = paperId,
                     projectId = projectId,
                     createdBy = testUserId,
@@ -341,7 +351,6 @@ class ReviewTableRepoTest : RepositoryTest(
                 val result =
                     repo.createReview(
                         createReviewRequest(projectId, paperId, listOf(UUID.randomUUID())),
-                        projectPaperId,
                         testUserId,
                     )
 

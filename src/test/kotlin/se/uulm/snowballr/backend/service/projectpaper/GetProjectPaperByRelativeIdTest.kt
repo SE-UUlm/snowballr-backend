@@ -25,7 +25,10 @@ class GetProjectPaperByRelativeIdTest : ProjectPaperServiceTest() {
         coEvery { paperRepoMock.getPaperById(paper.id) } returns Result.success(paper)
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id) } returns emptyList()
         coEvery {
-            reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaper.id)
+            reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(
+                projectPaper.projectId,
+                projectPaper.paperId,
+            )
         } returns emptyList()
 
         val result = service.getProjectPaperByRelativeId(project.id, relativeId)

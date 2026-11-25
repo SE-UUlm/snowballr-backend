@@ -91,7 +91,7 @@ class ReviewService(
 
             val projectPaper = projectPaperRepo.getProjectPaper(projectId, paperId).getOrThrow()
 
-            val reviewsForProjectPaper = repo.getAllReviewsForProjectPaper(projectPaper.id)
+            val reviewsForProjectPaper = repo.getAllReviewsForProjectPaper(projectId, paperId)
             val hasUserAlreadyReviewed = reviewsForProjectPaper.any { review -> review.userId == currentUser.id }
             if (hasUserAlreadyReviewed) {
                 throw DuplicateReviewException(projectId, paperId, currentUser.id)
@@ -104,7 +104,7 @@ class ReviewService(
                 )
             }
 
-            val review = repo.createReview(request, projectPaper.id, currentUser.id).getOrThrow()
+            val review = repo.createReview(request, currentUser.id).getOrThrow()
 
             val projectCriteria = criterionRepo.getAllProjectCriteria(project.id)
             val hasSelectedExclusionCriterion =
@@ -115,7 +115,7 @@ class ReviewService(
             } else {
                 determinePaperDecision(reviewsForProjectPaper + review, project.settings.reviewDecisionMatrix)
             }
-            projectPaperRepo.updateProjectPaperDecision(projectPaper.id, decision)
+            projectPaperRepo.updateProjectPaperDecision(projectId, paperId, decision)
 
             if (project.status != ProjectStatus.ACTIVE_LOCKED) {
                 setProjectStatusActiveLocked(project.id)

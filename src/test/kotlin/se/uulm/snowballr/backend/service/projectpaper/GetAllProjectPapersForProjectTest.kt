@@ -49,10 +49,16 @@ class GetAllProjectPapersForProjectTest : ProjectPaperServiceTest() {
                 citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(projectPaper1.paper.id)
             } returns projectPaper1Refs
             coEvery {
-                reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaper0.projectPaper.id)
+                reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(
+                    projectPaper0.projectPaper.projectId,
+                    projectPaper0.projectPaper.paperId,
+                )
             } returns listOf(projectPaper0Review0, projectPaper0Review1)
             coEvery {
-                reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaper1.projectPaper.id)
+                reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(
+                    projectPaper1.projectPaper.projectId,
+                    projectPaper1.projectPaper.paperId,
+                )
             } returns listOf(projectPaper1Review0, projectPaper1Review1)
 
             val projectPapers = service.getAllProjectPapersForProject(project.id)

@@ -12,7 +12,6 @@ import org.jetbrains.exposed.v1.core.vendors.ForUpdateOption
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.update
 import se.uulm.snowballr.backend.db.IDatabase
-import se.uulm.snowballr.backend.model.EntityType
 import se.uulm.snowballr.backend.model.PaperNavigationDirection
 import se.uulm.snowballr.backend.model.dto.projectpaper.PaperDecision
 import se.uulm.snowballr.backend.model.dto.projectpaper.ProjectPaper
@@ -22,8 +21,6 @@ import se.uulm.snowballr.backend.model.exception.NotFoundException
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectPaperNotFoundException
 import se.uulm.snowballr.backend.repository.doesEntityExist
 import se.uulm.snowballr.backend.repository.getEntities
-import se.uulm.snowballr.backend.repository.getEntityByIdOrNull
-import se.uulm.snowballr.backend.repository.getEntityByKeyAsResult
 import se.uulm.snowballr.backend.repository.getEntityOrNull
 import se.uulm.snowballr.backend.repository.insertAndGet
 import se.uulm.snowballr.backend.repository.joinPaperHasExternalId
@@ -45,12 +42,6 @@ import java.util.UUID
  */
 @Suppress("ComplexInterface")
 interface IProjectPaperTableRepo {
-    /**
-     * Returns a [Result] containing the project paper by its ID or a [NotFoundException] if the project paper with the
-     * passed [id] doesn't exist.
-     */
-    suspend fun getProjectPaperById(id: UUID): Result<ProjectPaper>
-
     /**
      * Returns a [Result] containing the project paper by its project ID and paper ID or a [NotFoundException] if the
      * project paper with the passed IDs doesn't exist.
@@ -160,10 +151,11 @@ interface IProjectPaperTableRepo {
     /**
      * Updates the decision of a project paper.
      *
-     * @param projectPaperId The unique identifier of the project paper to be updated.
+     * @param projectId The unique identifier of the project the paper belongs to.
+     * @param paperId The unique identifier of the paper whose decision in the project is to be updated.
      * @param decision The new [PaperDecision] to be set.
      */
-    suspend fun updateProjectPaperDecision(projectPaperId: UUID, decision: PaperDecision)
+    suspend fun updateProjectPaperDecision(projectId: UUID, paperId: UUID, decision: PaperDecision)
 }
 
 /**
@@ -179,9 +171,6 @@ interface IProjectPaperTableRepo {
 class ProjectPaperTableRepo(
     private val db: IDatabase,
 ) : IProjectPaperTableRepo {
-    private fun getProjectPaperByIdOrNull(id: UUID): ProjectPaper? =
-        ProjectPaperTable.getEntityByIdOrNull(id, ResultRow::toProjectPaper)
-
     /**
      * Generates the next available local paper ID for the specified project by checking the existent maximum local
      * paper ID within the project and incrementing it by one. If no local paper IDs exist for the given project, it
@@ -220,10 +209,6 @@ class ProjectPaperTableRepo(
             .firstOrNull()
 
         wrapAsResult(paperId, FailedPreconditionException("There is no $direction project paper in the project."))
-    }
-
-    override suspend fun getProjectPaperById(id: UUID): Result<ProjectPaper> = db.query {
-        getEntityByKeyAsResult(::getProjectPaperByIdOrNull, EntityType.PROJECT_PAPER, id)
     }
 
     override suspend fun getProjectPaper(projectId: UUID, paperId: UUID): Result<ProjectPaper> = db.query {
@@ -314,11 +299,14 @@ class ProjectPaperTableRepo(
         }
     }
 
-    override suspend fun updateProjectPaperDecision(projectPaperId: UUID, decision: PaperDecision): Unit = db.query {
-        ProjectPaperTable.update({ ProjectPaperTable.id eq projectPaperId }) {
-            it[ProjectPaperTable.decision] = decision
+    override suspend fun updateProjectPaperDecision(projectId: UUID, paperId: UUID, decision: PaperDecision): Unit =
+        db.query {
+            ProjectPaperTable.update({
+                (ProjectPaperTable.projectId eq projectId) and (ProjectPaperTable.paperId eq paperId)
+            }) {
+                it[ProjectPaperTable.decision] = decision
+            }
         }
-    }
 
     override suspend fun getSubsequentProjectPapers(
         projectId: UUID,
