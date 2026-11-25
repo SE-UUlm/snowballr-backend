@@ -7,7 +7,6 @@ import se.uulm.snowballr.backend.context.RequestContext
 import se.uulm.snowballr.backend.grpc.GrpcHelpers.parseCriterionId
 import se.uulm.snowballr.backend.grpc.GrpcHelpers.parsePaperId
 import se.uulm.snowballr.backend.grpc.GrpcHelpers.parseProjectId
-import se.uulm.snowballr.backend.grpc.GrpcHelpers.parseProjectPaperId
 import se.uulm.snowballr.backend.grpc.GrpcHelpers.parseReviewId
 import se.uulm.snowballr.backend.grpc.GrpcHelpers.parseUserId
 import se.uulm.snowballr.backend.grpc.GrpcHelpers.returnBoolValue
@@ -466,9 +465,6 @@ class SnowballRService :
 
     override suspend fun getReviewById(request: Base.Id): ReviewOuterClass.Review =
         reviewService.getReviewById(parseReviewId(request)).toGrpc()
-
-    override suspend fun getAllReviewsForProjectPaper(request: Base.Id): ReviewOuterClass.Review.List =
-        reviewService.getAllReviewsForProjectPaper(parseProjectPaperId(request)).toGrpc()
 
     override suspend fun createReview(request: ReviewOuterClass.Review.Create): ReviewOuterClass.Review =
         reviewService.createReview(
