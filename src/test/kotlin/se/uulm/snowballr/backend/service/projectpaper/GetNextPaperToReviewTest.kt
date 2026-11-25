@@ -30,7 +30,7 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
             localPaperId = 1,
             paperId = otherPaper.id,
         )
-        val review = DataBuilder.createExampleReview(projectPaperId = projectPaper.id)
+        val review = DataBuilder.createExampleReview(projectId = projectPaper.projectId, paperId = projectPaper.paperId)
 
         mockCurrentUser(currentUser)
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id) }
@@ -41,12 +41,15 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
             projectPaperRepoMock.getSubsequentProjectPapers(project.id, projectPaper.localPaperId, projectPaper.stage)
         } returns listOf(nextProjectPaper)
         coEvery {
-            reviewRepoMock.getAllReviewsForProjectPaper(nextProjectPaper.id)
+            reviewRepoMock.getAllReviewsForProjectPaper(nextProjectPaper.projectId, nextProjectPaper.paperId)
         } returns listOf(review)
         coEvery { paperRepoMock.getPaperById(nextProjectPaper.paperId) } returns Result.success(otherPaper)
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(otherPaper.id) } returns emptyList()
         coEvery {
-            reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(nextProjectPaper.id)
+            reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(
+                nextProjectPaper.projectId,
+                nextProjectPaper.paperId,
+            )
         } returns emptyList()
 
         val result = service.getNextPaperToReview(projectPaper.projectId, projectPaper.paperId)
@@ -100,7 +103,11 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
             localPaperId = 0,
         )
         val nextProjectPaper = DataBuilder.createExampleProjectPaper(stage = 0, localPaperId = 1)
-        val review = DataBuilder.createExampleReview(projectPaperId = projectPaper.id, userId = currentUser.id)
+        val review = DataBuilder.createExampleReview(
+            projectId = projectPaper.projectId,
+            paperId = projectPaper.paperId,
+            userId = currentUser.id,
+        )
 
         mockCurrentUser(currentUser)
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id) }
@@ -111,7 +118,7 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
             projectPaperRepoMock.getSubsequentProjectPapers(project.id, projectPaper.localPaperId, projectPaper.stage)
         } returns listOf(nextProjectPaper)
         coEvery {
-            reviewRepoMock.getAllReviewsForProjectPaper(nextProjectPaper.id)
+            reviewRepoMock.getAllReviewsForProjectPaper(nextProjectPaper.projectId, nextProjectPaper.paperId)
         } returns listOf(review)
 
         assertThrows<FailedPreconditionException> {
@@ -120,6 +127,7 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
     }
 
     @Test
+    @Suppress("LongMethod")
     fun `When a user requests the next project paper, then the project papers without own review are filtered out correctly`() =
         runTest {
             val currentUser = DataBuilder.createExampleUser()
@@ -147,7 +155,11 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
                 localPaperId = 2,
                 decision = PaperDecision.UNREVIEWED,
             )
-            val review = DataBuilder.createExampleReview(projectPaperId = projectPaper1.id, userId = currentUser.id)
+            val review = DataBuilder.createExampleReview(
+                projectId = projectPaper1.projectId,
+                paperId = projectPaper1.paperId,
+                userId = currentUser.id,
+            )
 
             mockCurrentUser(currentUser)
             coJustRun { projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id) }
@@ -161,20 +173,40 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
                     currentProjectPaper.stage,
                 )
             } returns listOf(projectPaper1, projectPaper2)
-            coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper1.id) } returns listOf(review)
-            coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper2.id) } returns emptyList()
+            coEvery {
+                reviewRepoMock.getAllReviewsForProjectPaper(
+                    projectPaper1.projectId,
+                    projectPaper1.paperId,
+                )
+            } returns listOf(review)
+            coEvery {
+                reviewRepoMock.getAllReviewsForProjectPaper(
+                    projectPaper2.projectId,
+                    projectPaper2.paperId,
+                )
+            } returns emptyList()
 
             coEvery { paperRepoMock.getPaperById(paper2.id) } returns Result.success(paper2)
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper2.id) } returns emptyList()
             coEvery {
-                reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaper2.id)
+                reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(
+                    projectPaper2.projectId,
+                    projectPaper2.paperId,
+                )
             } returns emptyList()
 
             service.getNextPaperToReview(currentProjectPaper.projectId, currentProjectPaper.paperId)
-            coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper1.id) }
-            coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper2.id) }
+            coVerify(
+                exactly = 1,
+            ) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper1.projectId, projectPaper1.paperId) }
+            coVerify(
+                exactly = 1,
+            ) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper2.projectId, projectPaper2.paperId) }
             coVerify(exactly = 1) {
-                reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaper2.id)
+                reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(
+                    projectPaper2.projectId,
+                    projectPaper2.paperId,
+                )
             }
         }
 
@@ -214,7 +246,11 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
             localPaperId = 3,
             decision = PaperDecision.UNREVIEWED,
         )
-        val review = DataBuilder.createExampleReview(projectPaperId = projectPaper1.id, userId = UUID.randomUUID())
+        val review = DataBuilder.createExampleReview(
+            projectId = projectPaper1.projectId,
+            paperId = projectPaper1.paperId,
+            userId = UUID.randomUUID(),
+        )
 
         mockCurrentUser(currentUser)
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id) }
@@ -228,24 +264,56 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
                 currentProjectPaper.stage,
             )
         } returns listOf(projectPaper1, projectPaper2, projectPaper3)
-        coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper1.id) } returns listOf(review)
-        coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper2.id) } returns emptyList()
-        coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper3.id) } returns emptyList()
+        coEvery {
+            reviewRepoMock.getAllReviewsForProjectPaper(
+                projectPaper1.projectId,
+                projectPaper1.paperId,
+            )
+        } returns listOf(review)
+        coEvery {
+            reviewRepoMock.getAllReviewsForProjectPaper(
+                projectPaper2.projectId,
+                projectPaper2.paperId,
+            )
+        } returns emptyList()
+        coEvery {
+            reviewRepoMock.getAllReviewsForProjectPaper(
+                projectPaper3.projectId,
+                projectPaper3.paperId,
+            )
+        } returns emptyList()
 
         coEvery { paperRepoMock.getPaperById(paper3.id) } returns Result.success(paper3)
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper3.id) } returns emptyList()
         coEvery {
-            reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaper3.id)
+            reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(
+                projectPaper3.projectId,
+                projectPaper3.paperId,
+            )
         } returns emptyList()
 
         service.getNextPaperToReview(currentProjectPaper.projectId, currentProjectPaper.paperId)
-        coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper1.id) }
-        coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper2.id) }
-        coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper3.id) }
-        coVerify(exactly = 1) { reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaper3.id) }
+        coVerify(
+            exactly = 1,
+        ) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper1.projectId, projectPaper1.paperId) }
+        coVerify(
+            exactly = 1,
+        ) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper2.projectId, projectPaper2.paperId) }
+        coVerify(
+            exactly = 1,
+        ) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper3.projectId, projectPaper3.paperId) }
+        coVerify(
+            exactly = 1,
+        ) {
+            reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(
+                projectPaper3.projectId,
+                projectPaper3.paperId,
+            )
+        }
     }
 
     @Test
+    @Suppress("LongMethod")
     fun `When a user requests the next project paper, then the already decided paper are correctly filtered`() =
         runTest {
             val currentUser = DataBuilder.createExampleUser()
@@ -286,24 +354,45 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
                     currentProjectPaper.stage,
                 )
             } returns listOf(projectPaper1, projectPaper2)
-            coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper1.id) } returns emptyList()
-            coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper2.id) } returns emptyList()
+            coEvery {
+                reviewRepoMock.getAllReviewsForProjectPaper(
+                    projectPaper1.projectId,
+                    projectPaper1.paperId,
+                )
+            } returns emptyList()
+            coEvery {
+                reviewRepoMock.getAllReviewsForProjectPaper(
+                    projectPaper2.projectId,
+                    projectPaper2.paperId,
+                )
+            } returns emptyList()
 
             coEvery { paperRepoMock.getPaperById(paper2.id) } returns Result.success(paper2)
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper2.id) } returns emptyList()
             coEvery {
-                reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaper2.id)
+                reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(
+                    projectPaper2.projectId,
+                    projectPaper2.paperId,
+                )
             } returns emptyList()
 
             service.getNextPaperToReview(currentProjectPaper.projectId, currentProjectPaper.paperId)
-            coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper1.id) }
-            coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper2.id) }
+            coVerify(
+                exactly = 1,
+            ) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper1.projectId, projectPaper1.paperId) }
+            coVerify(
+                exactly = 1,
+            ) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper2.projectId, projectPaper2.paperId) }
             coVerify(exactly = 1) {
-                reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaper2.id)
+                reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(
+                    projectPaper2.projectId,
+                    projectPaper2.paperId,
+                )
             }
         }
 
     @Test
+    @Suppress("LongMethod")
     fun `When a user requests the next project paper and only already decided papers are left, then an already decided paper is returned`() =
         runTest {
             val currentUser = DataBuilder.createExampleUser()
@@ -344,10 +433,23 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
                     currentProjectPaper.stage,
                 )
             } returns listOf(projectPaper1, projectPaper2)
-            coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper1.id) } returns emptyList()
-            coEvery { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper2.id) } returns emptyList()
             coEvery {
-                reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaper1.id)
+                reviewRepoMock.getAllReviewsForProjectPaper(
+                    projectPaper1.projectId,
+                    projectPaper1.paperId,
+                )
+            } returns emptyList()
+            coEvery {
+                reviewRepoMock.getAllReviewsForProjectPaper(
+                    projectPaper2.projectId,
+                    projectPaper2.paperId,
+                )
+            } returns emptyList()
+            coEvery {
+                reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(
+                    projectPaper1.projectId,
+                    projectPaper1.paperId,
+                )
             } returns emptyList()
 
             coEvery { paperRepoMock.getPaperById(paper1.id) } returns Result.success(paper1)
@@ -355,10 +457,17 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper1.id) } returns emptyList()
 
             service.getNextPaperToReview(currentProjectPaper.projectId, currentProjectPaper.paperId)
-            coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper1.id) }
-            coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper2.id) }
+            coVerify(
+                exactly = 1,
+            ) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper1.projectId, projectPaper1.paperId) }
+            coVerify(
+                exactly = 1,
+            ) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper2.projectId, projectPaper2.paperId) }
             coVerify(exactly = 1) {
-                reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaper1.id)
+                reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(
+                    projectPaper1.projectId,
+                    projectPaper1.paperId,
+                )
             }
         }
 }

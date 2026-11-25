@@ -7,7 +7,6 @@ import se.uulm.snowballr.backend.model.outgoing.review.ReviewResponse
 import java.util.UUID
 
 data class ProjectPaperResponse(
-    val id: UUID,
     val stage: Int,
     val decision: PaperDecision,
     val projectId: UUID,
@@ -21,7 +20,6 @@ data class ProjectPaperResponse(
             backwardReferencedIds: List<UUID>,
             reviews: List<ReviewResponse>,
         ) = ProjectPaperResponse(
-            id = paper.projectPaper.id,
             stage = paper.projectPaper.stage,
             decision = paper.projectPaper.decision,
             projectId = paper.projectPaper.projectId,

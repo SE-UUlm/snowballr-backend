@@ -151,7 +151,9 @@ class ProjectPaperService(
             }
 
             val projectPaper = repo.addPaperToProject(projectId, paperId, stage, currentUser.id)
-            logger.info { "Paper $paperId added to project $projectId as ${projectPaper.id} in stage $stage" }
+            logger.info {
+                "Paper $paperId added to project $projectId as local paper ${projectPaper.localPaperId} in stage $stage"
+            }
 
             projectPaper.toProjectPaperResponse(paper)
         }
@@ -195,11 +197,10 @@ class ProjectPaperService(
         val paper = associatedPaper ?: paperRepo.getPaperById(paperId).getOrThrow()
         val paperResponse = paper.toPaperResponse(citationTableRepo)
 
-        val reviews = reviewTableRepo.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(id)
+        val reviews = reviewTableRepo.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectId, paperId)
             .map { ReviewResponse.fromReviewWithSelectedCriteriaIds(it) }
 
         return ProjectPaperResponse(
-            id = this.id,
             stage = this.stage,
             decision = this.decision,
             projectId = this.projectId,
@@ -234,7 +235,7 @@ class ProjectPaperService(
         for ((projectPaper, paper) in projectPapersWithPapers) {
             paperBackwardReferencesMap[paper] = citationTableRepo.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
             projectPaperReviewsMap[projectPaper] = reviewTableRepo
-                .getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaper.id)
+                .getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaper.projectId, projectPaper.paperId)
                 .map { ReviewResponse.fromReviewWithSelectedCriteriaIds(it) }
         }
 
@@ -286,7 +287,7 @@ class ProjectPaperService(
     private suspend fun getProjectPapersWithReviewsCount(projectPapers: List<ProjectPaper>, currentUserId: UUID) =
         projectPapers
             .map { projectPaper ->
-                val reviews = reviewTableRepo.getAllReviewsForProjectPaper(projectPaper.id)
+                val reviews = reviewTableRepo.getAllReviewsForProjectPaper(projectPaper.projectId, projectPaper.paperId)
 
                 val hasOwnReview = reviews.any { it.userId == currentUserId }
                 if (hasOwnReview) {

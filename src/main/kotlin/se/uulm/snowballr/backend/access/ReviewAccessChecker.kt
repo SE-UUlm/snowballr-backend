@@ -15,7 +15,6 @@ import se.uulm.snowballr.backend.model.exception.failedprecondition.EntityNotAct
 import se.uulm.snowballr.backend.model.exception.notfound.entity.ProjectNotFoundException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadException
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
-import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import java.util.UUID
 import javax.annotation.CheckReturnValue
 
@@ -50,7 +49,6 @@ interface IReviewAccessChecker {
 }
 
 class ReviewAccessChecker(
-    private val projectPaperRepo: IProjectPaperTableRepo,
     private val projectMemberRepo: IProjectMemberTableRepo,
     private val projectAccessChecker: IProjectAccessChecker,
 ) : IReviewAccessChecker {
@@ -73,13 +71,6 @@ class ReviewAccessChecker(
      */
     @CheckReturnValue
     private fun isUserInProjectOfReview() = AccessRule<Review> { requester, target ->
-        val projectPaperResult = projectPaperRepo.getProjectPaperById(target.projectPaperId)
-        val projectPaper = projectPaperResult.getOrNull()
-
-        if (projectPaper != null) {
-            projectMemberRepo.isProjectMember(projectPaper.projectId, requester.id)
-        } else {
-            false
-        }
+        projectMemberRepo.isProjectMember(target.projectId, requester.id)
     }
 }

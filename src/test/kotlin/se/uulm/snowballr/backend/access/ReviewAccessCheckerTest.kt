@@ -15,15 +15,13 @@ import se.uulm.snowballr.backend.model.dto.user.UserRole
 import se.uulm.snowballr.backend.model.exception.failedprecondition.EntityNotActiveException
 import se.uulm.snowballr.backend.model.exception.unauthorized.UnauthorizedReadException
 import se.uulm.snowballr.backend.repository.association.IProjectMemberTableRepo
-import se.uulm.snowballr.backend.repository.association.IProjectPaperTableRepo
 import java.util.UUID
 
 class ReviewAccessCheckerTest {
-    private val projectPaperRepo = mockk<IProjectPaperTableRepo>()
     private val projectMemberRepo = mockk<IProjectMemberTableRepo>()
     private val projectAccessChecker = mockk<IProjectAccessChecker>()
 
-    private val accessChecker = ReviewAccessChecker(projectPaperRepo, projectMemberRepo, projectAccessChecker)
+    private val accessChecker = ReviewAccessChecker(projectMemberRepo, projectAccessChecker)
 
     @Nested
     inner class IsAllowedToCreateReview {
@@ -80,10 +78,8 @@ class ReviewAccessCheckerTest {
         fun `When the user is a member of the project the review belongs to, then access is allowed`() = runTest {
             val user = DataBuilder.createExampleUser()
             val projectId = UUID.randomUUID()
-            val projectPaper = DataBuilder.createExampleProjectPaper(projectId = projectId)
-            val review = DataBuilder.createExampleReview(projectPaperId = projectPaper.id)
+            val review = DataBuilder.createExampleReview(projectId = projectId)
 
-            coEvery { projectPaperRepo.getProjectPaperById(projectPaper.id) } returns Result.success(projectPaper)
             coEvery { projectMemberRepo.isProjectMember(projectId, user.id) } returns true
 
             assertDoesNotThrow { accessChecker.isAllowedToReadReview(user, review) }
@@ -93,50 +89,19 @@ class ReviewAccessCheckerTest {
         fun `When the user is a server admin but not a project member, then access is allowed`() = runTest {
             val user = DataBuilder.createExampleUser(role = UserRole.ADMIN)
             val projectId = UUID.randomUUID()
-            val projectPaper = DataBuilder.createExampleProjectPaper(projectId = projectId)
-            val review = DataBuilder.createExampleReview(projectPaperId = projectPaper.id)
+            val review = DataBuilder.createExampleReview(projectId = projectId)
 
-            coEvery { projectPaperRepo.getProjectPaperById(projectPaper.id) } returns Result.success(projectPaper)
             coEvery { projectMemberRepo.isProjectMember(projectId, user.id) } returns false
 
             assertDoesNotThrow { accessChecker.isAllowedToReadReview(user, review) }
         }
 
         @Test
-        fun `When the project paper is not found and the user is a server admin, then access is allowed`() = runTest {
-            val user = DataBuilder.createExampleUser(role = UserRole.ADMIN)
-            val projectPaperId = UUID.randomUUID()
-            val review = DataBuilder.createExampleReview(projectPaperId = projectPaperId)
-
-            coEvery { projectPaperRepo.getProjectPaperById(projectPaperId) } returns Result.failure(
-                TestSpecificException(),
-            )
-
-            assertDoesNotThrow { accessChecker.isAllowedToReadReview(user, review) }
-        }
-
-        @Test
-        fun `When the project paper is not found and the user is not a server admin, then access is denied`() =
-            runTest {
-                val user = DataBuilder.createExampleUser()
-                val projectPaperId = UUID.randomUUID()
-                val review = DataBuilder.createExampleReview(projectPaperId = projectPaperId)
-
-                coEvery { projectPaperRepo.getProjectPaperById(projectPaperId) } returns Result.failure(
-                    TestSpecificException(),
-                )
-
-                assertThrows<UnauthorizedReadException> { accessChecker.isAllowedToReadReview(user, review) }
-            }
-
-        @Test
         fun `When the user is not a project member and not a server admin, then access is denied`() = runTest {
             val user = DataBuilder.createExampleUser()
             val projectId = UUID.randomUUID()
-            val projectPaper = DataBuilder.createExampleProjectPaper(projectId = projectId)
-            val review = DataBuilder.createExampleReview(projectPaperId = projectPaper.id)
+            val review = DataBuilder.createExampleReview(projectId = projectId)
 
-            coEvery { projectPaperRepo.getProjectPaperById(projectPaper.id) } returns Result.success(projectPaper)
             coEvery { projectMemberRepo.isProjectMember(projectId, user.id) } returns false
 
             assertThrows<UnauthorizedReadException> { accessChecker.isAllowedToReadReview(user, review) }

@@ -213,7 +213,6 @@ fun ProjectInformation.toGrpc(): ProjectOuterClass.Project.Information =
         .build()
 
 fun ProjectPaperResponse.toGrpc(): ProjectOuterClass.Project.Paper = ProjectOuterClass.Project.Paper.newBuilder()
-    .setId(this.id.toString())
     .setPaper(this.paper.toGrpc())
     .setStage(this.stage.toLong())
     .setDecision(this.decision.toGrpc())

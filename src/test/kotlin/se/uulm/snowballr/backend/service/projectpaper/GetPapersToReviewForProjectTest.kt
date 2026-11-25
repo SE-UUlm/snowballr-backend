@@ -18,19 +18,20 @@ class GetPapersToReviewForProjectTest : ProjectPaperServiceTest() {
         val currentUser = DataBuilder.createExampleUser()
         val project = DataBuilder.createExampleProject()
         val author = DataBuilder.createExampleAuthor()
-        val paper = DataBuilder.createExamplePaper(authors = listOf(author))
+        val paper1 = DataBuilder.createExamplePaper(authors = listOf(author))
+        val paper2 = DataBuilder.createExamplePaper(authors = listOf(author))
         val projectPaperAlreadyDecided = DataBuilder.createExampleProjectPaper(
             projectId = project.id,
-            paperId = paper.id,
+            paperId = paper1.id,
             decision = PaperDecision.ACCEPTED,
         )
         val projectPaperNotAlreadyDecided = DataBuilder.createExampleProjectPaper(
             projectId = project.id,
-            paperId = paper.id,
+            paperId = paper2.id,
             decision = PaperDecision.UNREVIEWED,
         )
-        val projectPaperWithPaper1 = ProjectPaperWithPaper(projectPaperAlreadyDecided, paper)
-        val projectPaperWithPaper2 = ProjectPaperWithPaper(projectPaperNotAlreadyDecided, paper)
+        val projectPaperWithPaper1 = ProjectPaperWithPaper(projectPaperAlreadyDecided, paper1)
+        val projectPaperWithPaper2 = ProjectPaperWithPaper(projectPaperNotAlreadyDecided, paper2)
         val review = DataBuilder.createExampleReviewWithSelectedCriteriaIds(
             review = DataBuilder.createExampleReview(userId = UUID.randomUUID()),
             selectedCriteriaIds = listOf(UUID.randomUUID()),
@@ -42,20 +43,26 @@ class GetPapersToReviewForProjectTest : ProjectPaperServiceTest() {
             projectPaperRepoMock.getAllProjectPapersWithPapers(project.id)
         } returns listOf(projectPaperWithPaper1, projectPaperWithPaper2)
         coEvery {
-            citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
+            citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(any())
         } returns listOf(UUID.randomUUID())
         coEvery {
-            reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaperAlreadyDecided.id)
+            reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(
+                projectPaperAlreadyDecided.projectId,
+                projectPaperAlreadyDecided.paperId,
+            )
         } returns listOf(review)
         coEvery {
-            reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaperNotAlreadyDecided.id)
+            reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(
+                projectPaperNotAlreadyDecided.projectId,
+                projectPaperNotAlreadyDecided.paperId,
+            )
         } returns listOf(review)
 
         val projectPapers = service.getPapersToReviewForProject(project.id)
 
         assertThat(projectPapers).hasSize(1)
-        assertThat(projectPapers).anyMatch { it.id == projectPaperNotAlreadyDecided.id }
-        assertThat(projectPapers).noneMatch { it.id == projectPaperAlreadyDecided.id }
+        assertThat(projectPapers).anyMatch { it.paper.id == projectPaperNotAlreadyDecided.paperId }
+        assertThat(projectPapers).noneMatch { it.paper.id == projectPaperAlreadyDecided.paperId }
     }
 
     @Test
@@ -64,19 +71,20 @@ class GetPapersToReviewForProjectTest : ProjectPaperServiceTest() {
             val currentUser = DataBuilder.createExampleUser()
             val project = DataBuilder.createExampleProject()
             val author = DataBuilder.createExampleAuthor()
-            val paper = DataBuilder.createExamplePaper(authors = listOf(author))
+            val paper1 = DataBuilder.createExamplePaper(authors = listOf(author))
+            val paper2 = DataBuilder.createExamplePaper(authors = listOf(author))
             val projectPaperWithCurrentUserReview = DataBuilder.createExampleProjectPaper(
                 projectId = project.id,
-                paperId = paper.id,
+                paperId = paper1.id,
                 decision = PaperDecision.UNREVIEWED,
             )
             val projectPaperWithoutCurrentUserReview = DataBuilder.createExampleProjectPaper(
                 projectId = project.id,
-                paperId = paper.id,
+                paperId = paper2.id,
                 decision = PaperDecision.UNREVIEWED,
             )
-            val projectPaperWithPaper1 = ProjectPaperWithPaper(projectPaperWithCurrentUserReview, paper)
-            val projectPaperWithPaper2 = ProjectPaperWithPaper(projectPaperWithoutCurrentUserReview, paper)
+            val projectPaperWithPaper1 = ProjectPaperWithPaper(projectPaperWithCurrentUserReview, paper1)
+            val projectPaperWithPaper2 = ProjectPaperWithPaper(projectPaperWithoutCurrentUserReview, paper2)
             val reviewByCurrentUser = DataBuilder.createExampleReviewWithSelectedCriteriaIds(
                 review = DataBuilder.createExampleReview(userId = currentUser.id),
                 selectedCriteriaIds = listOf(UUID.randomUUID()),
@@ -92,22 +100,26 @@ class GetPapersToReviewForProjectTest : ProjectPaperServiceTest() {
                 projectPaperRepoMock.getAllProjectPapersWithPapers(project.id)
             } returns listOf(projectPaperWithPaper1, projectPaperWithPaper2)
             coEvery {
-                citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id)
+                citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(any())
             } returns listOf(UUID.randomUUID())
             coEvery {
-                reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaperWithCurrentUserReview.id)
+                reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(
+                    projectPaperWithCurrentUserReview.projectId,
+                    projectPaperWithCurrentUserReview.paperId,
+                )
             } returns listOf(reviewByCurrentUser)
             coEvery {
                 reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(
-                    projectPaperWithoutCurrentUserReview.id,
+                    projectPaperWithoutCurrentUserReview.projectId,
+                    projectPaperWithoutCurrentUserReview.paperId,
                 )
             } returns listOf(reviewByOtherUser)
 
             val projectPapers = service.getPapersToReviewForProject(project.id)
 
             assertThat(projectPapers).hasSize(1)
-            assertThat(projectPapers).anyMatch { it.id == projectPaperWithoutCurrentUserReview.id }
-            assertThat(projectPapers).noneMatch { it.id == projectPaperWithCurrentUserReview.id }
+            assertThat(projectPapers).anyMatch { it.paper.id == projectPaperWithoutCurrentUserReview.paperId }
+            assertThat(projectPapers).noneMatch { it.paper.id == projectPaperWithCurrentUserReview.paperId }
         }
 
     @Test
@@ -128,13 +140,16 @@ class GetPapersToReviewForProjectTest : ProjectPaperServiceTest() {
         coEvery { projectPaperRepoMock.getAllProjectPapersWithPapers(project.id) } returns listOf(projectPaperWithPaper)
         coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper.id) } returns emptyList()
         coEvery {
-            reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaper.id)
+            reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(
+                projectPaper.projectId,
+                projectPaper.paperId,
+            )
         } returns emptyList()
 
         val result = service.getPapersToReviewForProject(project.id)
 
         assertThat(result).hasSize(1)
-        assertThat(result.first().id).isEqualTo(projectPaper.id)
+        assertThat(result.first().paper.id).isEqualTo(projectPaper.paperId)
     }
 
     @Test

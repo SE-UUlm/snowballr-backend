@@ -65,7 +65,10 @@ class ExportService(
             val projectPapers = projectPaperRepo.getAllProjectPapersWithPapers(projectId)
                 .map {
                     val reviewsWithSelectedCriteriaIds =
-                        reviewRepo.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(it.projectPaper.id)
+                        reviewRepo.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(
+                            it.projectPaper.projectId,
+                            it.projectPaper.paperId,
+                        )
                     it.toProjectPaperFull(reviewsWithSelectedCriteriaIds)
                 }
             val projectCriteria = criterionRepo.getAllProjectCriteria(projectId)
