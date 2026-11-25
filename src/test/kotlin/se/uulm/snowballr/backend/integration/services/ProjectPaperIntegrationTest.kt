@@ -192,7 +192,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
                 val ppB = addToProject(project, createPaper("B"))
                 addToProject(project, createPaper("C"))
 
-                val next = projectPaperService.getNextPaper(ppA.id)
+                val next = projectPaperService.getNextPaper(ppA.projectId, ppA.paper.id)
 
                 assertEquals(ppB.id, next.id)
             }
@@ -205,7 +205,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
                 val ppB = addToProject(project, createPaper("B"))
                 val ppC = addToProject(project, createPaper("C"))
 
-                val previous = projectPaperService.getPreviousPaper(ppC.id)
+                val previous = projectPaperService.getPreviousPaper(ppC.projectId, ppC.paper.id)
 
                 assertEquals(ppB.id, previous.id)
             }
@@ -215,7 +215,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
             val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
             val ppA = addToProject(project, createPaper())
 
-            assertThrows<FailedPreconditionException> { projectPaperService.getNextPaper(ppA.id) }
+            assertThrows<FailedPreconditionException> { projectPaperService.getNextPaper(ppA.projectId, ppA.paper.id) }
         }
 
         @Test
@@ -223,7 +223,9 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
             val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
             val ppA = addToProject(project, createPaper())
 
-            assertThrows<FailedPreconditionException> { projectPaperService.getPreviousPaper(ppA.id) }
+            assertThrows<FailedPreconditionException> {
+                projectPaperService.getPreviousPaper(ppA.projectId, ppA.paper.id)
+            }
         }
     }
 
@@ -235,7 +237,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
             val ppA = addToProject(project, createPaper("A"))
             val ppB = addToProject(project, createPaper("B"))
 
-            val next = projectPaperService.getNextPaperToReview(ppA.id)
+            val next = projectPaperService.getNextPaperToReview(ppA.projectId, ppA.paper.id)
 
             assertEquals(ppB.id, next.id)
         }
@@ -246,7 +248,9 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
                 val project = projectService.createProject(CreateProjectRequest(name = "Test Project"))
                 val ppA = addToProject(project, createPaper())
 
-                assertThrows<FailedPreconditionException> { projectPaperService.getNextPaperToReview(ppA.id) }
+                assertThrows<FailedPreconditionException> {
+                    projectPaperService.getNextPaperToReview(ppA.projectId, ppA.paper.id)
+                }
             }
 
         @Test
@@ -258,7 +262,9 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
 
                 reviewPaper(ppB, ReviewDecision.ACCEPTED)
 
-                assertThrows<FailedPreconditionException> { projectPaperService.getNextPaperToReview(ppA.id) }
+                assertThrows<FailedPreconditionException> {
+                    projectPaperService.getNextPaperToReview(ppA.projectId, ppA.paper.id)
+                }
             }
     }
 }

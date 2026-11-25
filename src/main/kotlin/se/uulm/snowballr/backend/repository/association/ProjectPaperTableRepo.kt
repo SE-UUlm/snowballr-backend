@@ -52,6 +52,12 @@ interface IProjectPaperTableRepo {
     suspend fun getProjectPaperById(id: UUID): Result<ProjectPaper>
 
     /**
+     * Returns a [Result] containing the project paper by its project ID and paper ID or a [NotFoundException] if the
+     * project paper with the passed IDs doesn't exist.
+     */
+    suspend fun getProjectPaper(projectId: UUID, paperId: UUID): Result<ProjectPaper>
+
+    /**
      * Returns a [Result] containing the project paper by its relative ID in a project or a
      * [ProjectPaperNotFoundException] if the project paper with the passed [relativeId] doesn't exist.
      *
@@ -218,6 +224,14 @@ class ProjectPaperTableRepo(
 
     override suspend fun getProjectPaperById(id: UUID): Result<ProjectPaper> = db.query {
         getEntityByKeyAsResult(::getProjectPaperByIdOrNull, EntityType.PROJECT_PAPER, id)
+    }
+
+    override suspend fun getProjectPaper(projectId: UUID, paperId: UUID): Result<ProjectPaper> = db.query {
+        val projectPaper = ProjectPaperTable.getEntityOrNull(ResultRow::toProjectPaper) {
+            (ProjectPaperTable.projectId eq projectId) and (ProjectPaperTable.paperId eq paperId)
+        }
+
+        wrapAsResult(projectPaper, ProjectPaperNotFoundException(paperId, projectId))
     }
 
     override suspend fun getProjectPaperByRelativeId(projectId: UUID, relativeId: Int): Result<ProjectPaper> =

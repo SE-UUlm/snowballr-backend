@@ -186,11 +186,13 @@ message Project {
 
   // The project paper connecting a project to a paper with additional information.
   message Paper {
+    // The UUID of the project paper
     string id = 1;
     snowballr.Paper paper = 2;
     uint64 stage = 3;
     PaperDecision decision = 4;
     repeated Review reviews = 5;
+    // The project-local project paper integer ID
     string local_id = 6;
 
     // Request to get a project paper.
@@ -222,6 +224,12 @@ message Project {
       string query = 2;
     }
   }
+}
+
+message ProjectPaperRequest {
+  string project_id = 1;
+  // The UUID of the paper, not the project paper
+  string paper_id = 2;
 }
 
 // Matrix containing the paper decision based on reviews made for a paper.

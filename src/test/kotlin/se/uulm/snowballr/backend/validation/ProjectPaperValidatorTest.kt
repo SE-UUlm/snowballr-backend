@@ -10,6 +10,7 @@ import se.uulm.snowballr.backend.model.InvalidId
 import se.uulm.snowballr.backend.model.OutOfRangeValue
 import se.uulm.snowballr.backend.model.TooLongField
 import se.uulm.snowballr.backend.validation.ProjectPaperValidator.QUERY_MAX_LENGTH
+import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.Project
 import java.util.UUID
 
@@ -157,6 +158,42 @@ class ProjectPaperValidatorTest {
             val result = validateRequest(request)
 
             assertInvalidResult<TooLongField>(result)
+        }
+    }
+
+    @Nested
+    inner class ProjectPaperRequest {
+        private val validProjectPaperRequestBuilder: ProjectOuterClass.ProjectPaperRequest.Builder =
+            ProjectOuterClass.ProjectPaperRequest
+                .newBuilder()
+                .setProjectId(UUID.randomUUID().toString())
+                .setPaperId(UUID.randomUUID().toString())
+
+        @Test
+        fun `When a valid request is validated, then no issue is returned`() {
+            val request = validProjectPaperRequestBuilder.build()
+
+            val result = validateRequest(request)
+
+            EitherAssert.assertThat(result).isRight()
+        }
+
+        @Test
+        fun `When an invalid project ID is validated, then the 'InvalidId' issue is returned`() {
+            val request = validProjectPaperRequestBuilder.setProjectId("invalid-id").build()
+
+            val result = validateRequest(request)
+
+            assertInvalidResult<InvalidId>(result)
+        }
+
+        @Test
+        fun `When an invalid paper ID is validated, then the 'InvalidId' issue is returned`() {
+            val request = validProjectPaperRequestBuilder.setPaperId("invalid-id").build()
+
+            val result = validateRequest(request)
+
+            assertInvalidResult<InvalidId>(result)
         }
     }
 }

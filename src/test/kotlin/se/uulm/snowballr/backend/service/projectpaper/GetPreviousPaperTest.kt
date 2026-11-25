@@ -21,11 +21,10 @@ class GetPreviousPaperTest : ProjectPaperServiceTest() {
             val previousProjectPaper = DataBuilder.createExampleProjectPaper(paperId = otherPaper.id)
 
             mockCurrentUser(currentUser)
-            coEvery {
-                projectPaperRepoMock.getProjectPaperById(projectPaper.id)
-            } returns Result.success(projectPaper)
             coJustRun { projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id) }
-            coEvery { projectRepoMock.getProjectById(projectPaper.projectId) } returns Result.success(project)
+            coEvery {
+                projectPaperRepoMock.getProjectPaper(projectPaper.projectId, projectPaper.paperId)
+            } returns Result.success(projectPaper)
             coEvery {
                 projectPaperRepoMock.getAdjacentPaper(
                     project.id,
@@ -39,7 +38,7 @@ class GetPreviousPaperTest : ProjectPaperServiceTest() {
                 reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(previousProjectPaper.id)
             } returns emptyList()
 
-            val previousPaper = service.getPreviousPaper(projectPaper.id)
+            val previousPaper = service.getPreviousPaper(projectPaper.projectId, projectPaper.paperId)
 
             assertProjectPaperEquality(previousProjectPaper, previousPaper)
         }
@@ -52,11 +51,12 @@ class GetPreviousPaperTest : ProjectPaperServiceTest() {
         val projectPaper = DataBuilder.createExampleProjectPaper(projectId = project.id, paperId = paper.id)
 
         mockCurrentUser(currentUser)
+        coJustRun { projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id) }
         coEvery {
-            projectPaperRepoMock.getProjectPaperById(projectPaper.id)
+            projectPaperRepoMock.getProjectPaper(projectPaper.projectId, projectPaper.paperId)
         } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { service.getPreviousPaper(projectPaper.id) }
+        assertThrows<TestSpecificException> { service.getPreviousPaper(projectPaper.projectId, projectPaper.paperId) }
     }
 
     @Test
@@ -69,31 +69,13 @@ class GetPreviousPaperTest : ProjectPaperServiceTest() {
 
             mockCurrentUser(currentUser)
             coEvery {
-                projectPaperRepoMock.getProjectPaperById(projectPaper.id)
-            } returns Result.success(projectPaper)
-            coEvery {
                 projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id)
             } throws TestSpecificException()
 
-            assertThrows<TestSpecificException> { service.getPreviousPaper(projectPaper.id) }
+            assertThrows<TestSpecificException> {
+                service.getPreviousPaper(projectPaper.projectId, projectPaper.paperId)
+            }
         }
-
-    @Test
-    fun `When retrieving the project fails, then a TestSpecificException is thrown`() = runTest {
-        val currentUser = DataBuilder.createExampleUser()
-        val project = DataBuilder.createExampleProject()
-        val paper = DataBuilder.createExamplePaper()
-        val projectPaper = DataBuilder.createExampleProjectPaper(projectId = project.id, paperId = paper.id)
-
-        mockCurrentUser(currentUser)
-        coEvery {
-            projectPaperRepoMock.getProjectPaperById(projectPaper.id)
-        } returns Result.success(projectPaper)
-        coJustRun { projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id) }
-        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.failure(TestSpecificException())
-
-        assertThrows<TestSpecificException> { service.getPreviousPaper(projectPaper.id) }
-    }
 
     @Test
     fun `When retrieving the previous project paper fails, then a TestSpecificException is thrown`() = runTest {
@@ -103,11 +85,10 @@ class GetPreviousPaperTest : ProjectPaperServiceTest() {
         val projectPaper = DataBuilder.createExampleProjectPaper(projectId = project.id, paperId = paper.id)
 
         mockCurrentUser(currentUser)
-        coEvery {
-            projectPaperRepoMock.getProjectPaperById(projectPaper.id)
-        } returns Result.success(projectPaper)
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id) }
-        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
+        coEvery {
+            projectPaperRepoMock.getProjectPaper(projectPaper.projectId, projectPaper.paperId)
+        } returns Result.success(projectPaper)
         coEvery {
             projectPaperRepoMock.getAdjacentPaper(
                 project.id,
@@ -116,7 +97,7 @@ class GetPreviousPaperTest : ProjectPaperServiceTest() {
             )
         } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { service.getPreviousPaper(projectPaper.id) }
+        assertThrows<TestSpecificException> { service.getPreviousPaper(projectPaper.projectId, projectPaper.paperId) }
     }
 
     @Test
@@ -128,11 +109,10 @@ class GetPreviousPaperTest : ProjectPaperServiceTest() {
         val previousProjectPaper = DataBuilder.createExampleProjectPaper()
 
         mockCurrentUser(currentUser)
-        coEvery {
-            projectPaperRepoMock.getProjectPaperById(projectPaper.id)
-        } returns Result.success(projectPaper)
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id) }
-        coEvery { projectRepoMock.getProjectById(project.id) } returns Result.success(project)
+        coEvery {
+            projectPaperRepoMock.getProjectPaper(projectPaper.projectId, projectPaper.paperId)
+        } returns Result.success(projectPaper)
         coEvery {
             projectPaperRepoMock.getAdjacentPaper(
                 project.id,
@@ -144,6 +124,6 @@ class GetPreviousPaperTest : ProjectPaperServiceTest() {
             TestSpecificException(),
         )
 
-        assertThrows<TestSpecificException> { service.getPreviousPaper(projectPaper.id) }
+        assertThrows<TestSpecificException> { service.getPreviousPaper(projectPaper.projectId, projectPaper.paperId) }
     }
 }

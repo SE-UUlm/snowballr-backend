@@ -7,6 +7,7 @@ import arrow.core.raise.ensure
 import arrow.core.raise.zipOrAccumulate
 import se.uulm.snowballr.backend.model.InvalidId
 import se.uulm.snowballr.backend.model.ValidationIssue
+import snowballr.ProjectOuterClass
 import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
 
 /**
@@ -14,6 +15,7 @@ import snowballr.ProjectOuterClass.Project.Paper as GrpcProjectPaper
  */
 object ProjectPaperValidator {
     private const val PROJECT_ID_KEY = "project_id"
+    private const val PAPER_ID_KEY = "project_id"
     const val QUERY_MAX_LENGTH = 50
 
     fun validateGetRequest(request: GrpcProjectPaper.Get): EitherNel<ValidationIssue, Unit> = either {
@@ -39,6 +41,14 @@ object ProjectPaperValidator {
             { ensureTextFieldValidity("query", request.query, QUERY_MAX_LENGTH) },
         ) { _, _ -> }
     }
+
+    fun validateProjectPaperRequest(request: ProjectOuterClass.ProjectPaperRequest): EitherNel<ValidationIssue, Unit> =
+        either {
+            zipOrAccumulate(
+                { ensureIdValidity(PROJECT_ID_KEY, request.projectId) },
+                { ensureIdValidity(PAPER_ID_KEY, request.paperId) },
+            ) { _, _ -> }
+        }
 
     /**
      * Ensures the validity of a given relative project paper ID.

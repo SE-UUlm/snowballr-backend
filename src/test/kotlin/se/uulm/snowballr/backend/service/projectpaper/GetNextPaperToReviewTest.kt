@@ -33,10 +33,10 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
         val review = DataBuilder.createExampleReview(projectPaperId = projectPaper.id)
 
         mockCurrentUser(currentUser)
-        coEvery {
-            projectPaperRepoMock.getProjectPaperById(projectPaper.id)
-        } returns Result.success(projectPaper)
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id) }
+        coEvery {
+            projectPaperRepoMock.getProjectPaper(projectPaper.projectId, projectPaper.paperId)
+        } returns Result.success(projectPaper)
         coEvery {
             projectPaperRepoMock.getSubsequentProjectPapers(project.id, projectPaper.localPaperId, projectPaper.stage)
         } returns listOf(nextProjectPaper)
@@ -49,7 +49,7 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
             reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(nextProjectPaper.id)
         } returns emptyList()
 
-        val result = service.getNextPaperToReview(projectPaper.id)
+        val result = service.getNextPaperToReview(projectPaper.projectId, projectPaper.paperId)
 
         assertProjectPaperEquality(nextProjectPaper, result)
     }
@@ -61,11 +61,14 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
         val projectPaper = DataBuilder.createExampleProjectPaper(projectId = project.id)
 
         mockCurrentUser(currentUser)
+        coJustRun { projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id) }
         coEvery {
-            projectPaperRepoMock.getProjectPaperById(projectPaper.id)
+            projectPaperRepoMock.getProjectPaper(projectPaper.projectId, projectPaper.paperId)
         } returns Result.failure(TestSpecificException())
 
-        assertThrows<TestSpecificException> { service.getNextPaperToReview(projectPaper.id) }
+        assertThrows<TestSpecificException> {
+            service.getNextPaperToReview(projectPaper.projectId, projectPaper.paperId)
+        }
     }
 
     @Test
@@ -77,13 +80,12 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
 
             mockCurrentUser(currentUser)
             coEvery {
-                projectPaperRepoMock.getProjectPaperById(projectPaper.id)
-            } returns Result.success(projectPaper)
-            coEvery {
                 projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id)
             } throws TestSpecificException()
 
-            assertThrows<TestSpecificException> { service.getNextPaperToReview(projectPaper.id) }
+            assertThrows<TestSpecificException> {
+                service.getNextPaperToReview(projectPaper.projectId, projectPaper.paperId)
+            }
         }
 
     @Test
@@ -101,10 +103,10 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
         val review = DataBuilder.createExampleReview(projectPaperId = projectPaper.id, userId = currentUser.id)
 
         mockCurrentUser(currentUser)
-        coEvery {
-            projectPaperRepoMock.getProjectPaperById(projectPaper.id)
-        } returns Result.success(projectPaper)
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id) }
+        coEvery {
+            projectPaperRepoMock.getProjectPaper(projectPaper.projectId, projectPaper.paperId)
+        } returns Result.success(projectPaper)
         coEvery {
             projectPaperRepoMock.getSubsequentProjectPapers(project.id, projectPaper.localPaperId, projectPaper.stage)
         } returns listOf(nextProjectPaper)
@@ -112,7 +114,9 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
             reviewRepoMock.getAllReviewsForProjectPaper(nextProjectPaper.id)
         } returns listOf(review)
 
-        assertThrows<FailedPreconditionException> { service.getNextPaperToReview(projectPaper.id) }
+        assertThrows<FailedPreconditionException> {
+            service.getNextPaperToReview(projectPaper.projectId, projectPaper.paperId)
+        }
     }
 
     @Test
@@ -146,10 +150,10 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
             val review = DataBuilder.createExampleReview(projectPaperId = projectPaper1.id, userId = currentUser.id)
 
             mockCurrentUser(currentUser)
-            coEvery {
-                projectPaperRepoMock.getProjectPaperById(currentProjectPaper.id)
-            } returns Result.success(currentProjectPaper)
             coJustRun { projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id) }
+            coEvery {
+                projectPaperRepoMock.getProjectPaper(currentProjectPaper.projectId, currentProjectPaper.paperId)
+            } returns Result.success(currentProjectPaper)
             coEvery {
                 projectPaperRepoMock.getSubsequentProjectPapers(
                     project.id,
@@ -166,7 +170,7 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
                 reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaper2.id)
             } returns emptyList()
 
-            service.getNextPaperToReview(currentProjectPaper.id)
+            service.getNextPaperToReview(currentProjectPaper.projectId, currentProjectPaper.paperId)
             coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper1.id) }
             coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper2.id) }
             coVerify(exactly = 1) {
@@ -213,10 +217,10 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
         val review = DataBuilder.createExampleReview(projectPaperId = projectPaper1.id, userId = UUID.randomUUID())
 
         mockCurrentUser(currentUser)
-        coEvery {
-            projectPaperRepoMock.getProjectPaperById(currentProjectPaper.id)
-        } returns Result.success(currentProjectPaper)
         coJustRun { projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id) }
+        coEvery {
+            projectPaperRepoMock.getProjectPaper(currentProjectPaper.projectId, currentProjectPaper.paperId)
+        } returns Result.success(currentProjectPaper)
         coEvery {
             projectPaperRepoMock.getSubsequentProjectPapers(
                 project.id,
@@ -234,7 +238,7 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
             reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaper3.id)
         } returns emptyList()
 
-        service.getNextPaperToReview(currentProjectPaper.id)
+        service.getNextPaperToReview(currentProjectPaper.projectId, currentProjectPaper.paperId)
         coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper1.id) }
         coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper2.id) }
         coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper3.id) }
@@ -271,10 +275,10 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
             )
 
             mockCurrentUser(currentUser)
-            coEvery {
-                projectPaperRepoMock.getProjectPaperById(currentProjectPaper.id)
-            } returns Result.success(currentProjectPaper)
             coJustRun { projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id) }
+            coEvery {
+                projectPaperRepoMock.getProjectPaper(currentProjectPaper.projectId, currentProjectPaper.paperId)
+            } returns Result.success(currentProjectPaper)
             coEvery {
                 projectPaperRepoMock.getSubsequentProjectPapers(
                     project.id,
@@ -291,7 +295,7 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
                 reviewRepoMock.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaper2.id)
             } returns emptyList()
 
-            service.getNextPaperToReview(currentProjectPaper.id)
+            service.getNextPaperToReview(currentProjectPaper.projectId, currentProjectPaper.paperId)
             coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper1.id) }
             coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper2.id) }
             coVerify(exactly = 1) {
@@ -329,10 +333,10 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
             )
 
             mockCurrentUser(currentUser)
-            coEvery {
-                projectPaperRepoMock.getProjectPaperById(currentProjectPaper.id)
-            } returns Result.success(currentProjectPaper)
             coJustRun { projectAccessCheckerMock.isAllowedToReadProject(currentUser, project.id) }
+            coEvery {
+                projectPaperRepoMock.getProjectPaper(currentProjectPaper.projectId, currentProjectPaper.paperId)
+            } returns Result.success(currentProjectPaper)
             coEvery {
                 projectPaperRepoMock.getSubsequentProjectPapers(
                     project.id,
@@ -350,7 +354,7 @@ class GetNextPaperToReviewTest : ProjectPaperServiceTest() {
 
             coEvery { citationRepoMock.getBackwardsReferencedPaperIdsOfPaperById(paper1.id) } returns emptyList()
 
-            service.getNextPaperToReview(currentProjectPaper.id)
+            service.getNextPaperToReview(currentProjectPaper.projectId, currentProjectPaper.paperId)
             coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper1.id) }
             coVerify(exactly = 1) { reviewRepoMock.getAllReviewsForProjectPaper(projectPaper2.id) }
             coVerify(exactly = 1) {
