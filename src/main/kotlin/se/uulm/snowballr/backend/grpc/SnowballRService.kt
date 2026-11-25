@@ -473,7 +473,8 @@ class SnowballRService :
     override suspend fun createReview(request: ReviewOuterClass.Review.Create): ReviewOuterClass.Review =
         reviewService.createReview(
             CreateReviewRequest(
-                projectPaperId = parseUUID(request.projectPaperId, EntityType.PROJECT_PAPER),
+                projectId = parseUUID(request.projectId, EntityType.PROJECT),
+                paperId = parseUUID(request.paperId, EntityType.PAPER),
                 decision = reviewDecisionFromGrpc(request.decision),
                 selectedCriteriaIds = request.selectedCriteriaIdsList.map { parseUUID(it, EntityType.CRITERION) },
             ),

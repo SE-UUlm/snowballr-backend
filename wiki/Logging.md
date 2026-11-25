@@ -188,7 +188,7 @@ upon:
 
 ```kotlin
 // Good, because the actor is already part of the MDC prefix.
-logger.info { "Review ${review.id} created for project paper ${request.projectPaperId}" }
+logger.info { "Review ${review.id} created for paper ${request.paperId} in project ${request.projectId}" }
 
 // Necessary, because login runs unauthenticated and the MDC has no user yet.
 logger.info { "User ${user.id} logged in" }

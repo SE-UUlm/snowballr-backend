@@ -41,6 +41,7 @@ class CreateReviewTest : ReviewServiceTest() {
     private val project = DataBuilder.createExampleProject(
         reviewDecisionMatrix = DataBuilder.createExampleReviewDecisionMatrix(),
     )
+    private val paperId = UUID.randomUUID()
     private val projectPaperId = UUID.randomUUID()
     private val decision = ReviewDecision.ACCEPTED
     private val defaultCriterion = UUID.randomUUID()
@@ -51,13 +52,14 @@ class CreateReviewTest : ReviewServiceTest() {
     private val selectedCriteriaIds = listOf<UUID>(defaultCriterion)
 
     private val validCreateReviewRequest = CreateReviewRequest(
-        projectPaperId = projectPaperId,
+        projectId = project.id,
+        paperId = paperId,
         decision = decision,
         selectedCriteriaIds = selectedCriteriaIds,
     )
 
     fun failingFunctions(): Stream<Arguments?> = Stream.of(
-        Arguments.of(projectPaperRepoMock::getProjectPaperById),
+        Arguments.of(projectPaperRepoMock::getProjectPaper),
         Arguments.of(reviewAccessCheckerMock::isAllowedToCreateReview),
         Arguments.of(projectRepoMock::getProjectById),
     )
@@ -102,14 +104,6 @@ class CreateReviewTest : ReviewServiceTest() {
 
         mockCurrentUser(currentUser)
 
-        if (failAt == projectPaperRepoMock::getProjectPaperById) {
-            coEvery {
-                projectPaperRepoMock.getProjectPaperById(projectPaperId)
-            } returns Result.failure(TestSpecificException())
-            return
-        }
-        coEvery { projectPaperRepoMock.getProjectPaperById(projectPaperId) } returns Result.success(projectPaper)
-
         if (stopBefore == projectRepoMock::getProjectById) {
             return
         } else if (failAt == projectRepoMock::getProjectById) {
@@ -130,6 +124,14 @@ class CreateReviewTest : ReviewServiceTest() {
         }
         coJustRun { reviewAccessCheckerMock.isAllowedToCreateReview(currentUser, project.id, projectResult) }
 
+        if (failAt == projectPaperRepoMock::getProjectPaper) {
+            coEvery {
+                projectPaperRepoMock.getProjectPaper(project.id, paperId)
+            } returns Result.failure(TestSpecificException())
+            return
+        }
+        coEvery { projectPaperRepoMock.getProjectPaper(project.id, paperId) } returns Result.success(projectPaper)
+
         if (stopBefore == reviewRepoMock::getAllReviewsForProjectPaper) {
             return
         }
@@ -138,7 +140,7 @@ class CreateReviewTest : ReviewServiceTest() {
             return
         }
         coEvery {
-            reviewRepoMock.createReview(validCreateReviewRequest, project.id, currentUser.id)
+            reviewRepoMock.createReview(validCreateReviewRequest, projectPaperId, currentUser.id)
         } returns Result.success(review)
         coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } returns listOf(defaultProjectCriterion)
         coJustRun { projectPaperRepoMock.updateProjectPaperDecision(projectPaperId, updatedPaperDecision) }
@@ -261,6 +263,7 @@ class CreateReviewTest : ReviewServiceTest() {
                 ),
             )
             val project = DataBuilder.createExampleProject(
+                id = project.id,
                 reviewDecisionMatrix = DataBuilder.createExampleReviewDecisionMatrix(
                     numberOfReviewers = 1,
                     patterns = listOf(declinePattern),
@@ -298,11 +301,7 @@ class CreateReviewTest : ReviewServiceTest() {
 
             mockCreateReview(stopBefore = reviewRepoMock::createReview)
             coEvery {
-                reviewRepoMock.createReview(
-                    createReviewRequest,
-                    project.id,
-                    userId,
-                )
+                reviewRepoMock.createReview(createReviewRequest, projectPaperId, userId)
             } returns Result.success(review)
             coEvery {
                 criterionRepoMock.getAllProjectCriteria(project.id)
@@ -325,6 +324,7 @@ class CreateReviewTest : ReviewServiceTest() {
     fun `When required review count is exceeded and the latest review is REVIEW_DECISION_DECLINED, then final paper decision is REVIEW_DECISION_DECLINED`() =
         runTest {
             val project = DataBuilder.createExampleProject(
+                id = project.id,
                 reviewDecisionMatrix = DataBuilder.createExampleReviewDecisionMatrix(numberOfReviewers = 2),
             )
             val firstReview = DataBuilder.createExampleReview(
@@ -350,11 +350,7 @@ class CreateReviewTest : ReviewServiceTest() {
                 stopBefore = reviewRepoMock::createReview,
             )
             coEvery {
-                reviewRepoMock.createReview(
-                    createReviewRequest,
-                    project.id,
-                    userId,
-                )
+                reviewRepoMock.createReview(createReviewRequest, projectPaperId, userId)
             } returns Result.success(declineReview)
             coEvery { criterionRepoMock.getAllProjectCriteria(project.id) } returns listOf(defaultProjectCriterion)
             coJustRun {
@@ -388,11 +384,7 @@ class CreateReviewTest : ReviewServiceTest() {
 
             mockCreateReview(stopBefore = reviewRepoMock::createReview)
             coEvery {
-                reviewRepoMock.createReview(
-                    createReviewRequest,
-                    project.id,
-                    userId,
-                )
+                reviewRepoMock.createReview(createReviewRequest, projectPaperId, userId)
             } returns Result.success(acceptedReview)
             coEvery {
                 criterionRepoMock.getAllProjectCriteria(project.id)
@@ -431,7 +423,7 @@ class CreateReviewTest : ReviewServiceTest() {
             )
             mockCreateReview(stopBefore = reviewRepoMock::createReview)
             coEvery {
-                reviewRepoMock.createReview(createReviewRequest, project.id, userId)
+                reviewRepoMock.createReview(createReviewRequest, projectPaperId, userId)
             } returns Result.failure(CriteriaNotInProjectException(listOf(foreignCriterionId), project.id))
 
             assertThrows<CriteriaNotInProjectException> { service.createReview(createReviewRequest) }

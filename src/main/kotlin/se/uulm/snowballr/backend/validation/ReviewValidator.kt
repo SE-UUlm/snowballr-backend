@@ -11,7 +11,8 @@ import snowballr.ReviewOuterClass.Review.Create
  */
 object ReviewValidator {
     fun validateCreateRequest(request: Create): EitherNel<ValidationIssue, Unit> = either {
-        ensureIdValidity("project_paper_id", request.projectPaperId)
+        ensureIdValidity("project_id", request.projectId)
+        ensureIdValidity("paper_id", request.paperId)
         ensureEnumNotUnspecified("decision", request.decision)
         ensureIdListValidity("selected_criteria_ids", request.selectedCriteriaIdsList)
         ensureIdListDistinct("selected_criteria_ids", request.selectedCriteriaIdsList)

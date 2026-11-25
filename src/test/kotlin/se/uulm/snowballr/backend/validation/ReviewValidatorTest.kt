@@ -17,7 +17,8 @@ class ReviewValidatorTest {
         private val validCreateRequestBuilder: Create.Builder =
             Create
                 .newBuilder()
-                .setProjectPaperId(UUID.randomUUID().toString())
+                .setProjectId(UUID.randomUUID().toString())
+                .setPaperId(UUID.randomUUID().toString())
                 .setDecision(ReviewOuterClass.ReviewDecision.REVIEW_DECISION_ACCEPTED)
                 .addAllSelectedCriteriaIds(listOf(UUID.randomUUID().toString()))
 
@@ -30,10 +31,21 @@ class ReviewValidatorTest {
         }
 
         @Test
-        fun `When an invalid project paper ID is validated, then the 'InvalidID' issue is returned`() {
+        fun `When an invalid project ID is validated, then the 'InvalidId' issue is returned`() {
             val request =
                 validCreateRequestBuilder
-                    .setProjectPaperId("invalid-id")
+                    .setProjectId("invalid-id")
+                    .build()
+            val result = validateRequest(request)
+
+            assertInvalidResult<InvalidId>(result)
+        }
+
+        @Test
+        fun `When an invalid paper ID is validated, then the 'InvalidId' issue is returned`() {
+            val request =
+                validCreateRequestBuilder
+                    .setPaperId("invalid-id")
                     .build()
             val result = validateRequest(request)
 

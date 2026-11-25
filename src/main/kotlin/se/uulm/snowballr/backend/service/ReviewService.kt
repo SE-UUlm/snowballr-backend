@@ -102,16 +102,17 @@ class ReviewService(
 
     override suspend fun createReview(request: CreateReviewRequest): ReviewResponse =
         withUser(userRepo) { currentUser ->
-            val projectPaper = projectPaperRepo.getProjectPaperById(request.projectPaperId).getOrThrow()
-
-            val projectResult = projectRepo.getProjectById(projectPaper.projectId)
-            accessChecker.isAllowedToCreateReview(currentUser, projectPaper.projectId, projectResult)
+            val (projectId, paperId) = request
+            val projectResult = projectRepo.getProjectById(projectId)
+            accessChecker.isAllowedToCreateReview(currentUser, projectId, projectResult)
             val project = projectResult.getOrThrow()
 
-            val reviewsForProjectPaper = repo.getAllReviewsForProjectPaper(request.projectPaperId)
+            val projectPaper = projectPaperRepo.getProjectPaper(projectId, paperId).getOrThrow()
+
+            val reviewsForProjectPaper = repo.getAllReviewsForProjectPaper(projectPaper.id)
             val hasUserAlreadyReviewed = reviewsForProjectPaper.any { review -> review.userId == currentUser.id }
             if (hasUserAlreadyReviewed) {
-                throw DuplicateReviewException(request.projectPaperId, currentUser.id)
+                throw DuplicateReviewException(projectId, paperId, currentUser.id)
             }
 
             if (projectPaper.hasFinalDecision) {
@@ -121,7 +122,7 @@ class ReviewService(
                 )
             }
 
-            val review = repo.createReview(request, project.id, currentUser.id).getOrThrow()
+            val review = repo.createReview(request, projectPaper.id, currentUser.id).getOrThrow()
 
             val projectCriteria = criterionRepo.getAllProjectCriteria(project.id)
             val hasSelectedExclusionCriterion =
@@ -132,7 +133,7 @@ class ReviewService(
             } else {
                 determinePaperDecision(reviewsForProjectPaper + review, project.settings.reviewDecisionMatrix)
             }
-            projectPaperRepo.updateProjectPaperDecision(request.projectPaperId, decision)
+            projectPaperRepo.updateProjectPaperDecision(projectPaper.id, decision)
 
             if (project.status != ProjectStatus.ACTIVE_LOCKED) {
                 setProjectStatusActiveLocked(project.id)
@@ -141,9 +142,7 @@ class ReviewService(
                 fetcherOrchestrator.enqueue(FetcherEnqueueJob(projectPaper, currentUser.id))
             }
 
-            logger.info {
-                "Review ${review.id} created for project paper ${request.projectPaperId} (${review.decision})"
-            }
+            logger.info { "Review ${review.id} created for paper $paperId in project $projectId (${review.decision})" }
             ReviewResponse.fromReviewAndIds(review, request.selectedCriteriaIds)
         }
 

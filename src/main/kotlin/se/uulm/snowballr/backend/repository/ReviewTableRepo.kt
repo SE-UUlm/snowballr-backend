@@ -63,12 +63,12 @@ interface IReviewTableRepo {
      *
      * @param request The review request containing the project paper that was reviewed, the review decision and
      * the selected project criteria to justify the decision.
-     * @param projectId The ID of the project the reviewed project paper belongs to.
+     * @param projectPaperId The ID of the project paper for which the review is created.
      * @param userId The ID of the user who created the review.
      * @return A [Result] containing the created [Review], or a [CriteriaNotInProjectException] if at least one
-     * selected criterion does not exist or does not belong to the project with the passed [projectId].
+     * selected criterion does not exist or does not belong to the project of the passed [request].
      */
-    suspend fun createReview(request: CreateReviewRequest, projectId: UUID, userId: UUID): Result<Review>
+    suspend fun createReview(request: CreateReviewRequest, projectPaperId: UUID, userId: UUID): Result<Review>
 }
 
 /**
@@ -113,26 +113,29 @@ class ReviewTableRepo(
             }
     }
 
-    override suspend fun createReview(request: CreateReviewRequest, projectId: UUID, userId: UUID): Result<Review> =
-        db.query {
-            val foreignCriteriaIds = getForeignCriteriaIdsAndLockOthers(request.selectedCriteriaIds, projectId)
-            if (foreignCriteriaIds.isNotEmpty()) {
-                return@query Result.failure(CriteriaNotInProjectException(foreignCriteriaIds, projectId))
-            }
-
-            val review = ReviewTable.insertAndGet(ResultRow::toReview) {
-                it[projectPaperId] = request.projectPaperId
-                it[ReviewTable.userId] = userId
-                it[decision] = request.decision
-            }
-
-            ReviewHasCriterionTable.batchInsert(request.selectedCriteriaIds) { criterionId ->
-                this[ReviewHasCriterionTable.reviewId] = review.id
-                this[ReviewHasCriterionTable.criterionId] = criterionId
-            }
-
-            Result.success(review)
+    override suspend fun createReview(
+        request: CreateReviewRequest,
+        projectPaperId: UUID,
+        userId: UUID,
+    ): Result<Review> = db.query {
+        val foreignCriteriaIds = getForeignCriteriaIdsAndLockOthers(request.selectedCriteriaIds, request.projectId)
+        if (foreignCriteriaIds.isNotEmpty()) {
+            return@query Result.failure(CriteriaNotInProjectException(foreignCriteriaIds, request.projectId))
         }
+
+        val review = ReviewTable.insertAndGet(ResultRow::toReview) {
+            it[ReviewTable.projectPaperId] = projectPaperId
+            it[ReviewTable.userId] = userId
+            it[decision] = request.decision
+        }
+
+        ReviewHasCriterionTable.batchInsert(request.selectedCriteriaIds) { criterionId ->
+            this[ReviewHasCriterionTable.reviewId] = review.id
+            this[ReviewHasCriterionTable.criterionId] = criterionId
+        }
+
+        Result.success(review)
+    }
 
     /**
      * Returns the IDs of [criteriaIds] that do not exist or do not belong to the project with the passed [projectId].
