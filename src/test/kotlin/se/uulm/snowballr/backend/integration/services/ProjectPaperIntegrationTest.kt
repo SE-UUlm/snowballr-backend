@@ -25,7 +25,8 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
     private suspend fun reviewPaper(projectPaper: ProjectPaperResponse, decision: ReviewDecision) =
         reviewService.createReview(
             CreateReviewRequest(
-                projectPaperId = projectPaper.id,
+                projectId = projectPaper.projectId,
+                paperId = projectPaper.paper.id,
                 decision = decision,
                 selectedCriteriaIds = emptyList(),
             ),

@@ -48,7 +48,8 @@ class CriterionIntegrationTest : IntegrationTest() {
     private suspend fun lockProject(project: ProjectResponse, projectPaper: ProjectPaperResponse): ProjectResponse {
         reviewService.createReview(
             CreateReviewRequest(
-                projectPaperId = projectPaper.id,
+                projectId = projectPaper.projectId,
+                paperId = projectPaper.paper.id,
                 decision = ReviewDecision.ACCEPTED,
                 selectedCriteriaIds = emptyList(),
             ),

@@ -29,8 +29,11 @@ message Review {
 
   // Request to create a review.
   message Create {
-    string project_paper_id = 1;
+    reserved 1;
     ReviewDecision decision = 2;
     repeated string selected_criteria_ids = 3;
+    string project_id = 4;
+    // The UUID of the paper, not the project paper
+    string paper_id = 5;
   }
 }

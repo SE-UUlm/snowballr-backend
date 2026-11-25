@@ -1,7 +1,6 @@
 package se.uulm.snowballr.backend.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import se.uulm.snowballr.backend.access.IProjectAccessChecker
 import se.uulm.snowballr.backend.access.IReviewAccessChecker
 import se.uulm.snowballr.backend.fetcher.IFetcherOrchestrator
 import se.uulm.snowballr.backend.grpc.SnowballRService
@@ -38,11 +37,6 @@ interface IReviewService {
     suspend fun getReviewById(reviewId: UUID): ReviewResponse
 
     /**
-     * Service implementation of [SnowballRService.getAllReviewsForProjectPaper].
-     */
-    suspend fun getAllReviewsForProjectPaper(projectPaperId: UUID): List<ReviewResponse>
-
-    /**
      * Service implementation of [SnowballRService.createReview].
      */
     suspend fun createReview(request: CreateReviewRequest): ReviewResponse
@@ -65,7 +59,6 @@ interface IReviewService {
  * @param criterionRepo Interface for persistence and retrieval operations related to criteria.
  * @param reviewHasCriterionRepo Interface for persistence and retrieval operations related to review-criteria relation.
  * @param accessChecker Interface for checking access permissions for reviews based on defined rules.
- * @param projectAccessChecker Interface for checking access permissions for projects based on defined rules.
  * @param fetcherOrchestrator Interface for enqueuing fetcher jobs for fetching referenced papers.
  */
 @Suppress("LongParameterList")
@@ -77,7 +70,6 @@ class ReviewService(
     private val criterionRepo: ICriterionTableRepo,
     private val reviewHasCriterionRepo: IReviewHasCriterionTableRepo,
     private val accessChecker: IReviewAccessChecker,
-    private val projectAccessChecker: IProjectAccessChecker,
     private val fetcherOrchestrator: IFetcherOrchestrator,
 ) : IReviewService {
     override suspend fun getReviewById(reviewId: UUID): ReviewResponse = withUser(userRepo) { currentUser ->
@@ -90,28 +82,19 @@ class ReviewService(
         ReviewResponse.fromReviewAndIds(review, selectedCriteriaIds)
     }
 
-    override suspend fun getAllReviewsForProjectPaper(projectPaperId: UUID): List<ReviewResponse> =
-        withUser(userRepo) { currentUser ->
-            val projectPaper = projectPaperRepo.getProjectPaperById(projectPaperId).getOrThrow()
-
-            projectAccessChecker.isAllowedToReadProject(currentUser, projectPaper.projectId)
-
-            repo.getAllReviewsWithSelectedCriteriaIdsForProjectPaper(projectPaperId)
-                .map { ReviewResponse.fromReviewWithSelectedCriteriaIds(it) }
-        }
-
     override suspend fun createReview(request: CreateReviewRequest): ReviewResponse =
         withUser(userRepo) { currentUser ->
-            val projectPaper = projectPaperRepo.getProjectPaperById(request.projectPaperId).getOrThrow()
-
-            val projectResult = projectRepo.getProjectById(projectPaper.projectId)
-            accessChecker.isAllowedToCreateReview(currentUser, projectPaper.projectId, projectResult)
+            val (projectId, paperId) = request
+            val projectResult = projectRepo.getProjectById(projectId)
+            accessChecker.isAllowedToCreateReview(currentUser, projectId, projectResult)
             val project = projectResult.getOrThrow()
 
-            val reviewsForProjectPaper = repo.getAllReviewsForProjectPaper(request.projectPaperId)
+            val projectPaper = projectPaperRepo.getProjectPaper(projectId, paperId).getOrThrow()
+
+            val reviewsForProjectPaper = repo.getAllReviewsForProjectPaper(projectPaper.id)
             val hasUserAlreadyReviewed = reviewsForProjectPaper.any { review -> review.userId == currentUser.id }
             if (hasUserAlreadyReviewed) {
-                throw DuplicateReviewException(request.projectPaperId, currentUser.id)
+                throw DuplicateReviewException(projectId, paperId, currentUser.id)
             }
 
             if (projectPaper.hasFinalDecision) {
@@ -121,7 +104,7 @@ class ReviewService(
                 )
             }
 
-            val review = repo.createReview(request, project.id, currentUser.id).getOrThrow()
+            val review = repo.createReview(request, projectPaper.id, currentUser.id).getOrThrow()
 
             val projectCriteria = criterionRepo.getAllProjectCriteria(project.id)
             val hasSelectedExclusionCriterion =
@@ -132,7 +115,7 @@ class ReviewService(
             } else {
                 determinePaperDecision(reviewsForProjectPaper + review, project.settings.reviewDecisionMatrix)
             }
-            projectPaperRepo.updateProjectPaperDecision(request.projectPaperId, decision)
+            projectPaperRepo.updateProjectPaperDecision(projectPaper.id, decision)
 
             if (project.status != ProjectStatus.ACTIVE_LOCKED) {
                 setProjectStatusActiveLocked(project.id)
@@ -141,9 +124,7 @@ class ReviewService(
                 fetcherOrchestrator.enqueue(FetcherEnqueueJob(projectPaper, currentUser.id))
             }
 
-            logger.info {
-                "Review ${review.id} created for project paper ${request.projectPaperId} (${review.decision})"
-            }
+            logger.info { "Review ${review.id} created for paper $paperId in project $projectId (${review.decision})" }
             ReviewResponse.fromReviewAndIds(review, request.selectedCriteriaIds)
         }
 

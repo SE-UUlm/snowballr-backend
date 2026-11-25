@@ -235,12 +235,6 @@ fun ReviewResponse.toGrpc(): ReviewOuterClass.Review = ReviewOuterClass.Review
     .addAllSelectedCriteriaIds(selectedCriteriaIds.map { it.toString() })
     .build()
 
-@JvmName("toGrpcReviewList")
-fun List<ReviewResponse>.toGrpc(): ReviewOuterClass.Review.List = ReviewOuterClass.Review.List
-    .newBuilder()
-    .addAllReviews(this.map { it.toGrpc() })
-    .build()
-
 fun FileExport.toGrpc(): Export.ExportResponse = Export.ExportResponse.newBuilder()
     .setData(data.toByteString())
     .setFileName(filename)

@@ -54,7 +54,6 @@ sealed class ReviewServiceTest : BaseServiceTest {
         criterionRepo = criterionRepoMock,
         reviewHasCriterionRepo = reviewHasCriterionRepoMock,
         accessChecker = reviewAccessCheckerMock,
-        projectAccessChecker = projectAccessCheckerMock,
         fetcherOrchestrator = fetcherOrchestratorMock,
     )
 

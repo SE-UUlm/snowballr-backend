@@ -40,8 +40,6 @@ internal object GrpcHelpers {
 
     fun parseProjectId(id: Base.Id): UUID = parseUUID(id.id, EntityType.PROJECT)
 
-    fun parseProjectPaperId(id: Base.Id): UUID = parseUUID(id.id, EntityType.PROJECT_PAPER)
-
     fun parsePaperId(id: Base.Id): UUID = parseUUID(id.id, EntityType.PAPER)
 
     fun parseCriterionId(id: Base.Id): UUID = parseUUID(id.id, EntityType.CRITERION)

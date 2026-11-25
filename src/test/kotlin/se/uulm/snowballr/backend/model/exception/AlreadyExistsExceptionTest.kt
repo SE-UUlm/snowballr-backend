@@ -58,12 +58,14 @@ class AlreadyExistsExceptionTest {
     inner class DuplicateReviewExceptions {
         @Test
         fun `When creating a DuplicateReviewException, then the message is correctly formatted`() {
-            val projectPaperId = UUID.randomUUID()
+            val projectId = UUID.randomUUID()
+            val paperId = UUID.randomUUID()
             val userId = UUID.randomUUID()
-            val exception = DuplicateReviewException(projectPaperId, userId)
+            val exception = DuplicateReviewException(projectId, paperId, userId)
 
             assertEquals(
-                "Project paper with ID '$projectPaperId' was already reviewed by user with ID '$userId'.",
+                "Paper with ID '$paperId' in project with ID '$projectId' was already reviewed by user with ID " +
+                    "'$userId'.",
                 exception.message,
             )
         }

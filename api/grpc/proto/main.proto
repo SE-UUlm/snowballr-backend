@@ -889,19 +889,6 @@ service SnowballR {
   // @auth
   rpc GetReviewById(Id) returns (Review);
 
-  // Get all reviews for the specific project paper.
-  //
-  // ## Errors
-  // | Error Code | Description |
-  // | :--- | :--- |
-  // | `INVALID_ARGUMENT` | The project paper ID is not a valid UUID. |
-  // | `NOT_FOUND` | No project paper with the provided ID was found. |
-  // | `PERMISSION_DENIED` | The calling user is neither a server admin nor a member of the project the project paper belongs to. |
-  // | `UNAUTHENTICATED` | The user is not signed in. |
-  //
-  // @auth
-  rpc GetAllReviewsForProjectPaper(Id) returns (Review.List);
-
   // Create a new review for the specific project paper. All fields **must be
   // specified** and **non-blank**. The field `selected_criteria_ids` **may be empty**. The
   // calling user must not currently have another review for this project paper.

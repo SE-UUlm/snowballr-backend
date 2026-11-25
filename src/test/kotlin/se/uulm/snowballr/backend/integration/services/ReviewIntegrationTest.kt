@@ -18,6 +18,7 @@ import se.uulm.snowballr.backend.model.incoming.criterion.CreateCriterionRequest
 import se.uulm.snowballr.backend.model.incoming.project.CreateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.project.UpdateProjectRequest
 import se.uulm.snowballr.backend.model.incoming.review.CreateReviewRequest
+import se.uulm.snowballr.backend.model.outgoing.projectpaper.ProjectPaperResponse
 import java.util.UUID
 
 class ReviewIntegrationTest : IntegrationTest() {
@@ -33,8 +34,9 @@ class ReviewIntegrationTest : IntegrationTest() {
             ),
         )
 
-        private fun declineRequest(projectPaperId: UUID, criterion: Criterion) = CreateReviewRequest(
-            projectPaperId = projectPaperId,
+        private fun declineRequest(projectPaper: ProjectPaperResponse, criterion: Criterion) = CreateReviewRequest(
+            projectId = projectPaper.projectId,
+            paperId = projectPaper.paper.id,
             decision = ReviewDecision.DECLINED,
             selectedCriteriaIds = listOf(criterion.id),
         )
@@ -45,24 +47,22 @@ class ReviewIntegrationTest : IntegrationTest() {
                 val (project, projectPaper) = setupProjectAndPaperForReview()
                 val criterion = createCriterion(project.id)
 
-                val review = reviewService.createReview(declineRequest(projectPaper.id, criterion))
+                val review = reviewService.createReview(declineRequest(projectPaper, criterion))
 
                 val fetched = reviewService.getReviewById(review.id)
                 assertEquals(listOf(criterion.id), fetched.selectedCriteriaIds)
             }
 
         @Test
-        fun `When a review selects a criterion of another project, then the creation fails and no review is stored`() =
-            runTest {
-                val (_, projectPaper) = setupProjectAndPaperForReview()
-                val otherProject = projectService.createProject(CreateProjectRequest(name = "Other Project"))
-                val foreignCriterion = createCriterion(otherProject.id)
+        fun `When a review selects a criterion of another project, then the creation fails`() = runTest {
+            val (_, projectPaper) = setupProjectAndPaperForReview()
+            val otherProject = projectService.createProject(CreateProjectRequest(name = "Other Project"))
+            val foreignCriterion = createCriterion(otherProject.id)
 
-                assertThrows<CriteriaNotInProjectException> {
-                    reviewService.createReview(declineRequest(projectPaper.id, foreignCriterion))
-                }
-                assertTrue(reviewService.getAllReviewsForProjectPaper(projectPaper.id).isEmpty())
+            assertThrows<CriteriaNotInProjectException> {
+                reviewService.createReview(declineRequest(projectPaper, foreignCriterion))
             }
+        }
 
         @Test
         fun `When a review selects a user criterion, then the creation fails`() = runTest {
@@ -70,24 +70,8 @@ class ReviewIntegrationTest : IntegrationTest() {
             val userCriterion = createCriterion(projectId = null)
 
             assertThrows<CriteriaNotInProjectException> {
-                reviewService.createReview(declineRequest(projectPaper.id, userCriterion))
+                reviewService.createReview(declineRequest(projectPaper, userCriterion))
             }
-        }
-
-        @Test
-        fun `When a review is created, then it appears in the reviews list for the project paper`() = runTest {
-            val (_, projectPaper) = setupProjectAndPaperForReview()
-
-            reviewService.createReview(
-                CreateReviewRequest(
-                    projectPaperId = projectPaper.id,
-                    decision = ReviewDecision.ACCEPTED,
-                    selectedCriteriaIds = emptyList(),
-                ),
-            )
-
-            val reviews = reviewService.getAllReviewsForProjectPaper(projectPaper.id)
-            assertTrue(reviews.isNotEmpty())
         }
 
         @Test
@@ -96,7 +80,8 @@ class ReviewIntegrationTest : IntegrationTest() {
 
             val review = reviewService.createReview(
                 CreateReviewRequest(
-                    projectPaperId = projectPaper.id,
+                    projectId = projectPaper.projectId,
+                    paperId = projectPaper.paper.id,
                     decision = ReviewDecision.DECLINED,
                     selectedCriteriaIds = emptyList(),
                 ),
@@ -114,7 +99,8 @@ class ReviewIntegrationTest : IntegrationTest() {
 
             reviewService.createReview(
                 CreateReviewRequest(
-                    projectPaperId = projectPaper.id,
+                    projectId = projectPaper.projectId,
+                    paperId = projectPaper.paper.id,
                     decision = ReviewDecision.ACCEPTED,
                     selectedCriteriaIds = emptyList(),
                 ),
@@ -130,7 +116,8 @@ class ReviewIntegrationTest : IntegrationTest() {
 
             reviewService.createReview(
                 CreateReviewRequest(
-                    projectPaperId = projectPaper.id,
+                    projectId = projectPaper.projectId,
+                    paperId = projectPaper.paper.id,
                     decision = ReviewDecision.DECLINED,
                     selectedCriteriaIds = emptyList(),
                 ),
@@ -154,7 +141,8 @@ class ReviewIntegrationTest : IntegrationTest() {
 
             reviewService.createReview(
                 CreateReviewRequest(
-                    projectPaperId = projectPaper.id,
+                    projectId = projectPaper.projectId,
+                    paperId = projectPaper.paper.id,
                     decision = ReviewDecision.ACCEPTED,
                     selectedCriteriaIds = emptyList(),
                 ),

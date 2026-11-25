@@ -7,12 +7,14 @@ import java.util.UUID
  * Represents an exception that occurs when a user attempts to review a project paper that has already been reviewed by
  * this user.
  *
- * @param projectPaperId The ID of the project paper that has already been reviewed.
+ * @param projectId The ID of the project the reviewed paper belongs to.
+ * @param paperId The ID of the paper that has already been reviewed in the project.
  * @param userId The ID of the user who has already reviewed the project paper.
  */
 class DuplicateReviewException(
-    projectPaperId: UUID,
+    projectId: UUID,
+    paperId: UUID,
     userId: UUID,
 ) : AlreadyExistsException(
-    "Project paper with ID '$projectPaperId' was already reviewed by user with ID '$userId'.",
+    "Paper with ID '$paperId' in project with ID '$projectId' was already reviewed by user with ID '$userId'.",
 )
