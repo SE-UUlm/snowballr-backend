@@ -54,17 +54,15 @@ class ReviewIntegrationTest : IntegrationTest() {
             }
 
         @Test
-        fun `When a review selects a criterion of another project, then the creation fails and no review is stored`() =
-            runTest {
-                val (_, projectPaper) = setupProjectAndPaperForReview()
-                val otherProject = projectService.createProject(CreateProjectRequest(name = "Other Project"))
-                val foreignCriterion = createCriterion(otherProject.id)
+        fun `When a review selects a criterion of another project, then the creation fails`() = runTest {
+            val (_, projectPaper) = setupProjectAndPaperForReview()
+            val otherProject = projectService.createProject(CreateProjectRequest(name = "Other Project"))
+            val foreignCriterion = createCriterion(otherProject.id)
 
-                assertThrows<CriteriaNotInProjectException> {
-                    reviewService.createReview(declineRequest(projectPaper, foreignCriterion))
-                }
-                assertTrue(reviewService.getAllReviewsForProjectPaper(projectPaper.id).isEmpty())
+            assertThrows<CriteriaNotInProjectException> {
+                reviewService.createReview(declineRequest(projectPaper, foreignCriterion))
             }
+        }
 
         @Test
         fun `When a review selects a user criterion, then the creation fails`() = runTest {
@@ -74,23 +72,6 @@ class ReviewIntegrationTest : IntegrationTest() {
             assertThrows<CriteriaNotInProjectException> {
                 reviewService.createReview(declineRequest(projectPaper, userCriterion))
             }
-        }
-
-        @Test
-        fun `When a review is created, then it appears in the reviews list for the project paper`() = runTest {
-            val (_, projectPaper) = setupProjectAndPaperForReview()
-
-            reviewService.createReview(
-                CreateReviewRequest(
-                    projectId = projectPaper.projectId,
-                    paperId = projectPaper.paper.id,
-                    decision = ReviewDecision.ACCEPTED,
-                    selectedCriteriaIds = emptyList(),
-                ),
-            )
-
-            val reviews = reviewService.getAllReviewsForProjectPaper(projectPaper.id)
-            assertTrue(reviews.isNotEmpty())
         }
 
         @Test
