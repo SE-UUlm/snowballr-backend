@@ -64,8 +64,8 @@ class GetAllProjectPapersForProjectTest : ProjectPaperServiceTest() {
             val projectPapers = service.getAllProjectPapersForProject(project.id)
 
             assertEquals(2, projectPapers.size)
-            assertEquals(projectPaper0.projectPaper.id, projectPapers[0].id)
-            assertEquals(projectPaper1.projectPaper.id, projectPapers[1].id)
+            assertEquals(projectPaper0.paper.id, projectPapers[0].paper.id)
+            assertEquals(projectPaper1.paper.id, projectPapers[1].paper.id)
             val projectPaper0Result = projectPapers[0]
             val projectPaper1Result = projectPapers[1]
             val backwardRefs0 = projectPaper0Result.paper.backwardReferencedIds

@@ -185,9 +185,9 @@ message Project {
   }
 
   // The project paper connecting a project to a paper with additional information.
+  // It is identified by the ID of its project and the ID of its paper.
   message Paper {
-    // The UUID of the project paper
-    string id = 1;
+    reserved 1;
     snowballr.Paper paper = 2;
     uint64 stage = 3;
     PaperDecision decision = 4;

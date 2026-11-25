@@ -165,15 +165,15 @@ class ReviewIntegrationTest : IntegrationTest() {
 
             val papers = projectPaperService.getAllProjectPapersForProject(project.id)
 
-            assertTrue(papers.any { it.id == projectPaper.id })
+            assertTrue(papers.any { it.paper.id == projectPaper.paper.id })
         }
 
         @Test
-        fun `When a paper is added to a project, then it can be retrieved by its project paper ID`() = runTest {
+        fun `When a paper is added to a project, then it can be retrieved by its project and paper ID`() = runTest {
             val (_, projectPaper) = setupProjectAndPaperForReview()
 
             val fetched = projectPaperService.getProjectPaper(projectPaper.projectId, projectPaper.paper.id)
-            assertEquals(projectPaper.id, fetched.id)
+            assertEquals(projectPaper.paper.id, fetched.paper.id)
         }
     }
 }

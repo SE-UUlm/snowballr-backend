@@ -61,8 +61,8 @@ class GetPapersToReviewForProjectTest : ProjectPaperServiceTest() {
         val projectPapers = service.getPapersToReviewForProject(project.id)
 
         assertThat(projectPapers).hasSize(1)
-        assertThat(projectPapers).anyMatch { it.id == projectPaperNotAlreadyDecided.id }
-        assertThat(projectPapers).noneMatch { it.id == projectPaperAlreadyDecided.id }
+        assertThat(projectPapers).anyMatch { it.paper.id == projectPaperNotAlreadyDecided.paperId }
+        assertThat(projectPapers).noneMatch { it.paper.id == projectPaperAlreadyDecided.paperId }
     }
 
     @Test
@@ -118,8 +118,8 @@ class GetPapersToReviewForProjectTest : ProjectPaperServiceTest() {
             val projectPapers = service.getPapersToReviewForProject(project.id)
 
             assertThat(projectPapers).hasSize(1)
-            assertThat(projectPapers).anyMatch { it.id == projectPaperWithoutCurrentUserReview.id }
-            assertThat(projectPapers).noneMatch { it.id == projectPaperWithCurrentUserReview.id }
+            assertThat(projectPapers).anyMatch { it.paper.id == projectPaperWithoutCurrentUserReview.paperId }
+            assertThat(projectPapers).noneMatch { it.paper.id == projectPaperWithCurrentUserReview.paperId }
         }
 
     @Test
@@ -149,7 +149,7 @@ class GetPapersToReviewForProjectTest : ProjectPaperServiceTest() {
         val result = service.getPapersToReviewForProject(project.id)
 
         assertThat(result).hasSize(1)
-        assertThat(result.first().id).isEqualTo(projectPaper.id)
+        assertThat(result.first().paper.id).isEqualTo(projectPaper.paperId)
     }
 
     @Test

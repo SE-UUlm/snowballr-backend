@@ -97,7 +97,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
 
             val fetched = projectPaperService.getProjectPaperByRelativeId(project.id, added.localPaperId)
 
-            assertEquals(added.id, fetched.id)
+            assertEquals(added.paper.id, fetched.paper.id)
         }
 
         @Test
@@ -109,8 +109,8 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
             val fetchedA = projectPaperService.getProjectPaperByRelativeId(project.id, ppA.localPaperId)
             val fetchedB = projectPaperService.getProjectPaperByRelativeId(project.id, ppB.localPaperId)
 
-            assertEquals(ppA.id, fetchedA.id)
-            assertEquals(ppB.id, fetchedB.id)
+            assertEquals(ppA.paper.id, fetchedA.paper.id)
+            assertEquals(ppB.paper.id, fetchedB.paper.id)
         }
     }
 
@@ -132,7 +132,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
 
             val toReview = projectPaperService.getPapersToReviewForProject(project.id)
 
-            assertTrue(toReview.any { it.id == pp.id })
+            assertTrue(toReview.any { it.paper.id == pp.paper.id })
         }
 
         @Test
@@ -144,7 +144,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
 
             val toReview = projectPaperService.getPapersToReviewForProject(project.id)
 
-            assertFalse(toReview.any { it.id == pp.id })
+            assertFalse(toReview.any { it.paper.id == pp.paper.id })
         }
 
         @Test
@@ -164,7 +164,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
 
                 val toReview = projectPaperService.getPapersToReviewForProject(project.id)
 
-                assertFalse(toReview.any { it.id == pp.id })
+                assertFalse(toReview.any { it.paper.id == pp.paper.id })
             }
 
         @Test
@@ -178,8 +178,8 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
 
                 val toReview = projectPaperService.getPapersToReviewForProject(project.id)
 
-                assertFalse(toReview.any { it.id == ppA.id })
-                assertTrue(toReview.any { it.id == ppB.id })
+                assertFalse(toReview.any { it.paper.id == ppA.paper.id })
+                assertTrue(toReview.any { it.paper.id == ppB.paper.id })
             }
     }
 
@@ -195,7 +195,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
 
                 val next = projectPaperService.getNextPaper(ppA.projectId, ppA.paper.id)
 
-                assertEquals(ppB.id, next.id)
+                assertEquals(ppB.paper.id, next.paper.id)
             }
 
         @Test
@@ -208,7 +208,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
 
                 val previous = projectPaperService.getPreviousPaper(ppC.projectId, ppC.paper.id)
 
-                assertEquals(ppB.id, previous.id)
+                assertEquals(ppB.paper.id, previous.paper.id)
             }
 
         @Test
@@ -240,7 +240,7 @@ class ProjectPaperIntegrationTest : IntegrationTest() {
 
             val next = projectPaperService.getNextPaperToReview(ppA.projectId, ppA.paper.id)
 
-            assertEquals(ppB.id, next.id)
+            assertEquals(ppB.paper.id, next.paper.id)
         }
 
         @Test

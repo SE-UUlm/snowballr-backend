@@ -201,7 +201,6 @@ class ProjectPaperService(
             .map { ReviewResponse.fromReviewWithSelectedCriteriaIds(it) }
 
         return ProjectPaperResponse(
-            id = this.id,
             stage = this.stage,
             decision = this.decision,
             projectId = this.projectId,
