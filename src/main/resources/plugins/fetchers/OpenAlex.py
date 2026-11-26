@@ -39,8 +39,6 @@ fetcher_information = FetcherInformation(
     },
 )
 
-id_metadata_key: str = "OpenAlexId"
-
 base_url = "https://api.openalex.org"
 fields = "id,ids,title,publication_year,authorships,primary_location,abstract_inverted_index"
 
@@ -91,9 +89,9 @@ def backward_references(paper: Paper, options: dict[str, str]) -> list[Paper]:
 
 
 def _construct_paper_id(paper: Paper, options: dict[str, str]) -> Optional[str]:
-    paper_id = paper.fetcher_metadata.get(id_metadata_key)
-    if paper_id is not None:
-        return _short_openalex_id(paper_id)
+    for external_id in paper.external_ids:
+        if external_id.type == "OPEN_ALEX":
+            return _short_openalex_id(external_id.value)
 
     # Retrieve paper by other external IDs to get the OpenAlex ID
     prefixes = {
@@ -208,9 +206,8 @@ def _short_openalex_id(openalex_id: str) -> str:
 def _paper_from_response(res) -> Paper:
     external_ids = _external_ids_from_response(res)
 
-    metadata = {}
     if (paper_id := res.get("id")) is not None:
-        metadata[id_metadata_key] = _short_openalex_id(paper_id)
+        external_ids.append(ExternalId("OPEN_ALEX", _short_openalex_id(paper_id)))
 
     authors = [
         _author_from_response(authorship["author"])
@@ -230,7 +227,6 @@ def _paper_from_response(res) -> Paper:
         publication_name=safe_get(source, "display_name", ""),
         publisher=safe_get(source, "host_organization_name", ""),
         authors=authors,
-        fetcher_metadata=metadata,
     )
 
 

@@ -32,6 +32,8 @@ class ExternalIdTest {
             ExternalIdType.SEMANTIC_SCHOLAR to "not-a-hash",
             ExternalIdType.ACL to "not-an-acl-id",
             ExternalIdType.DBLP to "not-a-dblp-key",
+            ExternalIdType.OPEN_ALEX to "not-an-openalex-id",
+            ExternalIdType.IEEE_XPLORE to "not-a-number",
         )
 
         /**
@@ -58,6 +60,8 @@ class ExternalIdTest {
             ExternalIdType.ARXIV to "210.00001", // year-month segment shorter than 4 digits
             ExternalIdType.ACL to "P19-12345", // paper number longer than 4 digits
             ExternalIdType.DBLP to "journals/tods", // missing id-suffix segment
+            ExternalIdType.OPEN_ALEX to "A5023888391", // author ID instead of a work ID
+            ExternalIdType.OPEN_ALEX to "https://openalex.org/W2741809807", // full URL instead of the short ID
         )
 
         private fun argumentsFor(type: ExternalIdType, value: String): Arguments {

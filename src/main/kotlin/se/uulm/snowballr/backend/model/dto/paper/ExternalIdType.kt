@@ -53,4 +53,14 @@ enum class ExternalIdType(val displayName: String, val isCaseInsensitive: Boolea
      * [Semantic Scholar](https://www.semanticscholar.org/).
      */
     SEMANTIC_SCHOLAR("Semantic Scholar"),
+
+    /**
+     * [OpenAlex](https://openalex.org/).
+     */
+    OPEN_ALEX("OpenAlex"),
+
+    /**
+     * [IEEE Xplore](https://ieeexplore.ieee.org/).
+     */
+    IEEE_XPLORE("IEEE Xplore"),
 }

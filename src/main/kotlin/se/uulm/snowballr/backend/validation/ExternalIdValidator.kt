@@ -37,10 +37,10 @@ object ExternalIdValidator {
     private val ARXIV_OLD_STYLE_REGEX = Regex("""^[a-z-]+(\.[A-Z]{2})?/\d{7}(v\d+)?$""")
 
     /**
-     * Matches a numeric ID as used by both
-     * [Microsoft Academic Graph](https://www.microsoft.com/en-us/research/project/microsoft-academic-graph/) (MAG)
-     * and [PubMed](https://pubmed.ncbi.nlm.nih.gov/)/[Medline](https://www.nlm.nih.gov/medline/medline_home.html)
-     * (PMID), e.g. `12345678`.
+     * Matches a numeric ID as used by
+     * [Microsoft Academic Graph](https://www.microsoft.com/en-us/research/project/microsoft-academic-graph/) (MAG),
+     * [PubMed](https://pubmed.ncbi.nlm.nih.gov/)/[Medline](https://www.nlm.nih.gov/medline/medline_home.html)
+     * (PMID) and [IEEE Xplore](https://ieeexplore.ieee.org/) (article number), e.g. `12345678`.
      */
     private val DIGITS_ONLY_REGEX = Regex("""^\d+$""")
 
@@ -54,6 +54,12 @@ object ExternalIdValidator {
      * Matches a [Semantic Scholar](https://www.semanticscholar.org/) paper ID, a 40 character lowercase hex string.
      */
     private val SEMANTIC_SCHOLAR_REGEX = Regex("""^[a-f0-9]{40}$""")
+
+    /**
+     * Matches the short form of an [OpenAlex](https://openalex.org/) work ID, i.e. the `W` prefix followed by digits,
+     * e.g. `W2741809807`.
+     */
+    private val OPEN_ALEX_REGEX = Regex("""^W\d+$""")
 
     /**
      * Matches the current [ACL Anthology](https://aclanthology.org/) ID scheme introduced in 2020,
@@ -94,11 +100,16 @@ object ExternalIdValidator {
     private fun matchesExpectedFormat(type: ExternalIdType, value: String): Boolean = when (type) {
         ExternalIdType.DOI -> DOI_REGEX.matches(value)
         ExternalIdType.ARXIV -> ARXIV_NEW_STYLE_REGEX.matches(value) || ARXIV_OLD_STYLE_REGEX.matches(value)
-        ExternalIdType.MAG, ExternalIdType.PUB_MED, ExternalIdType.MEDLINE -> DIGITS_ONLY_REGEX.matches(value)
+        ExternalIdType.MAG,
+        ExternalIdType.PUB_MED,
+        ExternalIdType.MEDLINE,
+        ExternalIdType.IEEE_XPLORE,
+        -> DIGITS_ONLY_REGEX.matches(value)
         ExternalIdType.PUB_MED_CENTRAL -> PUB_MED_CENTRAL_REGEX.matches(value)
         ExternalIdType.SEMANTIC_SCHOLAR -> SEMANTIC_SCHOLAR_REGEX.matches(value)
         ExternalIdType.ACL -> ACL_NEW_STYLE_REGEX.matches(value) || ACL_OLD_STYLE_REGEX.matches(value)
         ExternalIdType.DBLP -> DBLP_REGEX.matches(value)
+        ExternalIdType.OPEN_ALEX -> OPEN_ALEX_REGEX.matches(value)
     }
 
     /**
