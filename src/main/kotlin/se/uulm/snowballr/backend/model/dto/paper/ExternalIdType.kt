@@ -4,15 +4,16 @@ package se.uulm.snowballr.backend.model.dto.paper
  * The type of an [ExternalId].
  *
  * @property displayName The displayable name of the type.
- * @property isCaseInsensitive Whether IDs of this type are case-insensitive, i.e., values that only differ in casing
- * refer to the same entity. Values of such types are lowercased by [ExternalId.normalized].
+ * @property canonicalCase The casing that values of this type are converted to by [ExternalId.normalized]. Anything
+ * other than [CanonicalCase.AS_IS] means IDs of this type are case-insensitive, i.e., values that only differ in casing
+ * refer to the same entity.
  */
-enum class ExternalIdType(val displayName: String, val isCaseInsensitive: Boolean = false) {
+enum class ExternalIdType(val displayName: String, val canonicalCase: CanonicalCase = CanonicalCase.AS_IS) {
     /**
      * [Digital Object Identifier](https://www.doi.org/). DOIs are case-insensitive, see the
      * [DOI Handbook](https://www.doi.org/doi-handbook/html/index.html), chapter 3.3.4.
      */
-    DOI("DOI", isCaseInsensitive = true),
+    DOI("DOI", canonicalCase = CanonicalCase.LOWER),
 
     /**
      * [arXiv](https://arxiv.org/).
@@ -55,12 +56,27 @@ enum class ExternalIdType(val displayName: String, val isCaseInsensitive: Boolea
     SEMANTIC_SCHOLAR("Semantic Scholar"),
 
     /**
-     * [OpenAlex](https://openalex.org/).
+     * [OpenAlex](https://openalex.org/). OpenAlex IDs are case-insensitive, e.g. `w2741809807` resolves to the same
+     * work as `W2741809807`, and are uppercased since the uppercase form is the one OpenAlex returns.
      */
-    OPEN_ALEX("OpenAlex"),
+    OPEN_ALEX("OpenAlex", canonicalCase = CanonicalCase.UPPER),
 
     /**
      * [IEEE Xplore](https://ieeexplore.ieee.org/).
      */
     IEEE_XPLORE("IEEE Xplore"),
+}
+
+/**
+ * The casing that values of an [ExternalIdType] are converted to during normalization.
+ */
+enum class CanonicalCase {
+    /** The value is case-sensitive and its casing is kept as is. */
+    AS_IS,
+
+    /** The value is case-insensitive and lowercased. */
+    LOWER,
+
+    /** The value is case-insensitive and uppercased. */
+    UPPER,
 }

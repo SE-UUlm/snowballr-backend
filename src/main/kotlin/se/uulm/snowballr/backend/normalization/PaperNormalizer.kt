@@ -20,8 +20,8 @@ import java.text.Normalizer
  * NFC composes such sequences into their single precomposed form wherever one exists, without otherwise altering
  * the text (unlike the compatibility forms NFKC/NFKD, which also fold things like ligatures or superscripts and
  * would be lossy for display). Blank authors and external IDs are dropped. External ID values are only trimmed, and
- * lowercased for case-insensitive ID types such as DOIs, since they are identifiers rather than prose and must not be
- * altered otherwise.
+ * converted to the canonical case of case-insensitive ID types such as DOIs, since they are identifiers rather than
+ * prose and must not be altered otherwise.
  */
 object PaperNormalizer {
     private val WHITESPACE_REGEX = Regex("[\\s\\p{Z}]+")
@@ -71,8 +71,9 @@ object PaperNormalizer {
 
     /**
      * Normalizes each external ID (see [ExternalId.normalized]) and drops entries whose value is blank. Unlike
-     * free-text fields, external ID values are only trimmed, and lowercased for case-insensitive ID types such as
-     * DOIs - not otherwise normalized - since they are identifiers rather than prose and must not be altered.
+     * free-text fields, external ID values are only trimmed, and converted to the canonical case of case-insensitive ID
+     * types such as DOIs - not otherwise normalized - since they are identifiers rather than prose and must not be
+     * altered.
      */
     fun normalizeExternalIds(externalIds: List<ExternalId>): List<ExternalId> = externalIds
         .map { it.normalized() }

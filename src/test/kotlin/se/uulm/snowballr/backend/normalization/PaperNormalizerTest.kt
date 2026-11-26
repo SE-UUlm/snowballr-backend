@@ -160,6 +160,19 @@ class PaperNormalizerTest {
         }
 
         @Test
+        fun `When an OpenAlex ID has a lowercase prefix, then it is uppercased`() {
+            val paper = DataBuilder.createExampleFetcherPaper(
+                externalIds = listOf(
+                    DataBuilder.createExampleExternalId(type = ExternalIdType.OPEN_ALEX, value = "w2741809807"),
+                ),
+            )
+
+            val result = PaperNormalizer.normalize(paper)
+
+            assertEquals("W2741809807", result.externalIds.single().value)
+        }
+
+        @Test
         fun `When a case-sensitive external ID contains uppercase letters, then its casing is kept`() {
             val paper = DataBuilder.createExampleFetcherPaper(
                 externalIds = listOf(

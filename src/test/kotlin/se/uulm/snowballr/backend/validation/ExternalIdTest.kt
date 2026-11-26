@@ -48,6 +48,7 @@ class ExternalIdTest {
             ExternalIdType.ACL to "2021.acl-long.1", // new-style (2020 onward)
             ExternalIdType.DBLP to "journals/corr/abs-2103-05387", // hyphenated id-suffix, e.g. CoRR/arXiv keys
             ExternalIdType.DBLP to "books/crc/chb/CarrollR14", // more than 3 segments
+            ExternalIdType.OPEN_ALEX to "w2741809807", // lowercase prefix, OpenAlex IDs are case-insensitive
         )
 
         /**

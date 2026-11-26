@@ -57,9 +57,10 @@ object ExternalIdValidator {
 
     /**
      * Matches the short form of an [OpenAlex](https://openalex.org/) work ID, i.e. the `W` prefix followed by digits,
-     * e.g. `W2741809807`.
+     * e.g. `W2741809807`. The prefix is matched case-insensitively, since OpenAlex IDs are case-insensitive, and is
+     * uppercased during normalization (see [ExternalIdType.OPEN_ALEX]).
      */
-    private val OPEN_ALEX_REGEX = Regex("""^W\d+$""")
+    private val OPEN_ALEX_REGEX = Regex("""^[Ww]\d+$""")
 
     /**
      * Matches the current [ACL Anthology](https://aclanthology.org/) ID scheme introduced in 2020,
