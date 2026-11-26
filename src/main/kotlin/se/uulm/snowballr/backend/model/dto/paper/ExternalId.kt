@@ -12,11 +12,15 @@ data class ExternalId(
 )
 
 /**
- * Returns this [ExternalId] with its value trimmed and, if its [type][ExternalId.type] is
- * [case-insensitive][ExternalIdType.isCaseInsensitive], lowercased. Two external IDs referring to the same entity are
- * equal after normalization.
+ * Returns this [ExternalId] with its value trimmed and converted to the [canonical case][ExternalIdType.canonicalCase]
+ * of its [type][ExternalId.type]. Two external IDs referring to the same entity are equal after normalization.
  */
 fun ExternalId.normalized(): ExternalId {
     val trimmed = value.trim()
-    return copy(value = if (type.isCaseInsensitive) trimmed.lowercase() else trimmed)
+    val cased = when (type.canonicalCase) {
+        CanonicalCase.AS_IS -> trimmed
+        CanonicalCase.LOWER -> trimmed.lowercase()
+        CanonicalCase.UPPER -> trimmed.uppercase()
+    }
+    return copy(value = cased)
 }

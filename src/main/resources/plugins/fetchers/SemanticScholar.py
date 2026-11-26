@@ -40,7 +40,6 @@ fetcher_information = FetcherInformation(
     },
 )
 
-id_metadata_key: str = "SemanticScholarId"
 corpus_id_metadata_key: str = "SemanticScholarCorpusId"
 
 base_url = "https://api.semanticscholar.org/graph/v1"
@@ -117,16 +116,15 @@ def _get_references(
 
 def _construct_paper_id(paper: Paper) -> Optional[str]:
     metadata = paper.fetcher_metadata
+    ext_id_map = {ext.type: ext.value for ext in paper.external_ids}
 
-    if (s2_id := metadata.get(id_metadata_key)) is not None:
+    if (s2_id := ext_id_map.get("SEMANTIC_SCHOLAR")) is not None:
         return s2_id
 
     if (s2_corpus_id := metadata.get(corpus_id_metadata_key)) is not None:
         return f"CorpusId:{s2_corpus_id}"
 
-    ext_id_map = {ext.type: ext.value for ext in paper.external_ids}
     key_mapping = {
-        "SEMANTIC_SCHOLAR": "",
         "DOI": "DOI:",
         "ARXIV": "ARXIV:",
         "MAG": "MAG:",
@@ -173,7 +171,6 @@ def _paper_from_response(res) -> Paper:
     metadata = {}
     paper_id = res["paperId"]
     if paper_id is not None:
-        metadata[id_metadata_key] = paper_id
         external_ids.append(ExternalId("SEMANTIC_SCHOLAR", paper_id))
     corpus_id = res["corpusId"]
     if corpus_id is not None:

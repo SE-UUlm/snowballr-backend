@@ -16,4 +16,6 @@ val VALID_EXTERNAL_ID_VALUES: Map<ExternalIdType, String> = mapOf(
     ExternalIdType.PUB_MED_CENTRAL to "PMC1234567",
     ExternalIdType.DBLP to "journals/tods/Bernstein83",
     ExternalIdType.SEMANTIC_SCHOLAR to "204e3073870fae3d05bcbc2f6a8e263d9b72e776",
+    ExternalIdType.OPEN_ALEX to "W2741809807",
+    ExternalIdType.IEEE_XPLORE to "8792395",
 )

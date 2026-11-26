@@ -32,6 +32,8 @@ class ExternalIdTest {
             ExternalIdType.SEMANTIC_SCHOLAR to "not-a-hash",
             ExternalIdType.ACL to "not-an-acl-id",
             ExternalIdType.DBLP to "not-a-dblp-key",
+            ExternalIdType.OPEN_ALEX to "not-an-openalex-id",
+            ExternalIdType.IEEE_XPLORE to "not-a-number",
         )
 
         /**
@@ -46,6 +48,7 @@ class ExternalIdTest {
             ExternalIdType.ACL to "2021.acl-long.1", // new-style (2020 onward)
             ExternalIdType.DBLP to "journals/corr/abs-2103-05387", // hyphenated id-suffix, e.g. CoRR/arXiv keys
             ExternalIdType.DBLP to "books/crc/chb/CarrollR14", // more than 3 segments
+            ExternalIdType.OPEN_ALEX to "w2741809807", // lowercase prefix, OpenAlex IDs are case-insensitive
         )
 
         /**
@@ -58,6 +61,8 @@ class ExternalIdTest {
             ExternalIdType.ARXIV to "210.00001", // year-month segment shorter than 4 digits
             ExternalIdType.ACL to "P19-12345", // paper number longer than 4 digits
             ExternalIdType.DBLP to "journals/tods", // missing id-suffix segment
+            ExternalIdType.OPEN_ALEX to "A5023888391", // author ID instead of a work ID
+            ExternalIdType.OPEN_ALEX to "https://openalex.org/W2741809807", // full URL instead of the short ID
         )
 
         private fun argumentsFor(type: ExternalIdType, value: String): Arguments {

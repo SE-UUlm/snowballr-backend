@@ -37,8 +37,6 @@ fetcher_information = FetcherInformation(
     },
 )
 
-metadata_key: str = "IEEEXploreId"
-
 base_url = "https://ieeexploreapi.ieee.org/api/v1"
 
 # IEEE Xplore allows 10 calls per second by default.
@@ -69,7 +67,7 @@ def backward_references(paper: Paper, options: dict[str, str]) -> list[Paper]:
 
 
 def forward_references(paper: Paper, options: dict[str, str]) -> list[Paper]:
-    article_number = paper.fetcher_metadata.get(metadata_key)
+    article_number = _article_number(paper)
     if article_number is None:
         return []
 
@@ -80,6 +78,14 @@ def forward_references(paper: Paper, options: dict[str, str]) -> list[Paper]:
         papers += _articles_by_numbers(citing_numbers[start : start + lookup_batch_size], options)
 
     return papers
+
+
+def _article_number(paper: Paper) -> Optional[str]:
+    for external_id in paper.external_ids:
+        if external_id.type == "IEEE_XPLORE":
+            return external_id.value
+
+    return None
 
 
 def _citing_article_numbers(article_number: str, options: dict[str, str]) -> list[str]:
@@ -151,9 +157,10 @@ def _paper_from_response(res: dict[str, Any]) -> Paper:
         if safe_get(author, "full_name", None) is not None
     ]
 
-    external_ids = []
+    article_number = str(res["article_number"])
+    external_ids = [ExternalId("IEEE_XPLORE", article_number)]
     if (doi := res.get("doi")) is not None:
-        external_ids = [ExternalId("DOI", doi)]
+        external_ids.append(ExternalId("DOI", doi))
 
     return Paper(
         title=safe_get(res, "title", ""),
@@ -164,7 +171,6 @@ def _paper_from_response(res: dict[str, Any]) -> Paper:
         publication_type=safe_get(res, "content_type", ""),
         publication_name=safe_get(res, "publication_title", ""),
         authors=authors,
-        fetcher_metadata={metadata_key: str(res["article_number"])},
     )
 
 
